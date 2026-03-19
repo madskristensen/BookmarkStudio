@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CommandTable xmlns="http://schemas.microsoft.com/VisualStudio/2005-10-18/CommandTable" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <Extern href="stdidcmd.h"/>
+  <Extern href="vsshlids.h"/>
+  <Include href="KnownImageIds.vsct"/>
+  <Include href="VSGlobals.vsct"/>
+
+  <Commands package="BookmarkStudio">
+    <Groups>
+      <Group guid="BookmarkStudio" id="BookmarkManagerToolbarGroup" priority="0x0000">
+        <Parent guid="BookmarkStudio" id="BookmarkManagerToolbar"/>
+      </Group>
+    </Groups>
+
+    <Menus>
+      <Menu guid="BookmarkStudio" id="BookmarkManagerToolbar" priority="0x0000" type="ToolWindowToolbar">
+        <CommandFlag>DefaultDocked</CommandFlag>
+        <Strings>
+          <ButtonText>Bookmark Manager Toolbar</ButtonText>
+          <CommandName>Bookmark Manager Toolbar</CommandName>
+        </Strings>
+      </Menu>
+    </Menus>
+
+    <Buttons>
+      <Button guid="BookmarkStudio" id="OpenBookmarkManagerCommand" priority="0x0100" type="Button">
+        <Parent guid="VSMainMenu" id="View.DevWindowsGroup.OtherWindows.Group1" />
+        <Icon guid="ImageCatalogGuid" id="ToolWindow" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Bookmark Manager</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.OpenBookmarkManager</LocCanonicalName>
+        </Strings>
+      </Button>
+
+      <Button guid="BookmarkStudio" id="RefreshBookmarkManagerCommand" priority="0x0110" type="Button">
+        <Parent guid="BookmarkStudio" id="BookmarkManagerToolbarGroup" />
+        <Icon guid="ImageCatalogGuid" id="Refresh" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Refresh Bookmark Manager</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.RefreshBookmarkManager</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="BookmarkStudio" id="ExportBookmarksCommand" priority="0x0404" type="Button"><Parent guid="BookmarkStudio" id="BookmarkManagerToolbarGroup" /><Strings><ButtonText>Export Bookmarks</ButtonText><LocCanonicalName>.BookmarkStudio.ExportBookmarks</LocCanonicalName></Strings></Button>
+      <Button guid="BookmarkStudio" id="DeleteBookmarkCommand" priority="0x0210" type="Button">
+        <Parent guid="BookmarkStudio" id="BookmarkManagerToolbarGroup" />
+        <Icon guid="ImageCatalogGuid" id="Cancel" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Delete Bookmark</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.DeleteBookmark</LocCanonicalName>
+        </Strings>
+      </Button>
+    </Buttons>
+  </Commands>
+ 
+  <Symbols>
+    <GuidSymbol name="BookmarkStudio" value="{78198409-af4c-486d-9caf-7ee074cf1041}">
+      <IDSymbol name="BookmarkManagerToolbar" value="0x1000" />
+      <IDSymbol name="BookmarkManagerToolbarGroup" value="0x1001" />
+      <IDSymbol name="OpenBookmarkManagerCommand" value="0x0100" />
+      <IDSymbol name="RefreshBookmarkManagerCommand" value="0x0101" />
+      <IDSymbol name="ExportBookmarksCommand" value="0x0404" />
+      <IDSymbol name="DeleteBookmarkCommand" value="0x0407" />
+    </GuidSymbol>
+  </Symbols>
+</CommandTable>

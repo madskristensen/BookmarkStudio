@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json.schemastore.org/vsix-publish",
+  "categories": [ "other" ],
+  "private": false,
+  "identity": {
+    "internalName": "BookmarkStudio",
+    "tags": [ "bookmarks" ]
+  },
+  "assetFiles": [
+    {
+      "pathOnDisk": "art/github-node.png",
+      "targetPath": "art/github-node.png"
+    }
+  ],
+  "overview": "README.md",
+  "publisher": "MadsKristensen",
+  "repo": "https://github.com/madskristensen/BookmarkStudio"
+}

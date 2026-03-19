@@ -1,0 +1,160 @@
+<UserControl x:Class="BookmarkStudio.BookmarkManagerControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:platformui="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
+             xmlns:toolkit="clr-namespace:Community.VisualStudio.Toolkit;assembly=Community.VisualStudio.Toolkit"
+             mc:Ignorable="d"
+             d:DesignHeight="480"
+             d:DesignWidth="960"
+             Background="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowBackgroundBrushKey}}"
+             Foreground="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowTextBrushKey}}"
+             toolkit:Themes.UseVsTheme="True">
+    <UserControl.Resources>
+        <Style TargetType="DataGridCell">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="4,2" />
+            <Setter Property="Foreground" Value="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowTextBrushKey}}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DataGridCell">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarSelectedBrushKey}}" />
+                    <Setter Property="Foreground" Value="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowTextBrushKey}}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="DataGridRow">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Margin" Value="0" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarMouseOverBackgroundBeginBrushKey}}" />
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarSelectedBrushKey}}" />
+                </Trigger>
+                <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                        <Condition Property="IsSelected" Value="True" />
+                        <Condition Property="IsMouseOver" Value="True" />
+                    </MultiTrigger.Conditions>
+                    <Setter Property="Background" Value="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarHoverOverSelectedBrushKey}}" />
+                </MultiTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarGradientBeginBrushKey}}" />
+            <Setter Property="Foreground" Value="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowTextBrushKey}}" />
+            <Setter Property="Padding" Value="6,4" />
+            <Setter Property="BorderThickness" Value="0,0,1,1" />
+            <Setter Property="BorderBrush" Value="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowBorderBrushKey}}" />
+        </Style>
+    </UserControl.Resources>
+    <Grid>
+        <DataGrid x:Name="BookmarkDataGrid"
+                  ItemsSource="{Binding BookmarksView}"
+                  SelectedItem="{Binding SelectedBookmark, Mode=TwoWay}"
+                  AutoGenerateColumns="False"
+                  IsReadOnly="True"
+                  SelectionMode="Single"
+                  SelectionUnit="FullRow"
+                  HeadersVisibility="Column"
+                  GridLinesVisibility="None"
+                  BorderThickness="0"
+                  Background="Transparent"
+                  RowBackground="Transparent"
+                  AlternatingRowBackground="Transparent"
+                  MouseDoubleClick="BookmarkDataGrid_MouseDoubleClick"
+                  Sorting="BookmarkDataGrid_Sorting">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Slot" Binding="{Binding SlotNumber}" Width="40" SortMemberPath="SlotNumber">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowTextBrushKey}}" />
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="File" Binding="{Binding FileName}" Width="140" SortMemberPath="FileName">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowTextBrushKey}}" />
+                            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                            <Setter Property="ToolTip" Value="{Binding DocumentPath}" />
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="Line" Binding="{Binding LineNumber}" Width="50" SortMemberPath="LineNumber">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowTextBrushKey}}" />
+                            <Setter Property="TextAlignment" Value="Right" />
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="Label" Binding="{Binding Label}" Width="120" SortMemberPath="Label">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowTextBrushKey}}" />
+                            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="Group" Binding="{Binding Group}" Width="100" SortMemberPath="Group">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowTextBrushKey}}" />
+                            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+                <DataGridTextColumn Header="Preview" Binding="{Binding LineText}" Width="*" SortMemberPath="LineText">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowTextBrushKey}}" />
+                            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
+            </DataGrid.Columns>
+            <DataGrid.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="Navigate" Click="NavigateMenuItem_Click" />
+                    <MenuItem Header="Copy Location" Click="CopyLocationMenuItem_Click" />
+                    <Separator />
+                    <MenuItem Header="Edit Label" Click="EditLabelMenuItem_Click" />
+                    <MenuItem Header="Edit Group" Click="EditGroupMenuItem_Click" />
+                    <MenuItem Header="Clear Group" Click="ClearGroupMenuItem_Click" />
+                    <Separator />
+                    <MenuItem Header="Assign Slot">
+                        <MenuItem Header="1" Tag="1" Click="AssignSlotMenuItem_Click" />
+                        <MenuItem Header="2" Tag="2" Click="AssignSlotMenuItem_Click" />
+                        <MenuItem Header="3" Tag="3" Click="AssignSlotMenuItem_Click" />
+                        <MenuItem Header="4" Tag="4" Click="AssignSlotMenuItem_Click" />
+                        <MenuItem Header="5" Tag="5" Click="AssignSlotMenuItem_Click" />
+                        <MenuItem Header="6" Tag="6" Click="AssignSlotMenuItem_Click" />
+                        <MenuItem Header="7" Tag="7" Click="AssignSlotMenuItem_Click" />
+                        <MenuItem Header="8" Tag="8" Click="AssignSlotMenuItem_Click" />
+                        <MenuItem Header="9" Tag="9" Click="AssignSlotMenuItem_Click" />
+                    </MenuItem>
+                    <MenuItem Header="Clear Slot" Click="ClearSlotMenuItem_Click" />
+                    <Separator />
+                    <MenuItem Header="Remove" Click="DeleteBookmarkMenuItem_Click" />
+                </ContextMenu>
+            </DataGrid.ContextMenu>
+        </DataGrid>
+    </Grid>
+</UserControl>
