@@ -86,9 +86,10 @@
                 <DataGridTemplateColumn Header="" Width="24" CanUserResize="False" CanUserSort="False" SortMemberPath="Color">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-                            <Ellipse Width="10" Height="10"
-                                     Fill="{Binding Color, Converter={StaticResource ColorToBrushConverter}}"
-                                     VerticalAlignment="Center" HorizontalAlignment="Center" />
+                            <Border Width="10" Height="10"
+                                    Background="{Binding Color, Converter={StaticResource ColorToBrushConverter}}"
+                                    BorderBrush="SaddleBrown" BorderThickness="1" CornerRadius="2"
+                                    VerticalAlignment="Center" HorizontalAlignment="Center" />
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
@@ -124,14 +125,6 @@
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
-                <DataGridTextColumn Header="Group" Binding="{Binding Group}" Width="100" SortMemberPath="Group">
-                    <DataGridTextColumn.ElementStyle>
-                        <Style TargetType="TextBlock">
-                            <Setter Property="Foreground" Value="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowTextBrushKey}}" />
-                            <Setter Property="TextTrimming" Value="CharacterEllipsis" />
-                        </Style>
-                    </DataGridTextColumn.ElementStyle>
-                </DataGridTextColumn>
                 <DataGridTextColumn Header="Preview" Binding="{Binding LineText}" Width="*" SortMemberPath="LineText">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
@@ -147,8 +140,6 @@
                     <MenuItem Header="Copy Location" Click="CopyLocationMenuItem_Click" />
                     <Separator />
                     <MenuItem Header="Edit Label" Click="EditLabelMenuItem_Click" />
-                    <MenuItem Header="Edit Group" Click="EditGroupMenuItem_Click" />
-                    <MenuItem Header="Clear Group" Click="ClearGroupMenuItem_Click" />
                     <Separator />
                     <MenuItem Header="Assign Slot">
                         <MenuItem Header="1" Tag="1" Click="AssignSlotMenuItem_Click" />
@@ -164,8 +155,8 @@
                     <MenuItem Header="Clear Slot" Click="ClearSlotMenuItem_Click" />
                     <Separator />
                     <MenuItem Header="Set Color">
+                        <MenuItem Header="Orange (default)" Tag="2" Click="SetColorMenuItem_Click" />
                         <MenuItem Header="Red" Tag="1" Click="SetColorMenuItem_Click" />
-                        <MenuItem Header="Orange" Tag="2" Click="SetColorMenuItem_Click" />
                         <MenuItem Header="Yellow" Tag="3" Click="SetColorMenuItem_Click" />
                         <MenuItem Header="Green" Tag="4" Click="SetColorMenuItem_Click" />
                         <MenuItem Header="Blue" Tag="5" Click="SetColorMenuItem_Click" />
@@ -173,7 +164,6 @@
                         <MenuItem Header="Pink" Tag="7" Click="SetColorMenuItem_Click" />
                         <MenuItem Header="Teal" Tag="8" Click="SetColorMenuItem_Click" />
                     </MenuItem>
-                    <MenuItem Header="Clear Color" Click="ClearColorMenuItem_Click" />
                     <Separator />
                     <MenuItem Header="Remove" Click="DeleteBookmarkMenuItem_Click" />
                 </ContextMenu>

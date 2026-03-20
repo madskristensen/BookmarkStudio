@@ -2,9 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
+using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
@@ -16,6 +19,8 @@ namespace BookmarkStudio
 {
     internal sealed class BookmarkGlyphTag : IGlyphTag
     {
+        public string BookmarkId { get; set; } = string.Empty;
+
         public string Label { get; set; } = string.Empty;
 
         public int? SlotNumber { get; set; }
@@ -89,6 +94,7 @@ namespace BookmarkStudio
                 SnapshotSpan span = new SnapshotSpan(line.Start, spanLength);
                 BookmarkGlyphTag glyphTag = new BookmarkGlyphTag
                 {
+                    BookmarkId = bookmark.BookmarkId,
                     Label = bookmark.Label,
                     SlotNumber = bookmark.SlotNumber,
                     Color = bookmark.Color,
@@ -139,14 +145,56 @@ namespace BookmarkStudio
                 Margin = new Thickness(0, 2, 0, 0),
             };
 
+            if (bookmarkTag is not null && !string.IsNullOrEmpty(bookmarkTag.BookmarkId))
+            {
+                glyph.ContextMenu = BuildColorContextMenu(bookmarkTag.BookmarkId);
+            }
+
             return glyph;
+        }
+
+        private static ContextMenu BuildColorContextMenu(string bookmarkId)
+        {
+            ContextMenu menu = new ContextMenu();
+            AddColorMenuItem(menu, "Orange (default)", BookmarkColor.Orange, bookmarkId);
+            AddColorMenuItem(menu, "Red", BookmarkColor.Red, bookmarkId);
+            AddColorMenuItem(menu, "Yellow", BookmarkColor.Yellow, bookmarkId);
+            AddColorMenuItem(menu, "Green", BookmarkColor.Green, bookmarkId);
+            AddColorMenuItem(menu, "Blue", BookmarkColor.Blue, bookmarkId);
+            AddColorMenuItem(menu, "Purple", BookmarkColor.Purple, bookmarkId);
+            AddColorMenuItem(menu, "Pink", BookmarkColor.Pink, bookmarkId);
+            AddColorMenuItem(menu, "Teal", BookmarkColor.Teal, bookmarkId);
+            return menu;
+        }
+
+        private static void AddColorMenuItem(ContextMenu menu, string header, BookmarkColor color, string bookmarkId)
+        {
+            Border icon = new Border
+            {
+                Width = 10,
+                Height = 10,
+                Background = BookmarkColorToBrushConverter.GetBrush(color),
+                CornerRadius = new CornerRadius(2),
+            };
+
+            MenuItem item = new MenuItem { Header = header, Icon = icon };
+            item.Click += (sender, e) =>
+            {
+                ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
+                {
+                    await BookmarkOperationsService.Current.SetColorAsync(bookmarkId, color, CancellationToken.None);
+                    await BookmarkManagerToolWindow.RefreshIfVisibleAsync(bookmarkId, CancellationToken.None);
+                });
+            };
+
+            menu.Items.Add(item);
         }
 
         private static Brush GetGlyphBrush(BookmarkGlyphTag bookmarkTag)
         {
-            if (bookmarkTag is null || bookmarkTag.Color == BookmarkColor.None)
+            if (bookmarkTag is null)
             {
-                return Brushes.Goldenrod;
+                return BookmarkColorToBrushConverter.GetBrush(BookmarkColor.None);
             }
 
             return BookmarkColorToBrushConverter.GetBrush(bookmarkTag.Color);

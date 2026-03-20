@@ -32,7 +32,7 @@ namespace BookmarkStudio
                 case BookmarkColor.Purple: return new SolidColorBrush(Color.FromRgb(0x8E, 0x24, 0xAA));
                 case BookmarkColor.Pink: return new SolidColorBrush(Color.FromRgb(0xEC, 0x40, 0x7A));
                 case BookmarkColor.Teal: return new SolidColorBrush(Color.FromRgb(0x00, 0x89, 0x7B));
-                default: return Brushes.Transparent;
+                default: return new SolidColorBrush(Color.FromRgb(0xFB, 0x8C, 0x00));
             }
         }
     }

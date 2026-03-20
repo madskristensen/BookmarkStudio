@@ -15,7 +15,6 @@ namespace BookmarkStudio
         private ManagedBookmark? _selectedBookmark;
         private string _searchText = string.Empty;
         private int? _selectedSlotNumber;
-        private string _selectedGroupText = string.Empty;
         private string _selectedLabelText = string.Empty;
         private string _statusText = "Loading bookmarks...";
         private string _columnSortProperty;
@@ -52,7 +51,6 @@ namespace BookmarkStudio
 
                 _selectedBookmark = value;
                 SelectedLabelText = value?.Label ?? string.Empty;
-                SelectedGroupText = value?.Group ?? string.Empty;
                 SelectedSlotNumber = value?.SlotNumber;
                 OnPropertyChanged();
                 OnPropertyChanged(nameof(HasSelectedBookmark));
@@ -94,21 +92,6 @@ namespace BookmarkStudio
                 }
 
                 _selectedLabelText = value ?? string.Empty;
-                OnPropertyChanged();
-            }
-        }
-
-        public string SelectedGroupText
-        {
-            get => _selectedGroupText;
-            set
-            {
-                if (string.Equals(_selectedGroupText, value, StringComparison.Ordinal))
-                {
-                    return;
-                }
-
-                _selectedGroupText = value ?? string.Empty;
                 OnPropertyChanged();
             }
         }
@@ -165,8 +148,7 @@ namespace BookmarkStudio
         public async Task SaveSelectionAsync(CancellationToken cancellationToken)
         {
             ManagedBookmark selectedBookmark = GetRequiredSelection();
-            await _operations.RenameLabelAsync(selectedBookmark.BookmarkId, SelectedLabelText, cancellationToken);
-            IReadOnlyList<ManagedBookmark> bookmarks = await _operations.SetGroupAsync(selectedBookmark.BookmarkId, SelectedGroupText, cancellationToken);
+            IReadOnlyList<ManagedBookmark> bookmarks = await _operations.RenameLabelAsync(selectedBookmark.BookmarkId, SelectedLabelText, cancellationToken);
             ReloadBookmarks(bookmarks, selectedBookmark.BookmarkId);
             SetStatus("Bookmark metadata updated.");
         }
@@ -198,28 +180,12 @@ namespace BookmarkStudio
             SetStatus("Bookmark slot cleared.");
         }
 
-        public async Task ClearSelectedGroupAsync(CancellationToken cancellationToken)
-        {
-            ManagedBookmark selectedBookmark = GetRequiredSelection();
-            IReadOnlyList<ManagedBookmark> bookmarks = await _operations.ClearGroupAsync(selectedBookmark.BookmarkId, cancellationToken);
-            ReloadBookmarks(bookmarks, selectedBookmark.BookmarkId);
-            SetStatus("Bookmark group cleared.");
-        }
-
         public async Task SetSelectedColorAsync(BookmarkColor color, CancellationToken cancellationToken)
         {
             ManagedBookmark selectedBookmark = GetRequiredSelection();
             IReadOnlyList<ManagedBookmark> bookmarks = await _operations.SetColorAsync(selectedBookmark.BookmarkId, color, cancellationToken);
             ReloadBookmarks(bookmarks, selectedBookmark.BookmarkId);
             SetStatus(string.Concat("Bookmark color set to ", color.ToString(), "."));
-        }
-
-        public async Task ClearSelectedColorAsync(CancellationToken cancellationToken)
-        {
-            ManagedBookmark selectedBookmark = GetRequiredSelection();
-            IReadOnlyList<ManagedBookmark> bookmarks = await _operations.ClearColorAsync(selectedBookmark.BookmarkId, cancellationToken);
-            ReloadBookmarks(bookmarks, selectedBookmark.BookmarkId);
-            SetStatus("Bookmark color cleared.");
         }
 
         public async Task DeleteSelectedAsync(CancellationToken cancellationToken)
@@ -326,7 +292,6 @@ namespace BookmarkStudio
 
             string search = SearchText.Trim();
             return Contains(bookmark.Label, search)
-                || Contains(bookmark.Group, search)
                 || Contains(bookmark.FileName, search)
                 || Contains(bookmark.DocumentPath, search)
                 || Contains(bookmark.LineText, search)

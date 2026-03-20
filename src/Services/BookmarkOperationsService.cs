@@ -69,16 +69,6 @@ namespace BookmarkStudio
             }, cancellationToken);
         }
 
-        public async Task<IReadOnlyList<ManagedBookmark>> SetGroupAsync(string? bookmarkId, string group, CancellationToken cancellationToken)
-        {
-            ManagedBookmark targetBookmark = await GetRequiredBookmarkAsync(bookmarkId, cancellationToken);
-            return await _session.UpdateBookmarksAsync(metadata =>
-            {
-                BookmarkMetadata targetMetadata = BookmarkRepositoryService.GetRequiredBookmark(metadata, targetBookmark.BookmarkId);
-                targetMetadata.Group = group?.Trim() ?? string.Empty;
-            }, cancellationToken);
-        }
-
         public async Task<IReadOnlyList<ManagedBookmark>> ClearSlotAsync(string? bookmarkId, CancellationToken cancellationToken)
         {
             ManagedBookmark targetBookmark = await GetRequiredBookmarkAsync(bookmarkId, cancellationToken);
@@ -89,16 +79,6 @@ namespace BookmarkStudio
             }, cancellationToken);
         }
 
-        public async Task<IReadOnlyList<ManagedBookmark>> ClearGroupAsync(string? bookmarkId, CancellationToken cancellationToken)
-        {
-            ManagedBookmark targetBookmark = await GetRequiredBookmarkAsync(bookmarkId, cancellationToken);
-            return await _session.UpdateBookmarksAsync(metadata =>
-            {
-                BookmarkMetadata targetMetadata = BookmarkRepositoryService.GetRequiredBookmark(metadata, targetBookmark.BookmarkId);
-                targetMetadata.Group = string.Empty;
-            }, cancellationToken);
-        }
-
         public async Task<IReadOnlyList<ManagedBookmark>> SetColorAsync(string? bookmarkId, BookmarkColor color, CancellationToken cancellationToken)
         {
             ManagedBookmark targetBookmark = await GetRequiredBookmarkAsync(bookmarkId, cancellationToken);
@@ -106,16 +86,6 @@ namespace BookmarkStudio
             {
                 BookmarkMetadata targetMetadata = BookmarkRepositoryService.GetRequiredBookmark(metadata, targetBookmark.BookmarkId);
                 targetMetadata.Color = color;
-            }, cancellationToken);
-        }
-
-        public async Task<IReadOnlyList<ManagedBookmark>> ClearColorAsync(string? bookmarkId, CancellationToken cancellationToken)
-        {
-            ManagedBookmark targetBookmark = await GetRequiredBookmarkAsync(bookmarkId, cancellationToken);
-            return await _session.UpdateBookmarksAsync(metadata =>
-            {
-                BookmarkMetadata targetMetadata = BookmarkRepositoryService.GetRequiredBookmark(metadata, targetBookmark.BookmarkId);
-                targetMetadata.Color = BookmarkColor.None;
             }, cancellationToken);
         }
 
@@ -371,8 +341,6 @@ namespace BookmarkStudio
                     .Append(" | ")
                     .Append(string.IsNullOrWhiteSpace(bookmark.Label) ? "(no label)" : bookmark.Label)
                     .Append(" | ")
-                    .Append(string.IsNullOrWhiteSpace(bookmark.Group) ? "(no group)" : bookmark.Group)
-                    .Append(" | ")
                     .Append(bookmark.Location)
                     .Append(" | ")
                     .AppendLine(bookmark.LineText);
@@ -384,8 +352,8 @@ namespace BookmarkStudio
         private static string BuildMarkdown(IEnumerable<ManagedBookmark> bookmarks)
         {
             StringBuilder builder = new StringBuilder();
-            builder.AppendLine("| Slot | Color | Label | Group | File | Line | Preview |");
-            builder.AppendLine("| --- | --- | --- | --- | --- | --- | --- |");
+            builder.AppendLine("| Slot | Color | Label | File | Line | Preview |");
+            builder.AppendLine("| --- | --- | --- | --- | --- | --- |");
 
             foreach (ManagedBookmark bookmark in bookmarks)
             {
@@ -396,8 +364,6 @@ namespace BookmarkStudio
                     .Append(bookmark.Color == BookmarkColor.None ? "-" : bookmark.Color.ToString())
                     .Append(" | ")
                     .Append(EscapeMarkdown(bookmark.Label))
-                    .Append(" | ")
-                    .Append(EscapeMarkdown(bookmark.Group))
                     .Append(" | ")
                     .Append(EscapeMarkdown(bookmark.FileName))
                     .Append(" | ")
@@ -413,14 +379,13 @@ namespace BookmarkStudio
         private static string BuildCsv(IEnumerable<ManagedBookmark> bookmarks)
         {
             StringBuilder builder = new StringBuilder();
-            builder.AppendLine("Slot,Color,Label,Group,Document,Line,Preview");
+            builder.AppendLine("Slot,Color,Label,Document,Line,Preview");
 
             foreach (ManagedBookmark bookmark in bookmarks)
             {
                 builder.Append(EscapeCsv(bookmark.SlotNumber?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty)).Append(',')
                     .Append(EscapeCsv(bookmark.Color == BookmarkColor.None ? string.Empty : bookmark.Color.ToString())).Append(',')
                     .Append(EscapeCsv(bookmark.Label)).Append(',')
-                    .Append(EscapeCsv(bookmark.Group)).Append(',')
                     .Append(EscapeCsv(bookmark.DocumentPath)).Append(',')
                     .Append(EscapeCsv(bookmark.LineNumber.ToString(System.Globalization.CultureInfo.InvariantCulture))).Append(',')
                     .Append(EscapeCsv(bookmark.LineText))

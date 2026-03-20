@@ -78,6 +78,7 @@ namespace BookmarkStudio
                 BookmarkId = Guid.NewGuid().ToString("N"),
                 CreatedUtc = now,
                 SlotNumber = FindNextAvailableSlot(bookmarks),
+                Color = BookmarkColor.Orange,
             };
 
             createdBookmark.UpdateFromSnapshot(snapshot, now);

@@ -66,28 +66,6 @@ namespace BookmarkStudio
             });
         }
 
-        private async void EditGroupMenuItem_Click(object sender, RoutedEventArgs e)
-        {
-            ManagedBookmark bookmark = _viewModel.SelectedBookmark;
-            if (bookmark is null)
-            {
-                return;
-            }
-
-            string newGroup = TextPromptWindow.Show("Edit Group", "Enter a group for the bookmark:", bookmark.Group);
-            if (newGroup is null)
-            {
-                return;
-            }
-
-            await RunAsync(async cancellationToken =>
-            {
-                await BookmarkOperationsService.Current.SetGroupAsync(bookmark.BookmarkId, newGroup, cancellationToken);
-                await _viewModel.RefreshAsync(cancellationToken);
-                _viewModel.SelectBookmark(bookmark.BookmarkId);
-            });
-        }
-
         private async void AssignSlotMenuItem_Click(object sender, RoutedEventArgs e)
         {
             if (sender is not MenuItem menuItem || menuItem.Tag is null || !int.TryParse(menuItem.Tag.ToString(), out int slotNumber))
@@ -111,12 +89,6 @@ namespace BookmarkStudio
             BookmarkColor color = (BookmarkColor)colorValue;
             await RunAsync(cancellationToken => _viewModel.SetSelectedColorAsync(color, cancellationToken));
         }
-
-        private async void ClearColorMenuItem_Click(object sender, RoutedEventArgs e)
-            => await RunAsync(cancellationToken => _viewModel.ClearSelectedColorAsync(cancellationToken));
-
-        private async void ClearGroupMenuItem_Click(object sender, RoutedEventArgs e)
-            => await RunAsync(cancellationToken => _viewModel.ClearSelectedGroupAsync(cancellationToken));
 
         private async void DeleteBookmarkMenuItem_Click(object sender, RoutedEventArgs e)
             => await RunAsync(cancellationToken => _viewModel.DeleteSelectedAsync(cancellationToken));
