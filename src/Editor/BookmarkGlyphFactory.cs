@@ -23,8 +23,6 @@ namespace BookmarkStudio
                 Width = 10,
                 Height = 10,
                 Background = background,
-                BorderBrush = Brushes.SaddleBrown,
-                BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(2),
                 ToolTip = tooltip,
                 Margin = new Thickness(0, 2, 0, 0),
