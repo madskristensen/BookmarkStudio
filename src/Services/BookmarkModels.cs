@@ -3,6 +3,19 @@ using System.IO;
 
 namespace BookmarkStudio
 {
+    internal enum BookmarkColor
+    {
+        None = 0,
+        Red = 1,
+        Orange = 2,
+        Yellow = 3,
+        Green = 4,
+        Blue = 5,
+        Purple = 6,
+        Pink = 7,
+        Teal = 8,
+    }
+
     internal static class BookmarkIdentity
     {
         public static string NormalizeDocumentPath(string path)
@@ -55,6 +68,8 @@ namespace BookmarkStudio
 
         public string Group { get; set; } = string.Empty;
 
+        public BookmarkColor Color { get; set; }
+
         public DateTime CreatedUtc { get; set; }
 
         public DateTime? LastVisitedUtc { get; set; }
@@ -94,6 +109,7 @@ namespace BookmarkStudio
                 SlotNumber = SlotNumber,
                 Label = Label,
                 Group = Group,
+                Color = Color,
                 CreatedUtc = CreatedUtc,
                 LastVisitedUtc = LastVisitedUtc,
             };
@@ -117,6 +133,8 @@ namespace BookmarkStudio
         public string Label { get; set; } = string.Empty;
 
         public string Group { get; set; } = string.Empty;
+
+        public BookmarkColor Color { get; set; }
 
         public DateTime CreatedUtc { get; set; }
 

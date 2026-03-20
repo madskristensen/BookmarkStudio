@@ -206,6 +206,22 @@ namespace BookmarkStudio
             SetStatus("Bookmark group cleared.");
         }
 
+        public async Task SetSelectedColorAsync(BookmarkColor color, CancellationToken cancellationToken)
+        {
+            ManagedBookmark selectedBookmark = GetRequiredSelection();
+            IReadOnlyList<ManagedBookmark> bookmarks = await _operations.SetColorAsync(selectedBookmark.BookmarkId, color, cancellationToken);
+            ReloadBookmarks(bookmarks, selectedBookmark.BookmarkId);
+            SetStatus(string.Concat("Bookmark color set to ", color.ToString(), "."));
+        }
+
+        public async Task ClearSelectedColorAsync(CancellationToken cancellationToken)
+        {
+            ManagedBookmark selectedBookmark = GetRequiredSelection();
+            IReadOnlyList<ManagedBookmark> bookmarks = await _operations.ClearColorAsync(selectedBookmark.BookmarkId, cancellationToken);
+            ReloadBookmarks(bookmarks, selectedBookmark.BookmarkId);
+            SetStatus("Bookmark color cleared.");
+        }
+
         public async Task DeleteSelectedAsync(CancellationToken cancellationToken)
         {
             ManagedBookmark selectedBookmark = GetRequiredSelection();
@@ -315,7 +331,8 @@ namespace BookmarkStudio
                 || Contains(bookmark.DocumentPath, search)
                 || Contains(bookmark.LineText, search)
                 || Contains(bookmark.Location, search)
-                || Contains(bookmark.SlotNumber?.ToString(System.Globalization.CultureInfo.InvariantCulture), search);
+                || Contains(bookmark.SlotNumber?.ToString(System.Globalization.CultureInfo.InvariantCulture), search)
+                || (bookmark.Color != BookmarkColor.None && Contains(bookmark.Color.ToString(), search));
         }
 
         private void RefreshView()

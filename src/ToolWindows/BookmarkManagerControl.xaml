@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:local="clr-namespace:BookmarkStudio"
              xmlns:platformui="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
              xmlns:toolkit="clr-namespace:Community.VisualStudio.Toolkit;assembly=Community.VisualStudio.Toolkit"
              mc:Ignorable="d"
@@ -12,6 +13,7 @@
              Foreground="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowTextBrushKey}}"
              toolkit:Themes.UseVsTheme="True">
     <UserControl.Resources>
+        <local:BookmarkColorToBrushConverter x:Key="ColorToBrushConverter" />
         <Style TargetType="DataGridCell">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="BorderThickness" Value="0" />
@@ -81,7 +83,16 @@
                   MouseDoubleClick="BookmarkDataGrid_MouseDoubleClick"
                   Sorting="BookmarkDataGrid_Sorting">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Slot" Binding="{Binding SlotNumber}" Width="40" SortMemberPath="SlotNumber">
+                <DataGridTemplateColumn Header="" Width="24" CanUserResize="False" CanUserSort="False" SortMemberPath="Color">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Ellipse Width="10" Height="10"
+                                     Fill="{Binding Color, Converter={StaticResource ColorToBrushConverter}}"
+                                     VerticalAlignment="Center" HorizontalAlignment="Center" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="Slot">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="Foreground" Value="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowTextBrushKey}}" />
@@ -151,6 +162,18 @@
                         <MenuItem Header="9" Tag="9" Click="AssignSlotMenuItem_Click" />
                     </MenuItem>
                     <MenuItem Header="Clear Slot" Click="ClearSlotMenuItem_Click" />
+                    <Separator />
+                    <MenuItem Header="Set Color">
+                        <MenuItem Header="Red" Tag="1" Click="SetColorMenuItem_Click" />
+                        <MenuItem Header="Orange" Tag="2" Click="SetColorMenuItem_Click" />
+                        <MenuItem Header="Yellow" Tag="3" Click="SetColorMenuItem_Click" />
+                        <MenuItem Header="Green" Tag="4" Click="SetColorMenuItem_Click" />
+                        <MenuItem Header="Blue" Tag="5" Click="SetColorMenuItem_Click" />
+                        <MenuItem Header="Purple" Tag="6" Click="SetColorMenuItem_Click" />
+                        <MenuItem Header="Pink" Tag="7" Click="SetColorMenuItem_Click" />
+                        <MenuItem Header="Teal" Tag="8" Click="SetColorMenuItem_Click" />
+                    </MenuItem>
+                    <MenuItem Header="Clear Color" Click="ClearColorMenuItem_Click" />
                     <Separator />
                     <MenuItem Header="Remove" Click="DeleteBookmarkMenuItem_Click" />
                 </ContextMenu>

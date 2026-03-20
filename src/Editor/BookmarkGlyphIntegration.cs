@@ -19,6 +19,8 @@ namespace BookmarkStudio
         public string Label { get; set; } = string.Empty;
 
         public int? SlotNumber { get; set; }
+
+        public BookmarkColor Color { get; set; }
     }
 
     [Export(typeof(IViewTaggerProvider))]
@@ -89,6 +91,7 @@ namespace BookmarkStudio
                 {
                     Label = bookmark.Label,
                     SlotNumber = bookmark.SlotNumber,
+                    Color = bookmark.Color,
                 };
                 yield return new TagSpan<BookmarkGlyphTag>(span, glyphTag);
             }
@@ -120,13 +123,15 @@ namespace BookmarkStudio
     {
         public UIElement GenerateGlyph(IWpfTextViewLine line, IGlyphTag tag)
         {
-            string tooltip = BuildTooltip(tag as BookmarkGlyphTag);
+            BookmarkGlyphTag bookmarkTag = tag as BookmarkGlyphTag;
+            string tooltip = BuildTooltip(bookmarkTag);
+            Brush background = GetGlyphBrush(bookmarkTag);
 
             Border glyph = new Border
             {
                 Width = 10,
                 Height = 10,
-                Background = Brushes.Goldenrod,
+                Background = background,
                 BorderBrush = Brushes.SaddleBrown,
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(2),
@@ -135,6 +140,16 @@ namespace BookmarkStudio
             };
 
             return glyph;
+        }
+
+        private static Brush GetGlyphBrush(BookmarkGlyphTag bookmarkTag)
+        {
+            if (bookmarkTag is null || bookmarkTag.Color == BookmarkColor.None)
+            {
+                return Brushes.Goldenrod;
+            }
+
+            return BookmarkColorToBrushConverter.GetBrush(bookmarkTag.Color);
         }
 
         private static string BuildTooltip(BookmarkGlyphTag bookmarkTag)

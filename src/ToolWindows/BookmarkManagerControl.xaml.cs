@@ -101,6 +101,20 @@ namespace BookmarkStudio
         private async void ClearSlotMenuItem_Click(object sender, RoutedEventArgs e)
             => await RunAsync(cancellationToken => _viewModel.ClearSelectedSlotAsync(cancellationToken));
 
+        private async void SetColorMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is not MenuItem menuItem || menuItem.Tag is null || !int.TryParse(menuItem.Tag.ToString(), out int colorValue))
+            {
+                return;
+            }
+
+            BookmarkColor color = (BookmarkColor)colorValue;
+            await RunAsync(cancellationToken => _viewModel.SetSelectedColorAsync(color, cancellationToken));
+        }
+
+        private async void ClearColorMenuItem_Click(object sender, RoutedEventArgs e)
+            => await RunAsync(cancellationToken => _viewModel.ClearSelectedColorAsync(cancellationToken));
+
         private async void ClearGroupMenuItem_Click(object sender, RoutedEventArgs e)
             => await RunAsync(cancellationToken => _viewModel.ClearSelectedGroupAsync(cancellationToken));
 

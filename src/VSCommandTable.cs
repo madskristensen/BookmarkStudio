@@ -28,5 +28,14 @@ namespace BookmarkStudio
         public const int RefreshBookmarkManagerCommand = 0x0101;
         public const int ExportBookmarksCommand = 0x0404;
         public const int DeleteBookmarkCommand = 0x0407;
+        public const int GoToSlot1Command = 0x0500;
+        public const int GoToSlot2Command = 0x0501;
+        public const int GoToSlot3Command = 0x0502;
+        public const int GoToSlot4Command = 0x0503;
+        public const int GoToSlot5Command = 0x0504;
+        public const int GoToSlot6Command = 0x0505;
+        public const int GoToSlot7Command = 0x0506;
+        public const int GoToSlot8Command = 0x0507;
+        public const int GoToSlot9Command = 0x0508;
     }
 }

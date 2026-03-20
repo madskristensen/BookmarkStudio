@@ -53,9 +53,85 @@
           <LocCanonicalName>.BookmarkStudio.DeleteBookmark</LocCanonicalName>
         </Strings>
       </Button>
+
+      <Button guid="BookmarkStudio" id="GoToSlot1Command" priority="0x0500" type="Button">
+        <CommandFlag>CommandWellOnly</CommandFlag>
+        <Strings>
+          <ButtonText>Go To Bookmark Slot 1</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.GoToSlot1</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="BookmarkStudio" id="GoToSlot2Command" priority="0x0501" type="Button">
+        <CommandFlag>CommandWellOnly</CommandFlag>
+        <Strings>
+          <ButtonText>Go To Bookmark Slot 2</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.GoToSlot2</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="BookmarkStudio" id="GoToSlot3Command" priority="0x0502" type="Button">
+        <CommandFlag>CommandWellOnly</CommandFlag>
+        <Strings>
+          <ButtonText>Go To Bookmark Slot 3</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.GoToSlot3</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="BookmarkStudio" id="GoToSlot4Command" priority="0x0503" type="Button">
+        <CommandFlag>CommandWellOnly</CommandFlag>
+        <Strings>
+          <ButtonText>Go To Bookmark Slot 4</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.GoToSlot4</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="BookmarkStudio" id="GoToSlot5Command" priority="0x0504" type="Button">
+        <CommandFlag>CommandWellOnly</CommandFlag>
+        <Strings>
+          <ButtonText>Go To Bookmark Slot 5</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.GoToSlot5</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="BookmarkStudio" id="GoToSlot6Command" priority="0x0505" type="Button">
+        <CommandFlag>CommandWellOnly</CommandFlag>
+        <Strings>
+          <ButtonText>Go To Bookmark Slot 6</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.GoToSlot6</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="BookmarkStudio" id="GoToSlot7Command" priority="0x0506" type="Button">
+        <CommandFlag>CommandWellOnly</CommandFlag>
+        <Strings>
+          <ButtonText>Go To Bookmark Slot 7</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.GoToSlot7</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="BookmarkStudio" id="GoToSlot8Command" priority="0x0507" type="Button">
+        <CommandFlag>CommandWellOnly</CommandFlag>
+        <Strings>
+          <ButtonText>Go To Bookmark Slot 8</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.GoToSlot8</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="BookmarkStudio" id="GoToSlot9Command" priority="0x0508" type="Button">
+        <CommandFlag>CommandWellOnly</CommandFlag>
+        <Strings>
+          <ButtonText>Go To Bookmark Slot 9</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.GoToSlot9</LocCanonicalName>
+        </Strings>
+      </Button>
     </Buttons>
   </Commands>
- 
+
+  <KeyBindings>
+    <KeyBinding guid="BookmarkStudio" id="GoToSlot1Command" editor="guidVSStd97" key1="1" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToSlot2Command" editor="guidVSStd97" key1="2" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToSlot3Command" editor="guidVSStd97" key1="3" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToSlot4Command" editor="guidVSStd97" key1="4" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToSlot5Command" editor="guidVSStd97" key1="5" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToSlot6Command" editor="guidVSStd97" key1="6" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToSlot7Command" editor="guidVSStd97" key1="7" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToSlot8Command" editor="guidVSStd97" key1="8" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToSlot9Command" editor="guidVSStd97" key1="9" mod1="Alt Shift" />
+  </KeyBindings>
+
   <Symbols>
     <GuidSymbol name="BookmarkStudio" value="{78198409-af4c-486d-9caf-7ee074cf1041}">
       <IDSymbol name="BookmarkManagerToolbar" value="0x1000" />
@@ -64,6 +140,15 @@
       <IDSymbol name="RefreshBookmarkManagerCommand" value="0x0101" />
       <IDSymbol name="ExportBookmarksCommand" value="0x0404" />
       <IDSymbol name="DeleteBookmarkCommand" value="0x0407" />
+      <IDSymbol name="GoToSlot1Command" value="0x0500" />
+      <IDSymbol name="GoToSlot2Command" value="0x0501" />
+      <IDSymbol name="GoToSlot3Command" value="0x0502" />
+      <IDSymbol name="GoToSlot4Command" value="0x0503" />
+      <IDSymbol name="GoToSlot5Command" value="0x0504" />
+      <IDSymbol name="GoToSlot6Command" value="0x0505" />
+      <IDSymbol name="GoToSlot7Command" value="0x0506" />
+      <IDSymbol name="GoToSlot8Command" value="0x0507" />
+      <IDSymbol name="GoToSlot9Command" value="0x0508" />
     </GuidSymbol>
   </Symbols>
 </CommandTable>

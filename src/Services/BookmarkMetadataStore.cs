@@ -1,17 +1,20 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 
 namespace BookmarkStudio
 {
     internal sealed class BookmarkMetadataStore
     {
-        private const string FileHeader = "BookmarkStudio|2";
-        private const string LegacyFileHeader = "BookmarkStudio|1";
-        private const char Separator = '\t';
+        private const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss";
+
+        private static readonly JsonSerializerOptions SerializerOptions = CreateSerializerOptions();
 
         public async Task<IReadOnlyList<BookmarkMetadata>> LoadAsync(string solutionPath, CancellationToken cancellationToken)
         {
@@ -21,28 +24,25 @@ namespace BookmarkStudio
                 return Array.Empty<BookmarkMetadata>();
             }
 
-            string[] lines = await Task.Run(() => File.ReadAllLines(storagePath), cancellationToken);
-            if (lines.Length == 0)
+            string json = await Task.Run(() => File.ReadAllText(storagePath, Encoding.UTF8), cancellationToken);
+            if (string.IsNullOrWhiteSpace(json))
             {
                 return Array.Empty<BookmarkMetadata>();
             }
 
-            string header = lines[0];
-            if (!string.Equals(header, FileHeader, StringComparison.Ordinal) && !string.Equals(header, LegacyFileHeader, StringComparison.Ordinal))
+            BookmarkFile? file = JsonSerializer.Deserialize<BookmarkFile>(json, SerializerOptions);
+            if (file?.Bookmarks is null)
             {
                 return Array.Empty<BookmarkMetadata>();
             }
+
+            string solutionDirectory = GetSolutionDirectory(solutionPath);
 
             List<BookmarkMetadata> metadata = new List<BookmarkMetadata>();
-            for (int i = 1; i < lines.Length; i++)
+            foreach (BookmarkEntry entry in file.Bookmarks)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-
-                BookmarkMetadata? entry = TryParse(lines[i]);
-                if (entry is not null)
-                {
-                    metadata.Add(Normalize(entry));
-                }
+                metadata.Add(Normalize(ToMetadata(entry, solutionDirectory)));
             }
 
             return metadata;
@@ -59,14 +59,19 @@ namespace BookmarkStudio
 
             Directory.CreateDirectory(directory);
 
-            string[] lines = new[] { FileHeader }
-                .Concat(metadata.OrderBy(item => item.DocumentPath, StringComparer.OrdinalIgnoreCase)
-                    .ThenBy(item => item.LineNumber)
-                    .ThenBy(item => item.BookmarkId, StringComparer.Ordinal)
-                    .Select(Serialize))
+            string solutionDirectory = GetSolutionDirectory(solutionPath);
+
+            BookmarkEntry[] entries = metadata
+                .OrderBy(item => item.DocumentPath, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(item => item.LineNumber)
+                .ThenBy(item => item.BookmarkId, StringComparer.Ordinal)
+                .Select(item => ToEntry(item, solutionDirectory))
                 .ToArray();
 
-            await Task.Run(() => File.WriteAllLines(storagePath, lines, Encoding.UTF8), cancellationToken);
+            BookmarkFile file = new BookmarkFile { Bookmarks = entries };
+            string json = JsonSerializer.Serialize(file, SerializerOptions);
+
+            await Task.Run(() => File.WriteAllText(storagePath, json, Encoding.UTF8), cancellationToken);
         }
 
         public string GetStoragePath(string solutionPath)
@@ -74,92 +79,62 @@ namespace BookmarkStudio
             if (string.IsNullOrWhiteSpace(solutionPath))
             {
                 string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                return Path.Combine(localAppData, "BookmarkStudio", "Transient", "bookmark-metadata.dat");
+                return Path.Combine(localAppData, "BookmarkStudio", "Transient", "bookmarks.json");
             }
 
             string solutionDirectory = Path.GetDirectoryName(solutionPath) ?? string.Empty;
-            string solutionName = Path.GetFileNameWithoutExtension(solutionPath);
-            return Path.Combine(solutionDirectory, ".vs", solutionName, "BookmarkStudio", "bookmark-metadata.dat");
+            return Path.Combine(solutionDirectory, ".vs", "bookmarks.json");
         }
 
-        private static string Serialize(BookmarkMetadata metadata)
+        private static JsonSerializerOptions CreateSerializerOptions()
         {
-            string[] values =
+            JsonSerializerOptions options = new JsonSerializerOptions
             {
-                Encode(metadata.BookmarkId),
-                Encode(metadata.DocumentPath),
-                metadata.LineNumber.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                metadata.ColumnNumber.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                Encode(metadata.LineText),
-                metadata.SlotNumber?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty,
-                Encode(metadata.Label),
-                Encode(metadata.Group),
-                metadata.CreatedUtc.Ticks.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                metadata.LastVisitedUtc?.Ticks.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty,
-                metadata.LastSeenUtc.Ticks.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                WriteIndented = true,
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+                PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             };
 
-            return string.Join(Separator.ToString(), values);
+            options.Converters.Add(new JsonStringEnumConverter(JsonNamingPolicy.CamelCase));
+            options.Converters.Add(new UtcDateTimeConverter());
+            return options;
         }
 
-        private static BookmarkMetadata? TryParse(string line)
+        private static BookmarkEntry ToEntry(BookmarkMetadata metadata, string solutionDirectory)
         {
-            if (string.IsNullOrWhiteSpace(line))
+            return new BookmarkEntry
             {
-                return null;
-            }
+                Id = metadata.BookmarkId,
+                DocumentPath = MakeRelativePath(metadata.DocumentPath, solutionDirectory),
+                LineNumber = metadata.LineNumber,
+                ColumnNumber = metadata.ColumnNumber,
+                LineText = metadata.LineText,
+                SlotNumber = metadata.SlotNumber,
+                Label = metadata.Label,
+                Group = metadata.Group,
+                Color = metadata.Color,
+                CreatedUtc = metadata.CreatedUtc,
+                LastVisitedUtc = metadata.LastVisitedUtc,
+                LastSeenUtc = metadata.LastSeenUtc,
+            };
+        }
 
-            string[] values = line.Split(Separator);
-            if (values.Length != 11)
-            {
-                return null;
-            }
-
-            if (!int.TryParse(values[2], out int lineNumber) || !int.TryParse(values[3], out int columnNumber))
-            {
-                return null;
-            }
-
-            if (!long.TryParse(values[8], out long createdTicks) || !long.TryParse(values[10], out long lastSeenTicks))
-            {
-                return null;
-            }
-
-            DateTime? lastVisitedUtc = null;
-            if (!string.IsNullOrWhiteSpace(values[9]))
-            {
-                if (!long.TryParse(values[9], out long lastVisitedTicks))
-                {
-                    return null;
-                }
-
-                lastVisitedUtc = new DateTime(lastVisitedTicks, DateTimeKind.Utc);
-            }
-
-            int? slotNumber = null;
-            if (!string.IsNullOrWhiteSpace(values[5]))
-            {
-                if (!int.TryParse(values[5], out int slotValue))
-                {
-                    return null;
-                }
-
-                slotNumber = slotValue;
-            }
-
+        private static BookmarkMetadata ToMetadata(BookmarkEntry entry, string solutionDirectory)
+        {
             return new BookmarkMetadata
             {
-                BookmarkId = Decode(values[0]),
-                DocumentPath = Decode(values[1]),
-                LineNumber = lineNumber,
-                ColumnNumber = columnNumber,
-                LineText = Decode(values[4]),
-                SlotNumber = slotNumber,
-                Label = Decode(values[6]),
-                Group = Decode(values[7]),
-                CreatedUtc = new DateTime(createdTicks, DateTimeKind.Utc),
-                LastVisitedUtc = lastVisitedUtc,
-                LastSeenUtc = new DateTime(lastSeenTicks, DateTimeKind.Utc),
+                BookmarkId = entry.Id ?? string.Empty,
+                DocumentPath = MakeAbsolutePath(entry.DocumentPath ?? string.Empty, solutionDirectory),
+                LineNumber = entry.LineNumber,
+                ColumnNumber = entry.ColumnNumber,
+                LineText = entry.LineText ?? string.Empty,
+                SlotNumber = entry.SlotNumber,
+                Label = entry.Label ?? string.Empty,
+                Group = entry.Group ?? string.Empty,
+                Color = entry.Color,
+                CreatedUtc = entry.CreatedUtc,
+                LastVisitedUtc = entry.LastVisitedUtc,
+                LastSeenUtc = entry.LastSeenUtc,
             };
         }
 
@@ -190,16 +165,88 @@ namespace BookmarkStudio
             return metadata;
         }
 
-        private static string Encode(string? value)
+        private static string GetSolutionDirectory(string solutionPath)
         {
-            byte[] bytes = Encoding.UTF8.GetBytes(value ?? string.Empty);
-            return Convert.ToBase64String(bytes);
+            if (string.IsNullOrWhiteSpace(solutionPath))
+            {
+                return string.Empty;
+            }
+
+            return Path.GetDirectoryName(solutionPath) ?? string.Empty;
         }
 
-        private static string Decode(string value)
+        private static string MakeRelativePath(string documentPath, string solutionDirectory)
         {
-            byte[] bytes = Convert.FromBase64String(value);
-            return Encoding.UTF8.GetString(bytes);
+            if (string.IsNullOrWhiteSpace(solutionDirectory) || string.IsNullOrWhiteSpace(documentPath))
+            {
+                return documentPath ?? string.Empty;
+            }
+
+            string normalizedDir = solutionDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                + Path.DirectorySeparatorChar;
+
+            if (documentPath.StartsWith(normalizedDir, StringComparison.OrdinalIgnoreCase))
+            {
+                return documentPath.Substring(normalizedDir.Length);
+            }
+
+            return documentPath;
+        }
+
+        private static string MakeAbsolutePath(string documentPath, string solutionDirectory)
+        {
+            if (string.IsNullOrWhiteSpace(solutionDirectory) || string.IsNullOrWhiteSpace(documentPath))
+            {
+                return documentPath ?? string.Empty;
+            }
+
+            if (Path.IsPathRooted(documentPath))
+            {
+                return documentPath;
+            }
+
+            return Path.Combine(solutionDirectory, documentPath);
+        }
+
+        private sealed class BookmarkFile
+        {
+            [JsonPropertyName("bookmarks")]
+            public BookmarkEntry[] Bookmarks { get; set; } = Array.Empty<BookmarkEntry>();
+        }
+
+        private sealed class BookmarkEntry
+        {
+            public string? Id { get; set; }
+            public string? DocumentPath { get; set; }
+            public int LineNumber { get; set; }
+            public int ColumnNumber { get; set; }
+            public string? LineText { get; set; }
+            public int? SlotNumber { get; set; }
+            public string? Label { get; set; }
+            public string? Group { get; set; }
+            public BookmarkColor Color { get; set; }
+            public DateTime CreatedUtc { get; set; }
+            public DateTime? LastVisitedUtc { get; set; }
+            public DateTime LastSeenUtc { get; set; }
+        }
+
+        private sealed class UtcDateTimeConverter : JsonConverter<DateTime>
+        {
+            public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+            {
+                string? value = reader.GetString();
+                if (DateTime.TryParseExact(value, DateTimeFormat, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out DateTime result))
+                {
+                    return result;
+                }
+
+                return default;
+            }
+
+            public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
+            {
+                writer.WriteStringValue(value.ToString(DateTimeFormat, CultureInfo.InvariantCulture));
+            }
         }
     }
 }
