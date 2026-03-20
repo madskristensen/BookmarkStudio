@@ -14,6 +14,7 @@ namespace BookmarkStudio
         private readonly List<ManagedBookmark> _bookmarks = new List<ManagedBookmark>();
         private readonly HashSet<string> _folderPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { string.Empty };
         private readonly HashSet<string> _expandedFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private bool _isTestMode;
         private BookmarkNodeViewModel? _selectedNode;
         private string _searchText = string.Empty;
         private int? _selectedSlotNumber;
@@ -345,6 +346,7 @@ namespace BookmarkStudio
 
         internal void LoadForTests(IEnumerable<ManagedBookmark> bookmarks, IEnumerable<string>? folderPaths = null)
         {
+            _isTestMode = true;
             ReloadData(
                 (bookmarks ?? Enumerable.Empty<ManagedBookmark>()).ToArray(),
                 (folderPaths ?? Enumerable.Empty<string>()).ToArray(),
@@ -423,7 +425,7 @@ namespace BookmarkStudio
 
             RootNodes.Clear();
 
-            if (!_operations.IsSolutionOrFolderOpen())
+            if (!_isTestMode && !_operations.IsSolutionOrFolderOpen())
             {
                 RestoreSelection(selectedBookmarkId, selectedFolderPath);
                 return;
