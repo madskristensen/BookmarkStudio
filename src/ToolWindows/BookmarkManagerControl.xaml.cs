@@ -19,6 +19,7 @@ namespace BookmarkStudio
             InitializeComponent();
             DataContext = _viewModel;
             Loaded += BookmarkManagerControl_Loaded;
+            PreviewKeyDown += BookmarkManagerControl_PreviewKeyDown;
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
         }
 
@@ -41,6 +42,27 @@ namespace BookmarkStudio
 
         internal Task DeleteSelectedAsync(CancellationToken cancellationToken)
             => _viewModel.DeleteSelectedAsync(cancellationToken);
+
+        internal async Task RenameSelectedAsync()
+        {
+            if (_viewModel.SelectedNode is FolderNodeViewModel)
+            {
+                await PromptRenameFolderInternalAsync();
+            }
+            else if (_viewModel.SelectedNode is BookmarkItemNodeViewModel)
+            {
+                await PromptRenameBookmarkInternalAsync();
+            }
+        }
+
+        private async void BookmarkManagerControl_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.F2 && _viewModel.SelectedNode is not null)
+            {
+                e.Handled = true;
+                await RenameSelectedAsync();
+            }
+        }
 
         private async void BookmarkManagerControl_Loaded(object sender, RoutedEventArgs e)
         {
@@ -288,6 +310,25 @@ namespace BookmarkStudio
             }
 
             await RunAsync(cancellationToken => _viewModel.RenameSelectedFolderAsync(folderName, cancellationToken));
+        }
+
+        private async Task PromptRenameBookmarkInternalAsync()
+        {
+            ManagedBookmark? bookmark = _viewModel.SelectedBookmark;
+            if (bookmark is null)
+            {
+                _viewModel.SetStatus("Select a bookmark first.");
+                return;
+            }
+
+            string? newLabel = TextPromptWindow.Show("Edit Label", "Enter a label for the bookmark:", bookmark.Label, selectTextOnLoad: true);
+            if (newLabel is null)
+            {
+                return;
+            }
+
+            _viewModel.SelectedLabelText = newLabel;
+            await RunAsync(cancellationToken => _viewModel.SaveSelectionAsync(cancellationToken));
         }
 
         private async Task RunAsync(Func<CancellationToken, Task> action)

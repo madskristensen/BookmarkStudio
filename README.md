@@ -13,7 +13,7 @@ or get the latest CI build from [Open VSIX Gallery][vsixgallery].
 
 **Bookmark Studio helps you manage bookmarks across your entire solution, not just the current file.**
 
-<!-- TODO: Add hero screenshot showing the Bookmark Manager tool window with folders, colored bookmarks, and slots -->
+![Tool window](art/bookmark-manager.png)
 
 ## Key Features at a Glance
 
@@ -36,7 +36,7 @@ Visual Studio bookmarks are useful, but they can be hard to manage across larger
 
 ### Bookmark Manager Tool Window
 
-Open **View > Other Windows > Bookmark Manager** to manage bookmarks in a dedicated tree view.
+Open **View > Bookmark Manager** to manage bookmarks in a dedicated tree view.
 
 <!-- TODO: Add screenshot of the Bookmark Manager tool window showing the tree view with folders and bookmarks -->
 
@@ -63,7 +63,7 @@ Each bookmark has a color and shows as a colored square in both:
 - Bookmark Manager tree view
 - Editor glyph margin
 
-<!-- TODO: Add screenshot showing colored glyphs in the editor margin -->
+![Glyphs](art/glyphs.png)
 
 Available colors:
 
