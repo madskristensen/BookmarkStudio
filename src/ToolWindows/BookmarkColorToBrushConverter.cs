@@ -30,7 +30,7 @@ namespace BookmarkStudio
                 return brush;
             }
 
-            return BrushesByColor[BookmarkColor.Orange];
+            return BrushesByColor[BookmarkColor.Blue];
         }
 
         private static IReadOnlyDictionary<BookmarkColor, Brush> CreateBrushesByColor()

@@ -13,6 +13,7 @@ namespace BookmarkStudio
         private readonly BookmarkOperationsService _operations = BookmarkOperationsService.Current;
         private readonly List<ManagedBookmark> _bookmarks = new List<ManagedBookmark>();
         private readonly HashSet<string> _folderPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { string.Empty };
+        private readonly HashSet<string> _expandedFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private BookmarkNodeViewModel? _selectedNode;
         private string _searchText = string.Empty;
         private int? _selectedSlotNumber;
@@ -145,10 +146,11 @@ namespace BookmarkStudio
         {
             IReadOnlyList<ManagedBookmark> bookmarks = await _operations.RefreshAsync(cancellationToken);
             IReadOnlyList<string> folderPaths = await _operations.GetFolderPathsAsync(cancellationToken);
+            IEnumerable<string> expandedFolders = await _operations.GetExpandedFoldersAsync(cancellationToken);
             string? selectedBookmarkId = SelectedBookmark?.BookmarkId;
             string? selectedFolderPath = SelectedNode is FolderNodeViewModel folderNode ? folderNode.FolderPath : null;
 
-            ReloadData(bookmarks, folderPaths);
+            ReloadData(bookmarks, folderPaths, expandedFolders);
             RebuildTree();
             RestoreSelection(selectedBookmarkId, selectedFolderPath);
 
@@ -343,11 +345,14 @@ namespace BookmarkStudio
 
         internal void LoadForTests(IEnumerable<ManagedBookmark> bookmarks, IEnumerable<string>? folderPaths = null)
         {
-            ReloadData((bookmarks ?? Enumerable.Empty<ManagedBookmark>()).ToArray(), (folderPaths ?? Enumerable.Empty<string>()).ToArray());
+            ReloadData(
+                (bookmarks ?? Enumerable.Empty<ManagedBookmark>()).ToArray(),
+                (folderPaths ?? Enumerable.Empty<string>()).ToArray(),
+                new HashSet<string>(StringComparer.OrdinalIgnoreCase));
             RebuildTree();
         }
 
-        private void ReloadData(IReadOnlyList<ManagedBookmark> bookmarks, IReadOnlyList<string> folderPaths)
+        private void ReloadData(IReadOnlyList<ManagedBookmark> bookmarks, IReadOnlyList<string> folderPaths, IEnumerable<string> expandedFolders)
         {
             ReloadBookmarks(bookmarks);
 
@@ -356,6 +361,12 @@ namespace BookmarkStudio
             foreach (string folderPath in folderPaths)
             {
                 _folderPaths.Add(BookmarkIdentity.NormalizeFolderPath(folderPath));
+            }
+
+            _expandedFolders.Clear();
+            foreach (string folder in expandedFolders)
+            {
+                _expandedFolders.Add(BookmarkIdentity.NormalizeFolderPath(folder));
             }
         }
 
@@ -412,6 +423,12 @@ namespace BookmarkStudio
 
             RootNodes.Clear();
 
+            if (!_operations.IsSolutionOrFolderOpen())
+            {
+                RestoreSelection(selectedBookmarkId, selectedFolderPath);
+                return;
+            }
+
             FolderBuilderNode root = new FolderBuilderNode(string.Empty, null);
             foreach (string folderPath in _folderPaths)
             {
@@ -435,6 +452,8 @@ namespace BookmarkStudio
             }
 
             FolderNodeViewModel rootNode = new FolderNodeViewModel(string.Empty, 0);
+            rootNode.IsExpanded = true;
+            rootNode.IsExpandedChanged += OnFolderExpandedChanged;
 
             foreach (FolderBuilderNode childFolder in root.Children.Values.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
             {
@@ -450,6 +469,37 @@ namespace BookmarkStudio
             RootNodes.Add(rootNode);
 
             RestoreSelection(selectedBookmarkId, selectedFolderPath);
+        }
+
+        private void OnFolderExpandedChanged(object? sender, EventArgs e)
+        {
+            if (sender is not FolderNodeViewModel folderNode)
+            {
+                return;
+            }
+
+            if (folderNode.IsExpanded)
+            {
+                _expandedFolders.Add(folderNode.FolderPath);
+            }
+            else
+            {
+                _expandedFolders.Remove(folderNode.FolderPath);
+            }
+
+            _ = SaveExpandedFoldersAsync();
+        }
+
+        private async Task SaveExpandedFoldersAsync()
+        {
+            try
+            {
+                await _operations.SetExpandedFoldersAsync(_expandedFolders, CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                await ex.LogAsync();
+            }
         }
 
         private void RebuildBookmarkRows(FolderBuilderNode root, IReadOnlyCollection<ManagedBookmark> bookmarks)
@@ -512,9 +562,11 @@ namespace BookmarkStudio
             return current;
         }
 
-        private static FolderNodeViewModel BuildFolderNode(FolderBuilderNode folderNode, int treeDepth)
+        private FolderNodeViewModel BuildFolderNode(FolderBuilderNode folderNode, int treeDepth)
         {
             FolderNodeViewModel node = new FolderNodeViewModel(folderNode.Path, treeDepth);
+            node.IsExpanded = _expandedFolders.Contains(folderNode.Path);
+            node.IsExpandedChanged += OnFolderExpandedChanged;
 
             foreach (FolderBuilderNode child in folderNode.Children.Values.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
             {
@@ -648,13 +700,19 @@ namespace BookmarkStudio
         public abstract string DisplayText { get; }
     }
 
-    public sealed class FolderNodeViewModel : BookmarkNodeViewModel
+    public sealed class FolderNodeViewModel : BookmarkNodeViewModel, INotifyPropertyChanged
     {
+        private bool _isExpanded;
+
         public FolderNodeViewModel(string folderPath, int treeDepth)
         {
             FolderPath = BookmarkIdentity.NormalizeFolderPath(folderPath);
             TreeDepth = Math.Max(0, treeDepth);
         }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        public event EventHandler? IsExpandedChanged;
 
         public string FolderPath { get; }
 
@@ -663,6 +721,20 @@ namespace BookmarkStudio
             : FolderPath.Split('/').Last();
 
         public int TreeDepth { get; }
+
+        public bool IsExpanded
+        {
+            get => _isExpanded;
+            set
+            {
+                if (_isExpanded != value)
+                {
+                    _isExpanded = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsExpanded)));
+                    IsExpandedChanged?.Invoke(this, EventArgs.Empty);
+                }
+            }
+        }
 
         public ObservableCollection<BookmarkNodeViewModel> Children { get; } = new ObservableCollection<BookmarkNodeViewModel>();
 
@@ -673,6 +745,8 @@ namespace BookmarkStudio
 
     public sealed class BookmarkItemNodeViewModel : BookmarkNodeViewModel
     {
+        private const int TreeIndentPixels = 19;
+
         public BookmarkItemNodeViewModel(ManagedBookmark bookmark, int treeDepth)
         {
             Bookmark = bookmark ?? throw new ArgumentNullException(nameof(bookmark));
@@ -683,11 +757,9 @@ namespace BookmarkStudio
 
         public int TreeDepth { get; }
 
-        public Thickness NonNameColumnMargin => new Thickness(-(TreeDepth * 19), 0, 0, 0);
+        public Thickness NonNameColumnMargin => new Thickness(-(Math.Max(0, TreeDepth - 1) * TreeIndentPixels), 0, 0, 0);
 
-        public Thickness NonNameRightAlignedMargin => new Thickness(-(TreeDepth * 19), 0, 4, 0);
-
-        public Thickness ColorIndicatorMargin => new Thickness(6 - (TreeDepth * 19), 0, 0, 0);
+        public Thickness NonNameRightAlignedMargin => new Thickness(-(Math.Max(0, TreeDepth - 1) * TreeIndentPixels), 0, 4, 0);
 
         public override bool IsFolder => false;
 

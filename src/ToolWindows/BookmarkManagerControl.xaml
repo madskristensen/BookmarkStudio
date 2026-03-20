@@ -18,18 +18,113 @@
     <UserControl.Resources>
         <local:BookmarkColorToBrushConverter x:Key="ColorToBrushConverter" />
 
-        <Style x:Key="BookmarkTreeViewItemStyle" TargetType="TreeViewItem">
+        <Style x:Key="TreeViewItemFocusVisual">
+            <Setter Property="Control.Template">
+                <Setter.Value>
+                    <ControlTemplate>
+                        <Rectangle />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="ExpandCollapseToggleStyle" TargetType="{x:Type ToggleButton}">
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Width" Value="16" />
+            <Setter Property="Height" Value="16" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type ToggleButton}">
+                        <Border Width="16" Height="16" Background="Transparent" Padding="5,5,5,5">
+                            <Path x:Name="ExpandPath"
+                                  Fill="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowTextBrushKey}}"
+                                  Data="M0,0 L0,6 L6,0 z">
+                                <Path.RenderTransform>
+                                    <RotateTransform Angle="135" CenterX="3" CenterY="3" />
+                                </Path.RenderTransform>
+                            </Path>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="ExpandPath" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <RotateTransform Angle="180" CenterX="3" CenterY="3" />
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="BookmarkTreeViewItemStyle" TargetType="{x:Type TreeViewItem}">
             <Setter Property="Foreground" Value="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowTextBrushKey}}" />
             <Setter Property="Background" Value="Transparent" />
-            <Setter Property="Padding" Value="2" />
             <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Padding" Value="1,2,0,2" />
+            <Setter Property="FocusVisualStyle" Value="{StaticResource TreeViewItemFocusVisual}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type TreeViewItem}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" MinWidth="19" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition />
+                            </Grid.RowDefinitions>
+                            <Border x:Name="SelectionBd"
+                                    Grid.ColumnSpan="2"
+                                    Background="Transparent"
+                                    SnapsToDevicePixels="True" />
+                            <ToggleButton x:Name="Expander"
+                                          Style="{StaticResource ExpandCollapseToggleStyle}"
+                                          ClickMode="Press"
+                                          IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}" />
+                            <Border x:Name="Bd"
+                                    Grid.Column="1"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    Padding="{TemplateBinding Padding}"
+                                    SnapsToDevicePixels="True">
+                                <ContentPresenter x:Name="PART_Header"
+                                                  ContentSource="Header"
+                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                  SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                            </Border>
+                            <ItemsPresenter x:Name="ItemsHost"
+                                            Grid.Row="1"
+                                            Grid.Column="1" />
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsExpanded" Value="False">
+                                <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed" />
+                            </Trigger>
+                            <Trigger Property="HasItems" Value="False">
+                                <Setter TargetName="Expander" Property="Visibility" Value="Hidden" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="SelectionBd" Property="Background" Value="#40808080" />
+                            </Trigger>
+                            <MultiTrigger>
+                                <MultiTrigger.Conditions>
+                                    <Condition Property="IsSelected" Value="True" />
+                                    <Condition Property="IsSelectionActive" Value="False" />
+                                </MultiTrigger.Conditions>
+                                <Setter TargetName="SelectionBd" Property="Background" Value="#30808080" />
+                            </MultiTrigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
             <Style.Triggers>
-                <Trigger Property="IsSelected" Value="True">
-                    <Setter Property="Background" Value="Transparent" />
-                    <Setter Property="Foreground" Value="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowTextBrushKey}}" />
-                </Trigger>
-                <DataTrigger Binding="{Binding FolderPath}" Value="">
-                    <Setter Property="IsExpanded" Value="True" />
+                <DataTrigger Binding="{Binding IsFolder}" Value="True">
+                    <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>
@@ -90,14 +185,46 @@
                         <MenuItem Header="Clear Slot" Click="ClearSlotMenuItem_Click" />
                         <Separator />
                         <MenuItem Header="Set Color">
-                            <MenuItem Header="Orange (default)" Tag="2" Click="SetColorMenuItem_Click" />
-                            <MenuItem Header="Red" Tag="1" Click="SetColorMenuItem_Click" />
-                            <MenuItem Header="Yellow" Tag="3" Click="SetColorMenuItem_Click" />
-                            <MenuItem Header="Green" Tag="4" Click="SetColorMenuItem_Click" />
-                            <MenuItem Header="Blue" Tag="5" Click="SetColorMenuItem_Click" />
-                            <MenuItem Header="Purple" Tag="6" Click="SetColorMenuItem_Click" />
-                            <MenuItem Header="Pink" Tag="7" Click="SetColorMenuItem_Click" />
-                            <MenuItem Header="Teal" Tag="8" Click="SetColorMenuItem_Click" />
+                            <MenuItem Header="Blue (default)" Tag="5" Click="SetColorMenuItem_Click">
+                                <MenuItem.Icon>
+                                    <Border Width="10" Height="10" CornerRadius="2" Background="#1E88E5" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Red" Tag="1" Click="SetColorMenuItem_Click">
+                                <MenuItem.Icon>
+                                    <Border Width="10" Height="10" CornerRadius="2" Background="#E53935" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Orange" Tag="2" Click="SetColorMenuItem_Click">
+                                <MenuItem.Icon>
+                                    <Border Width="10" Height="10" CornerRadius="2" Background="#FB8C00" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Yellow" Tag="3" Click="SetColorMenuItem_Click">
+                                <MenuItem.Icon>
+                                    <Border Width="10" Height="10" CornerRadius="2" Background="#FDD835" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Green" Tag="4" Click="SetColorMenuItem_Click">
+                                <MenuItem.Icon>
+                                    <Border Width="10" Height="10" CornerRadius="2" Background="#43A047" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Purple" Tag="6" Click="SetColorMenuItem_Click">
+                                <MenuItem.Icon>
+                                    <Border Width="10" Height="10" CornerRadius="2" Background="#8E24AA" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Pink" Tag="7" Click="SetColorMenuItem_Click">
+                                <MenuItem.Icon>
+                                    <Border Width="10" Height="10" CornerRadius="2" Background="#EC407A" />
+                                </MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="Teal" Tag="8" Click="SetColorMenuItem_Click">
+                                <MenuItem.Icon>
+                                    <Border Width="10" Height="10" CornerRadius="2" Background="#00897B" />
+                                </MenuItem.Icon>
+                            </MenuItem>
                         </MenuItem>
                         <Separator />
                         <MenuItem Header="Delete" Click="DeleteBookmarkMenuItem_Click" />
@@ -112,20 +239,20 @@
                         <ColumnDefinition Width="90" />
                         <ColumnDefinition Width="90" />
                     </Grid.ColumnDefinitions>
-                    <Border Grid.Column="0"
-                            Width="10"
-                            Height="10"
-                            Margin="{Binding ColorIndicatorMargin}"
-                            CornerRadius="2"
-                            BorderThickness="1"
-                            BorderBrush="SaddleBrown"
-                            VerticalAlignment="Center"
-                            HorizontalAlignment="Left"
-                            Background="{Binding Bookmark.Color, Converter={StaticResource ColorToBrushConverter}}" />
-                    <TextBlock Grid.Column="1"
-                               Text="{Binding DisplayText}"
-                               VerticalAlignment="Center"
-                               TextTrimming="CharacterEllipsis" />
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Border Width="10"
+                                Height="10"
+                                Margin="0,0,6,0"
+                                CornerRadius="2"
+                                BorderThickness="1"
+                                BorderBrush="SaddleBrown"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Left"
+                                Background="{Binding Bookmark.Color, Converter={StaticResource ColorToBrushConverter}}" />
+                        <TextBlock Text="{Binding DisplayText}"
+                                   VerticalAlignment="Center"
+                                   TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
                     <TextBlock Grid.Column="2"
                                Margin="{Binding NonNameColumnMargin}"
                                Text="{Binding Bookmark.RepositoryRelativePath}"
@@ -171,8 +298,8 @@
                     <ColumnDefinition Width="90" />
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="1" Text="Name" FontWeight="SemiBold" />
-                <TextBlock Grid.Column="2" Text="File" FontWeight="SemiBold" />
-                <TextBlock Grid.Column="3" Text="Line Text" FontWeight="SemiBold" />
+                <TextBlock Grid.Column="2" Text="File" FontWeight="SemiBold" Margin="13,0,0,0" />
+                <TextBlock Grid.Column="3" Text="Line Text" FontWeight="SemiBold" Margin="13,0,0,0" />
                 <TextBlock Grid.Column="4" Text="Line" FontWeight="SemiBold" HorizontalAlignment="Right" Margin="0,0,4,0" />
                 <TextBlock Grid.Column="5" Text="Slot" FontWeight="SemiBold" HorizontalAlignment="Right" Margin="0,0,4,0" />
             </Grid>

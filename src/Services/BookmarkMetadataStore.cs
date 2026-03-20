@@ -41,6 +41,7 @@ namespace BookmarkStudio
             if (TryGetObjectProperty(rootElement, RootPropertyName, out JsonElement rootFolderElement))
             {
                 ParseFolderNode(state, rootFolderElement, string.Empty, solutionDirectory, cancellationToken);
+                ParseExpandedFolders(state, rootElement);
                 return NormalizeState(state);
             }
 
@@ -59,9 +60,11 @@ namespace BookmarkStudio
             return NormalizeState(state);
         }
 
-        public Task SaveAsync(string solutionPath, IEnumerable<BookmarkMetadata> metadata, CancellationToken cancellationToken)
+        public async Task SaveAsync(string solutionPath, IEnumerable<BookmarkMetadata> metadata, CancellationToken cancellationToken)
         {
-            BookmarkWorkspaceState state = new BookmarkWorkspaceState();
+            BookmarkWorkspaceState state = await LoadWorkspaceAsync(solutionPath, cancellationToken);
+            state.Bookmarks.Clear();
+
             foreach (BookmarkMetadata item in metadata)
             {
                 BookmarkMetadata normalized = Normalize(item);
@@ -69,7 +72,7 @@ namespace BookmarkStudio
                 RegisterFolderPath(state.FolderPaths, normalized.Group);
             }
 
-            return SaveWorkspaceAsync(solutionPath, state, cancellationToken);
+            await SaveWorkspaceAsync(solutionPath, state, cancellationToken);
         }
 
         public async Task SaveWorkspaceAsync(string solutionPath, BookmarkWorkspaceState state, CancellationToken cancellationToken)
@@ -91,7 +94,7 @@ namespace BookmarkStudio
             string solutionDirectory = GetSolutionDirectory(solutionPath);
             FolderNode root = BuildFolderTree(state);
 
-            string json = await Task.Run(() => SerializeTree(root, solutionDirectory), cancellationToken);
+            string json = await Task.Run(() => SerializeTree(root, solutionDirectory, state.ExpandedFolders), cancellationToken);
             await Task.Run(() => File.WriteAllText(storagePath, json, Encoding.UTF8), cancellationToken);
         }
 
@@ -104,7 +107,59 @@ namespace BookmarkStudio
             }
 
             string solutionDirectory = Path.GetDirectoryName(solutionPath) ?? string.Empty;
+
+            // Check solution root first for team-shared bookmarks
+            string solutionRootPath = Path.Combine(solutionDirectory, "bookmarks.json");
+            if (File.Exists(solutionRootPath))
+            {
+                return solutionRootPath;
+            }
+
+            // Check repository root for team-shared bookmarks
+            string? repoRoot = GetRepositoryRoot(solutionDirectory);
+            if (!string.IsNullOrWhiteSpace(repoRoot))
+            {
+                string repoRootPath = Path.Combine(repoRoot, "bookmarks.json");
+                if (File.Exists(repoRootPath))
+                {
+                    return repoRootPath;
+                }
+            }
+
+            // Fall back to .vs folder for user-specific bookmarks
             return Path.Combine(solutionDirectory, ".vs", "bookmarks.json");
+        }
+
+        private static string? GetRepositoryRoot(string directoryPath)
+        {
+            string normalizedDirectoryPath;
+            try
+            {
+                normalizedDirectoryPath = Path.GetFullPath(directoryPath)
+                    .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            }
+            catch (ArgumentException)
+            {
+                return null;
+            }
+            catch (NotSupportedException)
+            {
+                return null;
+            }
+
+            string? current = normalizedDirectoryPath;
+
+            while (!string.IsNullOrWhiteSpace(current))
+            {
+                if (Directory.Exists(Path.Combine(current, ".git")))
+                {
+                    return current;
+                }
+
+                current = Path.GetDirectoryName(current.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+            }
+
+            return null;
         }
 
         private static BookmarkWorkspaceState NormalizeState(BookmarkWorkspaceState state)
@@ -159,6 +214,25 @@ namespace BookmarkStudio
             }
         }
 
+        private static void ParseExpandedFolders(BookmarkWorkspaceState state, JsonElement rootElement)
+        {
+            if (rootElement.TryGetProperty("expandedFolders", out JsonElement expandedFoldersElement) &&
+                expandedFoldersElement.ValueKind == JsonValueKind.Array)
+            {
+                foreach (JsonElement folderElement in expandedFoldersElement.EnumerateArray())
+                {
+                    if (folderElement.ValueKind == JsonValueKind.String)
+                    {
+                        string? folderPath = folderElement.GetString();
+                        if (!string.IsNullOrEmpty(folderPath))
+                        {
+                            state.ExpandedFolders.Add(folderPath);
+                        }
+                    }
+                }
+            }
+        }
+
         private static BookmarkMetadata ToMetadata(JsonElement element, string solutionDirectory, string folderPath)
         {
             string documentPath = GetStringProperty(element, "documentPath");
@@ -182,7 +256,7 @@ namespace BookmarkStudio
             };
         }
 
-        private static string SerializeTree(FolderNode root, string solutionDirectory)
+        private static string SerializeTree(FolderNode root, string solutionDirectory, IEnumerable<string> expandedFolders)
         {
             using MemoryStream stream = new MemoryStream();
             using (Utf8JsonWriter writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
@@ -190,6 +264,15 @@ namespace BookmarkStudio
                 writer.WriteStartObject();
                 writer.WritePropertyName(RootPropertyName);
                 WriteFolderNode(writer, root, solutionDirectory);
+
+                writer.WritePropertyName("expandedFolders");
+                writer.WriteStartArray();
+                foreach (string folder in expandedFolders.OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
+                {
+                    writer.WriteStringValue(folder);
+                }
+
+                writer.WriteEndArray();
                 writer.WriteEndObject();
             }
 

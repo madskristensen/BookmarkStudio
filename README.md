@@ -126,11 +126,23 @@ BookmarkStudio provides commands for:
 
 ## Storage
 
-Solution-specific metadata is stored at:
+BookmarkStudio looks for `bookmarks.json` in the following order:
 
-`.vs/bookmarks.json`
+1. **Solution root** - `{solutionDirectory}/bookmarks.json`
+2. **Repository root** - `{repoRoot}/bookmarks.json`
+3. **Default (.vs folder)** - `{solutionDirectory}/.vs/bookmarks.json`
 
 If no solution is loaded, BookmarkStudio uses a transient location under local app data.
+
+### Sharing bookmarks with your team
+
+To share bookmarks with your team via source control:
+
+1. Copy `.vs/bookmarks.json` to your solution root or repository root
+2. Commit `bookmarks.json` to source control
+3. Team members will automatically use the shared bookmarks file
+
+This is useful for marking important code locations, onboarding landmarks, or review checkpoints that the whole team should see.
 
 ## Compatibility
 

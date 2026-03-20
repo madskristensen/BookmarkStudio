@@ -41,11 +41,11 @@ namespace BookmarkStudio
         private static ContextMenu BuildGlyphContextMenu(string bookmarkId)
         {
             ContextMenu menu = new ContextMenu();
-            AddColorMenuItem(menu, "Orange (default)", BookmarkColor.Orange, bookmarkId);
+            AddColorMenuItem(menu, "Blue (default)", BookmarkColor.Blue, bookmarkId);
             AddColorMenuItem(menu, "Red", BookmarkColor.Red, bookmarkId);
+            AddColorMenuItem(menu, "Orange", BookmarkColor.Orange, bookmarkId);
             AddColorMenuItem(menu, "Yellow", BookmarkColor.Yellow, bookmarkId);
             AddColorMenuItem(menu, "Green", BookmarkColor.Green, bookmarkId);
-            AddColorMenuItem(menu, "Blue", BookmarkColor.Blue, bookmarkId);
             AddColorMenuItem(menu, "Purple", BookmarkColor.Purple, bookmarkId);
             AddColorMenuItem(menu, "Pink", BookmarkColor.Pink, bookmarkId);
             AddColorMenuItem(menu, "Teal", BookmarkColor.Teal, bookmarkId);

@@ -273,5 +273,7 @@ namespace BookmarkStudio
         public List<BookmarkMetadata> Bookmarks { get; } = new List<BookmarkMetadata>();
 
         public HashSet<string> FolderPaths { get; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        public HashSet<string> ExpandedFolders { get; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
     }
 }

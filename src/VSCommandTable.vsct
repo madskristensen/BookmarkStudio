@@ -24,9 +24,9 @@
     </Menus>
 
     <Buttons>
-      <Button guid="BookmarkStudio" id="OpenBookmarkManagerCommand" priority="0x0100" type="Button">
+      <Button guid="BookmarkStudio" id="OpenBookmarkManagerCommand" priority="0x0050" type="Button">
         <Parent guid="VSMainMenu" id="View.NavigationWindowsGroup" />
-        <Icon guid="ImageCatalogGuid" id="ToolWindow" />
+        <Icon guid="ImageCatalogGuid" id="Bookmark" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <Strings>
           <ButtonText>Bookmark Manager</ButtonText>
@@ -80,7 +80,7 @@
       </Button>
       <Button guid="BookmarkStudio" id="ClearAllBookmarksCommand" priority="0x0220" type="Button">
         <Parent guid="BookmarkStudio" id="BookmarkManagerToolbarGroup" />
-        <Icon guid="ImageCatalogGuid" id="Cancel" />
+        <Icon guid="ImageCatalogGuid" id="ClearBookmark" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <Strings>
           <ButtonText>Clear All Bookmarks</ButtonText>
@@ -164,6 +164,16 @@
     <KeyBinding guid="BookmarkStudio" id="GoToSlot7Command" editor="guidVSStd97" key1="7" mod1="Alt Shift" />
     <KeyBinding guid="BookmarkStudio" id="GoToSlot8Command" editor="guidVSStd97" key1="8" mod1="Alt Shift" />
     <KeyBinding guid="BookmarkStudio" id="GoToSlot9Command" editor="guidVSStd97" key1="9" mod1="Alt Shift" />
+
+    <KeyBinding guid="BookmarkStudio" id="GoToSlot1Command" editor="GUID_TextEditorFactory" key1="1" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToSlot2Command" editor="GUID_TextEditorFactory" key1="2" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToSlot3Command" editor="GUID_TextEditorFactory" key1="3" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToSlot4Command" editor="GUID_TextEditorFactory" key1="4" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToSlot5Command" editor="GUID_TextEditorFactory" key1="5" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToSlot6Command" editor="GUID_TextEditorFactory" key1="6" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToSlot7Command" editor="GUID_TextEditorFactory" key1="7" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToSlot8Command" editor="GUID_TextEditorFactory" key1="8" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToSlot9Command" editor="GUID_TextEditorFactory" key1="9" mod1="Alt Shift" />
   </KeyBindings>
 
   <Symbols>

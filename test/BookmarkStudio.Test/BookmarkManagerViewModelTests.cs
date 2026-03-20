@@ -1,5 +1,6 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Linq;
+using System.Windows;
 
 namespace BookmarkStudio.Test;
 
@@ -201,5 +202,27 @@ public class BookmarkManagerViewModelTests
 
         Assert.IsFalse(folderA.IsFolderPlaceholder);
         Assert.IsTrue(folderB.IsFolderPlaceholder);
+    }
+
+    [TestMethod]
+    public void BookmarkItemNodeViewModel_WhenTreeDepthIsOne_DoesNotOffsetNonNameColumns()
+    {
+        BookmarkItemNodeViewModel node = new BookmarkItemNodeViewModel(
+            new ManagedBookmark { BookmarkId = "id-1", DocumentPath = @"C:\repo\a.cs", LineNumber = 10 },
+            treeDepth: 1);
+
+        Assert.AreEqual(new Thickness(0, 0, 0, 0), node.NonNameColumnMargin);
+        Assert.AreEqual(new Thickness(0, 0, 4, 0), node.NonNameRightAlignedMargin);
+    }
+
+    [TestMethod]
+    public void BookmarkItemNodeViewModel_WhenTreeDepthIsNested_OffsetsNonNameColumnsByNestedLevels()
+    {
+        BookmarkItemNodeViewModel node = new BookmarkItemNodeViewModel(
+            new ManagedBookmark { BookmarkId = "id-1", DocumentPath = @"C:\repo\a.cs", LineNumber = 10 },
+            treeDepth: 3);
+
+        Assert.AreEqual(new Thickness(-38, 0, 0, 0), node.NonNameColumnMargin);
+        Assert.AreEqual(new Thickness(-38, 0, 4, 0), node.NonNameRightAlignedMargin);
     }
 }

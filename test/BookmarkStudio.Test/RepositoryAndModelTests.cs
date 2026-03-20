@@ -339,6 +339,36 @@ public class RepositoryAndModelTests
         StringAssert.EndsWith(path, "bookmarks.json");
     }
 
+    [TestMethod]
+    public async Task MetadataStore_SaveAsync_WhenBookmarkRemovedFromFolder_PreservesEmptyFolder()
+    {
+        BookmarkMetadataStore store = new BookmarkMetadataStore();
+        string solutionPath = CreateTestSolutionPath();
+
+        // Create initial workspace with a folder containing one bookmark and an empty sibling folder
+        BookmarkWorkspaceState initialWorkspace = new BookmarkWorkspaceState();
+        initialWorkspace.FolderPaths.Add(string.Empty);
+        initialWorkspace.FolderPaths.Add("FolderA");
+        initialWorkspace.FolderPaths.Add("EmptyFolder");
+        initialWorkspace.Bookmarks.Add(new BookmarkMetadata
+        {
+            BookmarkId = "id-1",
+            DocumentPath = @"C:\repo\file.cs",
+            LineNumber = 10,
+            Group = "FolderA",
+        });
+        await store.SaveWorkspaceAsync(solutionPath, initialWorkspace, CancellationToken.None);
+
+        // Remove the bookmark (simulating deletion of last bookmark in FolderA)
+        await store.SaveAsync(solutionPath, Array.Empty<BookmarkMetadata>(), CancellationToken.None);
+
+        // Verify empty folders are preserved
+        BookmarkWorkspaceState loaded = await store.LoadWorkspaceAsync(solutionPath, CancellationToken.None);
+        Assert.AreEqual(0, loaded.Bookmarks.Count);
+        Assert.IsTrue(loaded.FolderPaths.Contains("FolderA"), "FolderA should be preserved even when empty");
+        Assert.IsTrue(loaded.FolderPaths.Contains("EmptyFolder"), "EmptyFolder should be preserved");
+    }
+
     private static string CreateTestSolutionPath()
     {
         string testRoot = Path.Combine(Path.GetTempPath(), "BookmarkStudio.Tests", Guid.NewGuid().ToString("N"));

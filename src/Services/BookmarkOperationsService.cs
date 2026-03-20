@@ -143,6 +143,24 @@ namespace BookmarkStudio
                 .ToArray();
         }
 
+        public async Task<IEnumerable<string>> GetExpandedFoldersAsync(CancellationToken cancellationToken)
+        {
+            BookmarkWorkspaceState workspace = await _session.LoadWorkspaceAsync(cancellationToken);
+            return workspace.ExpandedFolders;
+        }
+
+        public async Task SetExpandedFoldersAsync(IEnumerable<string> expandedFolders, CancellationToken cancellationToken)
+        {
+            await _session.UpdateWorkspaceAsync(workspace =>
+            {
+                workspace.ExpandedFolders.Clear();
+                foreach (string folder in expandedFolders)
+                {
+                    workspace.ExpandedFolders.Add(folder);
+                }
+            }, cancellationToken);
+        }
+
         public async Task<IReadOnlyList<ManagedBookmark>> CreateFolderAsync(string? parentFolderPath, string? folderName, CancellationToken cancellationToken)
         {
             string normalizedFolderName = ValidateFolderName(folderName);
