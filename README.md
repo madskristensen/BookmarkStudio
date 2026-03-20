@@ -1,6 +1,12 @@
 # BookmarkStudio
 
+[![Build](https://github.com/madskristensen/BookmarkStudio/actions/workflows/build.yaml/badge.svg)](https://github.com/madskristensen/BookmarkStudio/actions/workflows/build.yaml)
+
 BookmarkStudio is a Visual Studio extension for managing code bookmarks across an entire solution. It adds a dedicated bookmark manager, richer bookmark metadata, quick slot navigation, export options, and bookmark tracking that stays useful as files change.
+
+## Install
+
+Download from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=MadsKristensen.BookmarkStudio) or grab the latest CI build from the [Open VSIX Gallery](https://www.vsixgallery.com/).
 
 ## Features
 
@@ -74,4 +80,4 @@ If no solution is available, it falls back to a transient location under local a
 
 ## Contribute
 
-Issues, ideas, and pull requests are welcome.
+[Issues](https://github.com/madskristensen/BookmarkStudio/issues), ideas, and pull requests are welcome.
