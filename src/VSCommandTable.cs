@@ -25,7 +25,9 @@ namespace BookmarkStudio
         public const int BookmarkManagerToolbar = 0x1000;
         public const int BookmarkManagerToolbarGroup = 0x1001;
         public const int OpenBookmarkManagerCommand = 0x0100;
+        public const int AddBookmarkCommand = 0x0102;
         public const int RefreshBookmarkManagerCommand = 0x0101;
+        public const int AddFolderCommand = 0x0103;
         public const int ExportBookmarksCommand = 0x0404;
         public const int DeleteBookmarkCommand = 0x0407;
         public const int GoToSlot1Command = 0x0500;

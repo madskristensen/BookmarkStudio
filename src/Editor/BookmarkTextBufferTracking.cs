@@ -136,7 +136,6 @@ namespace BookmarkStudio
             {
                 BookmarkSnapshot translatedBookmark = TranslateBookmark(bookmark, beforeSnapshot, afterSnapshot);
                 if (bookmark.LineNumber == translatedBookmark.LineNumber
-                    && bookmark.ColumnNumber == translatedBookmark.ColumnNumber
                     && string.Equals(bookmark.LineText, translatedBookmark.LineText, StringComparison.Ordinal)
                     && string.Equals(bookmark.DocumentPath, translatedBookmark.DocumentPath, StringComparison.Ordinal))
                 {
@@ -154,8 +153,7 @@ namespace BookmarkStudio
         {
             int beforeLineNumber = Clamp(bookmark.LineNumber - 1, 0, Math.Max(beforeSnapshot.LineCount - 1, 0));
             ITextSnapshotLine beforeLine = beforeSnapshot.GetLineFromLineNumber(beforeLineNumber);
-            int beforeColumn = Clamp(bookmark.ColumnNumber - 1, 0, beforeLine.Length);
-            var beforePoint = new SnapshotPoint(beforeSnapshot, beforeLine.Start.Position + beforeColumn);
+            var beforePoint = new SnapshotPoint(beforeSnapshot, beforeLine.Start.Position);
             SnapshotPoint afterPoint = beforePoint.TranslateTo(afterSnapshot, PointTrackingMode.Positive);
             ITextSnapshotLine afterLine = afterPoint.GetContainingLine();
 
@@ -163,7 +161,6 @@ namespace BookmarkStudio
             {
                 DocumentPath = _documentPath,
                 LineNumber = afterLine.LineNumber + 1,
-                ColumnNumber = afterPoint.Position - afterLine.Start.Position + 1,
                 LineText = afterLine.GetText(),
             };
         }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 
 namespace BookmarkStudio
@@ -12,6 +13,7 @@ namespace BookmarkStudio
         private readonly BookmarkRepositoryService _repositoryService;
         private readonly SemaphoreSlim _repositoryGate = new SemaphoreSlim(1, 1);
         private IReadOnlyList<ManagedBookmark> _cachedBookmarks = Array.Empty<ManagedBookmark>();
+        private IReadOnlyList<string> _cachedFolderPaths = new[] { string.Empty };
 
         private BookmarkStudioSession()
         {
@@ -24,6 +26,8 @@ namespace BookmarkStudio
 
         public IReadOnlyList<ManagedBookmark> CachedBookmarks => _cachedBookmarks;
 
+        public IReadOnlyList<string> CachedFolderPaths => _cachedFolderPaths;
+
         public BookmarkMetadataStore MetadataStore => _metadataStore;
 
         public async Task<IReadOnlyList<ManagedBookmark>> RefreshAsync(CancellationToken cancellationToken)
@@ -32,7 +36,9 @@ namespace BookmarkStudio
             try
             {
                 string solutionPath = await GetSolutionPathAsync(cancellationToken);
-                SetCachedBookmarks(await _repositoryService.ListAsync(solutionPath, cancellationToken));
+                BookmarkWorkspaceState workspace = await _repositoryService.LoadWorkspaceAsync(solutionPath, cancellationToken);
+                BookmarkRepositoryService.NormalizeWorkspaceState(workspace);
+                SetCachedState(BookmarkRepositoryService.ToManagedBookmarks(workspace.Bookmarks), workspace.FolderPaths);
                 return _cachedBookmarks;
             }
             finally
@@ -62,7 +68,9 @@ namespace BookmarkStudio
             {
                 string solutionPath = await GetSolutionPathAsync(cancellationToken);
                 await _repositoryService.SaveAsync(solutionPath, metadata, cancellationToken);
-                SetCachedBookmarks(BookmarkRepositoryService.ToManagedBookmarks(metadata));
+                BookmarkWorkspaceState workspace = await _repositoryService.LoadWorkspaceAsync(solutionPath, cancellationToken);
+                BookmarkRepositoryService.NormalizeWorkspaceState(workspace);
+                SetCachedState(BookmarkRepositoryService.ToManagedBookmarks(workspace.Bookmarks), workspace.FolderPaths);
             }
             finally
             {
@@ -77,6 +85,9 @@ namespace BookmarkStudio
             {
                 string solutionPath = await GetSolutionPathAsync(cancellationToken);
                 SetCachedBookmarks(await _repositoryService.UpdateAsync(solutionPath, updateAction, cancellationToken));
+                BookmarkWorkspaceState workspace = await _repositoryService.LoadWorkspaceAsync(solutionPath, cancellationToken);
+                BookmarkRepositoryService.NormalizeWorkspaceState(workspace);
+                _cachedFolderPaths = workspace.FolderPaths.OrderBy(path => path, StringComparer.OrdinalIgnoreCase).ToArray();
                 return _cachedBookmarks;
             }
             finally
@@ -92,6 +103,9 @@ namespace BookmarkStudio
             {
                 string solutionPath = await GetSolutionPathAsync(cancellationToken);
                 SetCachedBookmarks(await _repositoryService.TryUpdateAsync(solutionPath, updateAction, cancellationToken));
+                BookmarkWorkspaceState workspace = await _repositoryService.LoadWorkspaceAsync(solutionPath, cancellationToken);
+                BookmarkRepositoryService.NormalizeWorkspaceState(workspace);
+                _cachedFolderPaths = workspace.FolderPaths.OrderBy(path => path, StringComparer.OrdinalIgnoreCase).ToArray();
                 return _cachedBookmarks;
             }
             finally
@@ -107,7 +121,9 @@ namespace BookmarkStudio
             {
                 string solutionPath = await GetSolutionPathAsync(cancellationToken);
                 ManagedBookmark? bookmark = await _repositoryService.ToggleAsync(solutionPath, snapshot, cancellationToken);
-                SetCachedBookmarks(await _repositoryService.ListAsync(solutionPath, cancellationToken));
+                BookmarkWorkspaceState workspace = await _repositoryService.LoadWorkspaceAsync(solutionPath, cancellationToken);
+                BookmarkRepositoryService.NormalizeWorkspaceState(workspace);
+                SetCachedState(BookmarkRepositoryService.ToManagedBookmarks(workspace.Bookmarks), workspace.FolderPaths);
                 return bookmark;
             }
             finally
@@ -117,7 +133,41 @@ namespace BookmarkStudio
         }
 
         public void Clear()
-            => SetCachedBookmarks(Array.Empty<ManagedBookmark>());
+            => SetCachedState(Array.Empty<ManagedBookmark>(), new[] { string.Empty });
+
+        public async Task<BookmarkWorkspaceState> LoadWorkspaceAsync(CancellationToken cancellationToken)
+        {
+            await _repositoryGate.WaitAsync(cancellationToken);
+            try
+            {
+                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                BookmarkWorkspaceState workspace = await _repositoryService.LoadWorkspaceAsync(solutionPath, cancellationToken);
+                BookmarkRepositoryService.NormalizeWorkspaceState(workspace);
+                return workspace;
+            }
+            finally
+            {
+                _repositoryGate.Release();
+            }
+        }
+
+        public async Task<IReadOnlyList<ManagedBookmark>> UpdateWorkspaceAsync(Action<BookmarkWorkspaceState> updateAction, CancellationToken cancellationToken)
+        {
+            await _repositoryGate.WaitAsync(cancellationToken);
+            try
+            {
+                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                SetCachedBookmarks(await _repositoryService.UpdateWorkspaceAsync(solutionPath, updateAction, cancellationToken));
+                BookmarkWorkspaceState workspace = await _repositoryService.LoadWorkspaceAsync(solutionPath, cancellationToken);
+                BookmarkRepositoryService.NormalizeWorkspaceState(workspace);
+                _cachedFolderPaths = workspace.FolderPaths.OrderBy(path => path, StringComparer.OrdinalIgnoreCase).ToArray();
+                return _cachedBookmarks;
+            }
+            finally
+            {
+                _repositoryGate.Release();
+            }
+        }
 
         public async Task<string> GetStoragePathAsync(CancellationToken cancellationToken)
         {
@@ -144,6 +194,23 @@ namespace BookmarkStudio
         private void SetCachedBookmarks(IReadOnlyList<ManagedBookmark> bookmarks)
         {
             _cachedBookmarks = bookmarks ?? Array.Empty<ManagedBookmark>();
+            BookmarksChanged?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void SetCachedState(IReadOnlyList<ManagedBookmark> bookmarks, IEnumerable<string> folderPaths)
+        {
+            _cachedBookmarks = bookmarks ?? Array.Empty<ManagedBookmark>();
+            _cachedFolderPaths = (folderPaths ?? Array.Empty<string>())
+                .Select(BookmarkIdentity.NormalizeFolderPath)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            if (!_cachedFolderPaths.Contains(string.Empty, StringComparer.OrdinalIgnoreCase))
+            {
+                _cachedFolderPaths = _cachedFolderPaths.Concat(new[] { string.Empty }).ToArray();
+            }
+
             BookmarksChanged?.Invoke(this, EventArgs.Empty);
         }
     }

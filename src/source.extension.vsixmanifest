@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="BookmarkStudio.7ed28d42-37b3-4773-8a6e-e9ca6403a0fc" Version="1.0" Language="en-US" Publisher="Mads Kristensen" />
+        <Identity Id="BookmarkStudio.7ed28d42-37b3-4773-8a6e-e9ca6403a0fc" Version="1.0.900" Language="en-US" Publisher="Mads Kristensen" />
         <DisplayName>Bookmark Studio</DisplayName>
         <Description>Manage color-coded code bookmarks across your solution with slots, search, and fast navigation.</Description>
+        <License>Resources\LICENSE.txt</License>
         <Icon>Resources\Icon.png</Icon>
         <PreviewImage>Resources\Icon.png</PreviewImage>
     </Metadata>

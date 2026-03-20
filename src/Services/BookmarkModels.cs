@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace BookmarkStudio
 {
-    internal enum BookmarkColor
+    public enum BookmarkColor
     {
         None = 0,
         Red = 1,
@@ -18,6 +20,9 @@ namespace BookmarkStudio
 
     internal static class BookmarkIdentity
     {
+        private static readonly object RepositoryRootCacheGate = new object();
+        private static readonly Dictionary<string, string?> RepositoryRootCache = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+
         public static string NormalizeDocumentPath(string? path)
         {
             if (string.IsNullOrWhiteSpace(path))
@@ -34,6 +39,100 @@ namespace BookmarkStudio
         public static string CreateExactMatchKey(string documentPath, int lineNumber)
             => string.Concat(NormalizeDocumentPath(documentPath), "|", lineNumber.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
+        public static string NormalizeFolderPath(string? folderPath)
+        {
+            if (string.IsNullOrWhiteSpace(folderPath))
+            {
+                return string.Empty;
+            }
+
+            string normalized = folderPath.Trim()
+                .Replace('\\', '/');
+
+            string[] segments = normalized.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            return string.Join("/", segments);
+        }
+
+        public static string GetRepositoryRelativePath(string? documentPath)
+        {
+            if (string.IsNullOrWhiteSpace(documentPath))
+            {
+                return string.Empty;
+            }
+
+            string fullPath;
+            try
+            {
+                fullPath = Path.GetFullPath(documentPath);
+            }
+            catch (ArgumentException)
+            {
+                return documentPath;
+            }
+            catch (NotSupportedException)
+            {
+                return documentPath;
+            }
+
+            string? directoryPath = Path.GetDirectoryName(fullPath);
+            if (string.IsNullOrWhiteSpace(directoryPath))
+            {
+                return Path.GetFileName(fullPath);
+            }
+
+            string? repositoryRoot = GetRepositoryRoot(directoryPath);
+            if (string.IsNullOrWhiteSpace(repositoryRoot))
+            {
+                return Path.GetFileName(fullPath);
+            }
+
+            string rootWithSeparator = repositoryRoot.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                + Path.DirectorySeparatorChar;
+
+            if (!fullPath.StartsWith(rootWithSeparator, StringComparison.OrdinalIgnoreCase))
+            {
+                return Path.GetFileName(fullPath);
+            }
+
+            string relativePath = fullPath.Substring(rootWithSeparator.Length);
+            return string.Join("/", relativePath.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).Where(segment => !string.IsNullOrWhiteSpace(segment)));
+        }
+
+        private static string? GetRepositoryRoot(string directoryPath)
+        {
+            string normalizedDirectoryPath = Path.GetFullPath(directoryPath)
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+            lock (RepositoryRootCacheGate)
+            {
+                if (RepositoryRootCache.TryGetValue(normalizedDirectoryPath, out string? cachedRoot))
+                {
+                    return cachedRoot;
+                }
+            }
+
+            string? current = normalizedDirectoryPath;
+            string? foundRoot = null;
+
+            while (!string.IsNullOrWhiteSpace(current))
+            {
+                if (Directory.Exists(Path.Combine(current, ".git")))
+                {
+                    foundRoot = current;
+                    break;
+                }
+
+                current = Path.GetDirectoryName(current.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+            }
+
+            lock (RepositoryRootCacheGate)
+            {
+                RepositoryRootCache[normalizedDirectoryPath] = foundRoot;
+            }
+
+            return foundRoot;
+        }
+
     }
 
     internal sealed class BookmarkSnapshot
@@ -41,8 +140,6 @@ namespace BookmarkStudio
         public string DocumentPath { get; set; } = string.Empty;
 
         public int LineNumber { get; set; }
-
-        public int ColumnNumber { get; set; }
 
         public string LineText { get; set; } = string.Empty;
 
@@ -58,8 +155,6 @@ namespace BookmarkStudio
 
         public int LineNumber { get; set; }
 
-        public int ColumnNumber { get; set; }
-
         public string LineText { get; set; } = string.Empty;
 
         public int? SlotNumber { get; set; }
@@ -67,6 +162,12 @@ namespace BookmarkStudio
         public string Label { get; set; } = string.Empty;
 
         public string Group { get; set; } = string.Empty;
+
+        public string FolderPath
+        {
+            get => Group;
+            set => Group = BookmarkIdentity.NormalizeFolderPath(value);
+        }
 
         public BookmarkColor Color { get; set; }
 
@@ -87,7 +188,6 @@ namespace BookmarkStudio
 
             DocumentPath = snapshot.DocumentPath;
             LineNumber = snapshot.LineNumber;
-            ColumnNumber = snapshot.ColumnNumber;
             LineText = snapshot.LineText;
             LastSeenUtc = seenUtc;
 
@@ -104,7 +204,6 @@ namespace BookmarkStudio
                 BookmarkId = BookmarkId,
                 DocumentPath = DocumentPath,
                 LineNumber = LineNumber,
-                ColumnNumber = ColumnNumber,
                 LineText = (LineText ?? string.Empty).Trim(),
                 SlotNumber = SlotNumber,
                 Label = Label,
@@ -116,15 +215,13 @@ namespace BookmarkStudio
         }
     }
 
-    internal sealed class ManagedBookmark
+    public sealed class ManagedBookmark
     {
         public string BookmarkId { get; set; } = string.Empty;
 
         public string DocumentPath { get; set; } = string.Empty;
 
         public int LineNumber { get; set; }
-
-        public int ColumnNumber { get; set; }
 
         public string LineText { get; set; } = string.Empty;
 
@@ -134,6 +231,12 @@ namespace BookmarkStudio
 
         public string Group { get; set; } = string.Empty;
 
+        public string FolderPath
+        {
+            get => Group;
+            set => Group = BookmarkIdentity.NormalizeFolderPath(value);
+        }
+
         public BookmarkColor Color { get; set; }
 
         public DateTime CreatedUtc { get; set; }
@@ -142,9 +245,18 @@ namespace BookmarkStudio
 
         public string FileName => Path.GetFileName(DocumentPath);
 
+        public string RepositoryRelativePath => BookmarkIdentity.GetRepositoryRelativePath(DocumentPath);
+
         public string Location => string.IsNullOrWhiteSpace(DocumentPath)
             ? string.Empty
             : string.Concat(DocumentPath, "(", LineNumber.ToString(System.Globalization.CultureInfo.InvariantCulture), ")");
 
+    }
+
+    internal sealed class BookmarkWorkspaceState
+    {
+        public List<BookmarkMetadata> Bookmarks { get; } = new List<BookmarkMetadata>();
+
+        public HashSet<string> FolderPaths { get; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
     }
 }

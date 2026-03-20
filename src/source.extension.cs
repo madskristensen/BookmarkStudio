@@ -10,9 +10,9 @@ namespace BookmarkStudio
     {
         public const string Id = "BookmarkStudio.7ed28d42-37b3-4773-8a6e-e9ca6403a0fc";
         public const string Name = "Bookmark Studio";
-        public const string Description = @"Empty VSIX Project.";
+        public const string Description = @"Manage color-coded code bookmarks across your solution with slots, search, and fast navigation.";
         public const string Language = "en-US";
-        public const string Version = "1.0";
+        public const string Version = "1.0.900";
         public const string Author = "Mads Kristensen";
         public const string Tags = "";
         public const bool IsPreview = false;

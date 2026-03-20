@@ -25,12 +25,22 @@
 
     <Buttons>
       <Button guid="BookmarkStudio" id="OpenBookmarkManagerCommand" priority="0x0100" type="Button">
-        <Parent guid="VSMainMenu" id="View.DevWindowsGroup.OtherWindows.Group1" />
+        <Parent guid="VSMainMenu" id="View.NavigationWindowsGroup" />
         <Icon guid="ImageCatalogGuid" id="ToolWindow" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <Strings>
           <ButtonText>Bookmark Manager</ButtonText>
           <LocCanonicalName>.BookmarkStudio.OpenBookmarkManager</LocCanonicalName>
+        </Strings>
+      </Button>
+
+      <Button guid="BookmarkStudio" id="AddBookmarkCommand" priority="0x0100" type="Button">
+        <Parent guid="BookmarkStudio" id="BookmarkManagerToolbarGroup" />
+        <Icon guid="ImageCatalogGuid" id="Bookmark" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Add Bookmark</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.AddBookmark</LocCanonicalName>
         </Strings>
       </Button>
 
@@ -43,7 +53,22 @@
           <LocCanonicalName>.BookmarkStudio.RefreshBookmarkManager</LocCanonicalName>
         </Strings>
       </Button>
-      <Button guid="BookmarkStudio" id="ExportBookmarksCommand" priority="0x0404" type="Button"><Parent guid="BookmarkStudio" id="BookmarkManagerToolbarGroup" /><Strings><ButtonText>Export Bookmarks</ButtonText><LocCanonicalName>.BookmarkStudio.ExportBookmarks</LocCanonicalName></Strings></Button>
+      <Button guid="BookmarkStudio" id="AddFolderCommand" priority="0x0115" type="Button">
+        <Parent guid="BookmarkStudio" id="BookmarkManagerToolbarGroup" />
+        <Icon guid="ImageCatalogGuid" id="NewFolder" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Add Folder</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.AddFolder</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="BookmarkStudio" id="ExportBookmarksCommand" priority="0x0404" type="Button">
+        <Parent guid="BookmarkStudio" id="BookmarkManagerToolbarGroup" />
+        <Strings>
+          <ButtonText>Export Bookmarks</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.ExportBookmarks</LocCanonicalName>
+        </Strings>
+      </Button>
       <Button guid="BookmarkStudio" id="DeleteBookmarkCommand" priority="0x0210" type="Button">
         <Parent guid="BookmarkStudio" id="BookmarkManagerToolbarGroup" />
         <Icon guid="ImageCatalogGuid" id="Cancel" />
@@ -137,7 +162,9 @@
       <IDSymbol name="BookmarkManagerToolbar" value="0x1000" />
       <IDSymbol name="BookmarkManagerToolbarGroup" value="0x1001" />
       <IDSymbol name="OpenBookmarkManagerCommand" value="0x0100" />
+      <IDSymbol name="AddBookmarkCommand" value="0x0102" />
       <IDSymbol name="RefreshBookmarkManagerCommand" value="0x0101" />
+      <IDSymbol name="AddFolderCommand" value="0x0103" />
       <IDSymbol name="ExportBookmarksCommand" value="0x0404" />
       <IDSymbol name="DeleteBookmarkCommand" value="0x0407" />
       <IDSymbol name="GoToSlot1Command" value="0x0500" />

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Windows.Data;
 using System.Windows.Media;
@@ -7,6 +8,8 @@ namespace BookmarkStudio
 {
     internal sealed class BookmarkColorToBrushConverter : IValueConverter
     {
+        private static readonly IReadOnlyDictionary<BookmarkColor, Brush> BrushesByColor = CreateBrushesByColor();
+
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {
             if (value is BookmarkColor color)
@@ -22,18 +25,34 @@ namespace BookmarkStudio
 
         internal static Brush GetBrush(BookmarkColor color)
         {
-            switch (color)
+            if (BrushesByColor.TryGetValue(color, out Brush brush))
             {
-                case BookmarkColor.Red: return new SolidColorBrush(Color.FromRgb(0xE5, 0x39, 0x35));
-                case BookmarkColor.Orange: return new SolidColorBrush(Color.FromRgb(0xFB, 0x8C, 0x00));
-                case BookmarkColor.Yellow: return new SolidColorBrush(Color.FromRgb(0xFD, 0xD8, 0x35));
-                case BookmarkColor.Green: return new SolidColorBrush(Color.FromRgb(0x43, 0xA0, 0x47));
-                case BookmarkColor.Blue: return new SolidColorBrush(Color.FromRgb(0x1E, 0x88, 0xE5));
-                case BookmarkColor.Purple: return new SolidColorBrush(Color.FromRgb(0x8E, 0x24, 0xAA));
-                case BookmarkColor.Pink: return new SolidColorBrush(Color.FromRgb(0xEC, 0x40, 0x7A));
-                case BookmarkColor.Teal: return new SolidColorBrush(Color.FromRgb(0x00, 0x89, 0x7B));
-                default: return new SolidColorBrush(Color.FromRgb(0xFB, 0x8C, 0x00));
+                return brush;
             }
+
+            return BrushesByColor[BookmarkColor.Orange];
+        }
+
+        private static IReadOnlyDictionary<BookmarkColor, Brush> CreateBrushesByColor()
+        {
+            return new Dictionary<BookmarkColor, Brush>
+            {
+                { BookmarkColor.Red, CreateBrush(0xE5, 0x39, 0x35) },
+                { BookmarkColor.Orange, CreateBrush(0xFB, 0x8C, 0x00) },
+                { BookmarkColor.Yellow, CreateBrush(0xFD, 0xD8, 0x35) },
+                { BookmarkColor.Green, CreateBrush(0x43, 0xA0, 0x47) },
+                { BookmarkColor.Blue, CreateBrush(0x1E, 0x88, 0xE5) },
+                { BookmarkColor.Purple, CreateBrush(0x8E, 0x24, 0xAA) },
+                { BookmarkColor.Pink, CreateBrush(0xEC, 0x40, 0x7A) },
+                { BookmarkColor.Teal, CreateBrush(0x00, 0x89, 0x7B) },
+            };
+        }
+
+        private static Brush CreateBrush(byte r, byte g, byte b)
+        {
+            SolidColorBrush brush = new SolidColorBrush(Color.FromRgb(r, g, b));
+            brush.Freeze();
+            return brush;
         }
     }
 }

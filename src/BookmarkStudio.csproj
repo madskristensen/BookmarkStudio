@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
@@ -46,9 +46,11 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="Commands\AddFolderCommand.cs" />
     <Compile Include="Commands\GoToSlotCommands.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Commands\OpenBookmarkManagerCommand.cs" />
+    <Compile Include="Commands\AddBookmarkCommand.cs" />
     <Compile Include="Commands\RefreshBookmarkManagerCommand.cs" />
     <Compile Include="Commands\ExportBookmarksCommand.cs" />
     <Compile Include="Commands\DeleteBookmarkCommand.cs" />
@@ -56,6 +58,7 @@
     <Compile Include="Commands\BookmarkBuiltInCommandInterceptor.cs" />
     <Compile Include="Commands\BookmarkCommandActions.cs" />
     <Compile Include="BookmarkStudioPackage.cs" />
+    <Compile Include="Services\BookmarkMetadataStore.cs" />
     <Compile Include="source.extension.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -70,10 +73,13 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>VSCommandTable.vsct</DependentUpon>
     </Compile>
-    <Compile Include="Services\BookmarkMetadataStore.cs" />
     <Compile Include="Services\BookmarkModels.cs" />
     <Compile Include="Services\BookmarkRepositoryService.cs" />
-    <Compile Include="Editor\BookmarkGlyphIntegration.cs" />
+    <Compile Include="Editor\BookmarkGlyphTag.cs" />
+    <Compile Include="Editor\BookmarkGlyphTaggerProvider.cs" />
+    <Compile Include="Editor\BookmarkGlyphTagger.cs" />
+    <Compile Include="Editor\BookmarkGlyphFactoryProvider.cs" />
+    <Compile Include="Editor\BookmarkGlyphFactory.cs" />
     <Compile Include="Editor\BookmarkTextBufferTracking.cs" />
     <Compile Include="Services\BookmarkStudioSession.cs" />
     <Compile Include="Services\BookmarkOperationsService.cs" />
@@ -88,6 +94,11 @@
       <Generator>VsixManifestGenerator</Generator>
       <LastGenOutput>source.extension.cs</LastGenOutput>
     </None>
+    <Content Include="..\LICENSE.txt">
+      <Link>Resources\LICENSE.txt</Link>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <Content Include="Resources\Icon.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>

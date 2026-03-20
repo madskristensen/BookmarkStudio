@@ -5,14 +5,8 @@ namespace BookmarkStudio
     {
         protected override async Task ExecuteAsync(OleMenuCmdEventArgs e)
         {
-            string? bookmarkId = SelectedBookmarkId;
-            if (string.IsNullOrWhiteSpace(bookmarkId))
-            {
-                return;
-            }
-
-            await BookmarkOperationsService.Current.RemoveBookmarkAsync(bookmarkId, System.Threading.CancellationToken.None);
-            await RefreshToolWindowAsync();
+            await BookmarkManagerToolWindow.DeleteSelectionAsync(System.Threading.CancellationToken.None);
+            await RefreshToolWindowAsync(SelectedBookmarkId);
         }
     }
 }

@@ -28,6 +28,9 @@ namespace BookmarkStudio
         internal static string? GetSelectedBookmarkId()
             => _currentControl?.SelectedBookmarkId;
 
+        internal static string? GetSelectedFolderPath()
+            => _currentControl?.SelectedFolderPath;
+
         internal static void ClearIfVisible()
             => _currentControl?.ViewModel.Clear();
 
@@ -49,6 +52,36 @@ namespace BookmarkStudio
 
             await _currentControl.RefreshAsync(cancellationToken);
             _currentControl.SelectBookmark(bookmarkId);
+        }
+
+        internal static async Task PromptCreateFolderAsync()
+        {
+            if (_currentControl is null)
+            {
+                await ShowAsync();
+            }
+
+            if (_currentControl is null)
+            {
+                return;
+            }
+
+            await _currentControl.PromptCreateFolderAsync();
+        }
+
+        internal static async Task DeleteSelectionAsync(CancellationToken cancellationToken)
+        {
+            if (_currentControl is null)
+            {
+                await ShowAsync();
+            }
+
+            if (_currentControl is null)
+            {
+                return;
+            }
+
+            await _currentControl.DeleteSelectedAsync(cancellationToken);
         }
 
         internal static async Task RefreshAsync(string? bookmarkId, CancellationToken cancellationToken)
@@ -105,29 +138,38 @@ namespace BookmarkStudio
 
             protected override void OnStartSearch()
             {
-                uint resultCount = 0;
                 ErrorCode = VSConstants.S_OK;
+                SearchResults = 0;
 
                 try
                 {
-                    ThreadHelper.JoinableTaskFactory.Run(async delegate
+                    if (ThreadHelper.CheckAccess())
                     {
-                        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                        resultCount = (uint)_viewModel.ApplySearchText(SearchQuery.SearchString);
-                        _viewModel.SetStatus(string.Concat(resultCount.ToString(System.Globalization.CultureInfo.InvariantCulture), " matching bookmarks."));
-                    });
+                        ApplySearchResults();
+                    }
+                    else
+                    {
+                        _ = ThreadHelper.JoinableTaskFactory.RunAsync(async delegate
+                        {
+                            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+                            ApplySearchResults();
+                        });
+                    }
                 }
                 catch (Exception ex)
                 {
                     ex.Log();
                     ErrorCode = VSConstants.E_FAIL;
                 }
-                finally
-                {
-                    SearchResults = resultCount;
-                }
 
                 base.OnStartSearch();
+            }
+
+            private void ApplySearchResults()
+            {
+                uint resultCount = (uint)_viewModel.ApplySearchText(SearchQuery.SearchString);
+                SearchResults = resultCount;
+                _viewModel.SetStatus(string.Concat(resultCount.ToString(System.Globalization.CultureInfo.InvariantCulture), " matching bookmarks."));
             }
 
             protected override void OnStopSearch()

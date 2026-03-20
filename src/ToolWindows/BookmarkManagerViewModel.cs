@@ -1,65 +1,74 @@
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
-using System.Windows.Data;
 
 namespace BookmarkStudio
 {
     internal sealed class BookmarkManagerViewModel : INotifyPropertyChanged
     {
         private readonly BookmarkOperationsService _operations = BookmarkOperationsService.Current;
-        private readonly ICollectionView _bookmarksView;
-        private ManagedBookmark? _selectedBookmark;
+        private readonly List<ManagedBookmark> _bookmarks = new List<ManagedBookmark>();
+        private readonly HashSet<string> _folderPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { string.Empty };
+        private BookmarkNodeViewModel? _selectedNode;
         private string _searchText = string.Empty;
         private int? _selectedSlotNumber;
         private string _selectedLabelText = string.Empty;
         private string _statusText = "Loading bookmarks...";
-        private string? _columnSortProperty;
-        private ListSortDirection _columnSortDirection = ListSortDirection.Ascending;
-
-        public BookmarkManagerViewModel()
-        {
-            _bookmarksView = CollectionViewSource.GetDefaultView(Bookmarks);
-            _bookmarksView.Filter = FilterBookmark;
-            RefreshView();
-        }
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        public ObservableCollection<ManagedBookmark> Bookmarks { get; } = new ObservableCollection<ManagedBookmark>();
-
-        public ICollectionView BookmarksView => _bookmarksView;
+        public ObservableCollection<BookmarkNodeViewModel> RootNodes { get; } = new ObservableCollection<BookmarkNodeViewModel>();
 
         public IReadOnlyList<int> SlotOptions { get; } = Enumerable.Range(1, 9).ToArray();
 
-        internal string? ColumnSortProperty => _columnSortProperty;
-
-        internal ListSortDirection ColumnSortDirection => _columnSortDirection;
-
-        public ManagedBookmark? SelectedBookmark
+        public BookmarkNodeViewModel? SelectedNode
         {
-            get => _selectedBookmark;
+            get => _selectedNode;
             set
             {
-                if (ReferenceEquals(_selectedBookmark, value))
+                if (ReferenceEquals(_selectedNode, value))
                 {
                     return;
                 }
 
-                _selectedBookmark = value;
-                SelectedLabelText = value?.Label ?? string.Empty;
-                SelectedSlotNumber = value?.SlotNumber;
+                _selectedNode = value;
+
+                if (_selectedNode is BookmarkItemNodeViewModel bookmarkNode)
+                {
+                    SelectedLabelText = bookmarkNode.Bookmark.Label;
+                    SelectedSlotNumber = bookmarkNode.Bookmark.SlotNumber;
+                }
+                else
+                {
+                    SelectedLabelText = string.Empty;
+                    SelectedSlotNumber = null;
+                }
+
                 OnPropertyChanged();
+                OnPropertyChanged(nameof(SelectedBookmark));
+                OnPropertyChanged(nameof(SelectedFolderPath));
                 OnPropertyChanged(nameof(HasSelectedBookmark));
+                OnPropertyChanged(nameof(HasSelectedFolder));
                 OnPropertyChanged(nameof(SelectedLocation));
                 OnPropertyChanged(nameof(SelectedPreview));
             }
         }
 
+        public ManagedBookmark? SelectedBookmark => (SelectedNode as BookmarkItemNodeViewModel)?.Bookmark;
+
+        public string? SelectedFolderPath => SelectedNode switch
+        {
+            FolderNodeViewModel folderNode => folderNode.FolderPath,
+            BookmarkItemNodeViewModel bookmarkNode => bookmarkNode.Bookmark.FolderPath,
+            _ => null,
+        };
+
         public bool HasSelectedBookmark => SelectedBookmark is not null;
+
+        public bool HasSelectedFolder => SelectedNode is FolderNodeViewModel;
 
         public string SelectedLocation => SelectedBookmark?.Location ?? string.Empty;
 
@@ -77,7 +86,7 @@ namespace BookmarkStudio
 
                 _searchText = value ?? string.Empty;
                 OnPropertyChanged();
-                _bookmarksView.Refresh();
+                RebuildTree();
             }
         }
 
@@ -132,24 +141,24 @@ namespace BookmarkStudio
         public async Task RefreshAsync(CancellationToken cancellationToken)
         {
             IReadOnlyList<ManagedBookmark> bookmarks = await _operations.RefreshAsync(cancellationToken);
-            string? bookmarkId = SelectedBookmark?.BookmarkId;
-            ReloadBookmarks(bookmarks, bookmarkId);
-            int totalCount = Bookmarks.Count;
-            int visibleCount = _bookmarksView.Cast<object>().Count();
-            SetStatus(visibleCount == totalCount
-                ? string.Concat(totalCount.ToString(System.Globalization.CultureInfo.InvariantCulture), " bookmarks loaded.")
-                : string.Concat(
-                    visibleCount.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                    " of ",
-                    totalCount.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                    " bookmarks visible."));
+            IReadOnlyList<string> folderPaths = await _operations.GetFolderPathsAsync(cancellationToken);
+            string? selectedBookmarkId = SelectedBookmark?.BookmarkId;
+            string? selectedFolderPath = SelectedNode is FolderNodeViewModel folderNode ? folderNode.FolderPath : null;
+
+            ReloadData(bookmarks, folderPaths);
+            RebuildTree();
+            RestoreSelection(selectedBookmarkId, selectedFolderPath);
+
+            SetStatus(string.Concat(_bookmarks.Count.ToString(System.Globalization.CultureInfo.InvariantCulture), " bookmarks loaded."));
         }
 
         public async Task SaveSelectionAsync(CancellationToken cancellationToken)
         {
             ManagedBookmark selectedBookmark = GetRequiredSelection();
             IReadOnlyList<ManagedBookmark> bookmarks = await _operations.RenameLabelAsync(selectedBookmark.BookmarkId, SelectedLabelText, cancellationToken);
-            ReloadBookmarks(bookmarks, selectedBookmark.BookmarkId);
+            ReloadBookmarks(bookmarks);
+            RebuildTree();
+            SelectBookmark(selectedBookmark.BookmarkId);
             SetStatus("Bookmark metadata updated.");
         }
 
@@ -162,7 +171,9 @@ namespace BookmarkStudio
             }
 
             IReadOnlyList<ManagedBookmark> bookmarks = await _operations.AssignSlotAsync(SelectedSlotNumber.Value, selectedBookmark.BookmarkId, cancellationToken);
-            ReloadBookmarks(bookmarks, selectedBookmark.BookmarkId);
+            ReloadBookmarks(bookmarks);
+            RebuildTree();
+            SelectBookmark(selectedBookmark.BookmarkId);
             SetStatus(string.Concat("Slot ", SelectedSlotNumber.Value.ToString(System.Globalization.CultureInfo.InvariantCulture), " assigned."));
         }
 
@@ -176,7 +187,9 @@ namespace BookmarkStudio
         {
             ManagedBookmark selectedBookmark = GetRequiredSelection();
             IReadOnlyList<ManagedBookmark> bookmarks = await _operations.ClearSlotAsync(selectedBookmark.BookmarkId, cancellationToken);
-            ReloadBookmarks(bookmarks, selectedBookmark.BookmarkId);
+            ReloadBookmarks(bookmarks);
+            RebuildTree();
+            SelectBookmark(selectedBookmark.BookmarkId);
             SetStatus("Bookmark slot cleared.");
         }
 
@@ -184,16 +197,96 @@ namespace BookmarkStudio
         {
             ManagedBookmark selectedBookmark = GetRequiredSelection();
             IReadOnlyList<ManagedBookmark> bookmarks = await _operations.SetColorAsync(selectedBookmark.BookmarkId, color, cancellationToken);
-            ReloadBookmarks(bookmarks, selectedBookmark.BookmarkId);
+            ReloadBookmarks(bookmarks);
+            RebuildTree();
+            SelectBookmark(selectedBookmark.BookmarkId);
             SetStatus(string.Concat("Bookmark color set to ", color.ToString(), "."));
         }
 
         public async Task DeleteSelectedAsync(CancellationToken cancellationToken)
         {
+            if (SelectedNode is FolderNodeViewModel folderNode)
+            {
+                IReadOnlyList<ManagedBookmark> bookmarks = await _operations.DeleteFolderRecursiveAsync(folderNode.FolderPath, cancellationToken);
+                ReloadBookmarks(bookmarks);
+                _folderPaths.RemoveWhere(path => string.Equals(path, folderNode.FolderPath, StringComparison.OrdinalIgnoreCase)
+                    || path.StartsWith(string.Concat(folderNode.FolderPath, "/"), StringComparison.OrdinalIgnoreCase));
+                RebuildTree();
+                SetStatus("Folder deleted recursively.");
+                return;
+            }
+
             ManagedBookmark selectedBookmark = GetRequiredSelection();
-            IReadOnlyList<ManagedBookmark> bookmarks = await _operations.RemoveBookmarkAsync(selectedBookmark.BookmarkId, cancellationToken);
-            ReloadBookmarks(bookmarks, null);
+            IReadOnlyList<ManagedBookmark> updated = await _operations.RemoveBookmarkAsync(selectedBookmark.BookmarkId, cancellationToken);
+            ReloadBookmarks(updated);
+            RebuildTree();
             SetStatus("Bookmark removed.");
+        }
+
+        public async Task CreateFolderAsync(string folderName, CancellationToken cancellationToken)
+        {
+            string parentPath = SelectedNode switch
+            {
+                FolderNodeViewModel folderNode => folderNode.FolderPath,
+                BookmarkItemNodeViewModel bookmarkNode => bookmarkNode.Bookmark.FolderPath,
+                _ => string.Empty,
+            };
+
+            IReadOnlyList<ManagedBookmark> bookmarks = await _operations.CreateFolderAsync(parentPath, folderName, cancellationToken);
+            ReloadBookmarks(bookmarks);
+
+            string createdPath = string.IsNullOrEmpty(parentPath)
+                ? BookmarkIdentity.NormalizeFolderPath(folderName)
+                : string.Concat(parentPath, "/", BookmarkIdentity.NormalizeFolderPath(folderName));
+
+            _folderPaths.Add(createdPath);
+            RebuildTree();
+            SelectFolder(createdPath);
+            SetStatus("Folder created.");
+        }
+
+        public async Task RenameSelectedFolderAsync(string folderName, CancellationToken cancellationToken)
+        {
+            FolderNodeViewModel folderNode = GetRequiredSelectedFolder();
+            IReadOnlyList<ManagedBookmark> bookmarks = await _operations.RenameFolderAsync(folderNode.FolderPath, folderName, cancellationToken);
+            ReloadBookmarks(bookmarks);
+
+            string parentPath = GetParentFolderPath(folderNode.FolderPath);
+            string renamedPath = string.IsNullOrEmpty(parentPath)
+                ? BookmarkIdentity.NormalizeFolderPath(folderName)
+                : string.Concat(parentPath, "/", BookmarkIdentity.NormalizeFolderPath(folderName));
+
+            string sourcePrefix = string.Concat(folderNode.FolderPath, "/");
+            List<string> affected = _folderPaths
+                .Where(path => string.Equals(path, folderNode.FolderPath, StringComparison.OrdinalIgnoreCase)
+                    || path.StartsWith(sourcePrefix, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            foreach (string path in affected)
+            {
+                _folderPaths.Remove(path);
+            }
+
+            foreach (string path in affected)
+            {
+                string suffix = path.Length == folderNode.FolderPath.Length ? string.Empty : path.Substring(folderNode.FolderPath.Length);
+                _folderPaths.Add(string.Concat(renamedPath, suffix));
+            }
+
+            RebuildTree();
+            SelectFolder(renamedPath);
+            SetStatus("Folder renamed.");
+        }
+
+        public async Task MoveSelectedBookmarkToFolderAsync(string targetFolderPath, CancellationToken cancellationToken)
+        {
+            ManagedBookmark selectedBookmark = GetRequiredSelection();
+            IReadOnlyList<ManagedBookmark> bookmarks = await _operations.MoveBookmarkToFolderAsync(selectedBookmark.BookmarkId, targetFolderPath, cancellationToken);
+            ReloadBookmarks(bookmarks);
+            _folderPaths.Add(BookmarkIdentity.NormalizeFolderPath(targetFolderPath));
+            RebuildTree();
+            SelectBookmark(selectedBookmark.BookmarkId);
+            SetStatus("Bookmark moved.");
         }
 
         public Task NavigateSelectedAsync(CancellationToken cancellationToken)
@@ -208,89 +301,135 @@ namespace BookmarkStudio
         internal int ApplySearchText(string searchText)
         {
             SearchText = searchText;
-            return _bookmarksView.Cast<object>().Count();
+            return CountVisibleBookmarks(RootNodes);
         }
 
         internal void Clear()
         {
-            _columnSortProperty = null;
-            _columnSortDirection = ListSortDirection.Ascending;
-            Bookmarks.Clear();
-            SelectedBookmark = null;
+            _bookmarks.Clear();
+            RootNodes.Clear();
+            _folderPaths.Clear();
+            _folderPaths.Add(string.Empty);
+            SelectedNode = null;
             SearchText = string.Empty;
-            OnPropertyChanged(nameof(ColumnSortProperty));
             SetStatus("No solution loaded.");
         }
 
         internal void ClearSearch()
             => SearchText = string.Empty;
 
-        internal void SortByColumn(string propertyName)
-        {
-            if (string.IsNullOrEmpty(propertyName))
-            {
-                return;
-            }
-
-            if (string.Equals(_columnSortProperty, propertyName, StringComparison.Ordinal))
-            {
-                _columnSortDirection = _columnSortDirection == ListSortDirection.Ascending
-                    ? ListSortDirection.Descending
-                    : ListSortDirection.Ascending;
-            }
-            else
-            {
-                _columnSortProperty = propertyName;
-                _columnSortDirection = ListSortDirection.Ascending;
-            }
-
-            OnPropertyChanged(nameof(ColumnSortProperty));
-            RefreshView();
-        }
-
         internal void SelectBookmark(string? bookmarkId)
         {
-            SelectedBookmark = string.IsNullOrWhiteSpace(bookmarkId)
-                ? null
-                : Bookmarks.FirstOrDefault(item => string.Equals(item.BookmarkId, bookmarkId, StringComparison.Ordinal));
-        }
-
-        private void ReloadBookmarks(IReadOnlyList<ManagedBookmark> bookmarks, string? bookmarkId)
-        {
-            Bookmarks.Clear();
-
-            foreach (ManagedBookmark bookmark in bookmarks)
-            {
-                Bookmarks.Add(bookmark);
-            }
-
-            RefreshView();
-
             if (string.IsNullOrWhiteSpace(bookmarkId))
             {
-                SelectedBookmark = Bookmarks.FirstOrDefault();
+                SelectedNode = null;
                 return;
             }
 
-            SelectBookmark(bookmarkId);
-            if (SelectedBookmark is null)
+            BookmarkItemNodeViewModel? node = FindBookmarkNode(RootNodes, bookmarkId);
+            SelectedNode = node;
+        }
+
+        internal void SelectFolder(string? folderPath)
+        {
+            string normalizedPath = BookmarkIdentity.NormalizeFolderPath(folderPath);
+            FolderNodeViewModel? node = FindFolderNode(RootNodes, normalizedPath);
+            SelectedNode = node;
+        }
+
+        internal void LoadForTests(IEnumerable<ManagedBookmark> bookmarks, IEnumerable<string>? folderPaths = null)
+        {
+            ReloadData((bookmarks ?? Enumerable.Empty<ManagedBookmark>()).ToArray(), (folderPaths ?? Enumerable.Empty<string>()).ToArray());
+            RebuildTree();
+        }
+
+        private void ReloadData(IReadOnlyList<ManagedBookmark> bookmarks, IReadOnlyList<string> folderPaths)
+        {
+            ReloadBookmarks(bookmarks);
+
+            _folderPaths.Clear();
+            _folderPaths.Add(string.Empty);
+            foreach (string folderPath in folderPaths)
             {
-                SelectedBookmark = Bookmarks.FirstOrDefault();
+                _folderPaths.Add(BookmarkIdentity.NormalizeFolderPath(folderPath));
             }
         }
 
-        private ManagedBookmark GetRequiredSelection()
-            => SelectedBookmark ?? throw new InvalidOperationException("Select a bookmark first.");
-
-        private bool FilterBookmark(object item)
+        private void ReloadBookmarks(IReadOnlyList<ManagedBookmark> bookmarks)
         {
-            ManagedBookmark bookmark = (ManagedBookmark)item;
-            if (string.IsNullOrWhiteSpace(SearchText))
+            _bookmarks.Clear();
+            foreach (ManagedBookmark bookmark in bookmarks)
             {
-                return true;
+                _bookmarks.Add(bookmark);
+                _folderPaths.Add(bookmark.FolderPath);
+            }
+        }
+
+        private void RestoreSelection(string? bookmarkId, string? folderPath)
+        {
+            if (!string.IsNullOrWhiteSpace(bookmarkId))
+            {
+                SelectBookmark(bookmarkId);
+                if (SelectedNode is not null)
+                {
+                    return;
+                }
             }
 
+            if (!string.IsNullOrWhiteSpace(folderPath))
+            {
+                SelectFolder(folderPath);
+                if (SelectedNode is not null)
+                {
+                    return;
+                }
+            }
+
+            SelectedNode = RootNodes.FirstOrDefault();
+        }
+
+        private void RebuildTree()
+        {
+            string? selectedBookmarkId = SelectedBookmark?.BookmarkId;
+            string? selectedFolderPath = SelectedNode is FolderNodeViewModel folderNode ? folderNode.FolderPath : null;
+
+            RootNodes.Clear();
+
+            FolderBuilderNode root = new FolderBuilderNode(string.Empty, null);
+            foreach (string folderPath in _folderPaths)
+            {
+                EnsureFolderBuilderNode(root, folderPath);
+            }
+
+            IEnumerable<ManagedBookmark> sourceBookmarks = _bookmarks;
             string search = SearchText.Trim();
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                sourceBookmarks = sourceBookmarks.Where(bookmark => MatchesSearch(bookmark, search));
+            }
+
+            foreach (ManagedBookmark bookmark in sourceBookmarks)
+            {
+                FolderBuilderNode folder = EnsureFolderBuilderNode(root, bookmark.FolderPath);
+                folder.Bookmarks.Add(bookmark);
+            }
+
+            foreach (FolderBuilderNode childFolder in root.Children.Values.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
+            {
+                FolderNodeViewModel node = BuildFolderNode(childFolder);
+                RootNodes.Add(node);
+            }
+
+            foreach (ManagedBookmark rootBookmark in root.Bookmarks.OrderBy(item => item.LineNumber).ThenBy(item => item.FileName, StringComparer.OrdinalIgnoreCase))
+            {
+                RootNodes.Add(new BookmarkItemNodeViewModel(rootBookmark));
+            }
+
+            RestoreSelection(selectedBookmarkId, selectedFolderPath);
+        }
+
+        private static bool MatchesSearch(ManagedBookmark bookmark, string search)
+        {
             return Contains(bookmark.Label, search)
                 || Contains(bookmark.FileName, search)
                 || Contains(bookmark.DocumentPath, search)
@@ -300,34 +439,196 @@ namespace BookmarkStudio
                 || (bookmark.Color != BookmarkColor.None && Contains(bookmark.Color.ToString(), search));
         }
 
-        private void RefreshView()
+        private static FolderBuilderNode EnsureFolderBuilderNode(FolderBuilderNode root, string? folderPath)
         {
-            using (_bookmarksView.DeferRefresh())
+            string normalizedPath = BookmarkIdentity.NormalizeFolderPath(folderPath);
+            if (string.IsNullOrWhiteSpace(normalizedPath))
             {
-                _bookmarksView.SortDescriptions.Clear();
-                _bookmarksView.GroupDescriptions.Clear();
-
-                ApplySort();
+                return root;
             }
+
+            FolderBuilderNode current = root;
+            foreach (string segment in normalizedPath.Split('/'))
+            {
+                if (!current.Children.TryGetValue(segment, out FolderBuilderNode? child))
+                {
+                    child = new FolderBuilderNode(segment, current);
+                    current.Children[segment] = child;
+                }
+
+                current = child;
+            }
+
+            return current;
         }
 
-        private void ApplySort()
+        private static FolderNodeViewModel BuildFolderNode(FolderBuilderNode folderNode)
         {
-            if (!string.IsNullOrEmpty(_columnSortProperty))
+            FolderNodeViewModel node = new FolderNodeViewModel(folderNode.Path);
+
+            foreach (FolderBuilderNode child in folderNode.Children.Values.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
             {
-                _bookmarksView.SortDescriptions.Add(new SortDescription(_columnSortProperty, _columnSortDirection));
-                return;
+                FolderNodeViewModel childNode = BuildFolderNode(child);
+                node.Children.Add(childNode);
             }
 
-            _bookmarksView.SortDescriptions.Add(new SortDescription(nameof(ManagedBookmark.SlotNumber), ListSortDirection.Ascending));
-            _bookmarksView.SortDescriptions.Add(new SortDescription(nameof(ManagedBookmark.FileName), ListSortDirection.Ascending));
-            _bookmarksView.SortDescriptions.Add(new SortDescription(nameof(ManagedBookmark.LineNumber), ListSortDirection.Ascending));
+            foreach (ManagedBookmark bookmark in folderNode.Bookmarks.OrderBy(item => item.LineNumber).ThenBy(item => item.FileName, StringComparer.OrdinalIgnoreCase))
+            {
+                node.Children.Add(new BookmarkItemNodeViewModel(bookmark));
+            }
+
+            return node;
+        }
+
+        private FolderNodeViewModel GetRequiredSelectedFolder()
+            => SelectedNode as FolderNodeViewModel ?? throw new InvalidOperationException("Select a folder first.");
+
+        private ManagedBookmark GetRequiredSelection()
+            => SelectedBookmark ?? throw new InvalidOperationException("Select a bookmark first.");
+
+        private static FolderNodeViewModel? FindFolderNode(IEnumerable<BookmarkNodeViewModel> nodes, string folderPath)
+        {
+            foreach (BookmarkNodeViewModel node in nodes)
+            {
+                if (node is FolderNodeViewModel folderNode)
+                {
+                    if (string.Equals(folderNode.FolderPath, folderPath, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return folderNode;
+                    }
+
+                    FolderNodeViewModel? found = FindFolderNode(folderNode.Children, folderPath);
+                    if (found is not null)
+                    {
+                        return found;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private static BookmarkItemNodeViewModel? FindBookmarkNode(IEnumerable<BookmarkNodeViewModel> nodes, string bookmarkId)
+        {
+            foreach (BookmarkNodeViewModel node in nodes)
+            {
+                if (node is BookmarkItemNodeViewModel bookmarkNode)
+                {
+                    if (string.Equals(bookmarkNode.Bookmark.BookmarkId, bookmarkId, StringComparison.Ordinal))
+                    {
+                        return bookmarkNode;
+                    }
+
+                    continue;
+                }
+
+                if (node is FolderNodeViewModel folderNode)
+                {
+                    BookmarkItemNodeViewModel? found = FindBookmarkNode(folderNode.Children, bookmarkId);
+                    if (found is not null)
+                    {
+                        return found;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private static string GetParentFolderPath(string folderPath)
+        {
+            string normalized = BookmarkIdentity.NormalizeFolderPath(folderPath);
+            int separator = normalized.LastIndexOf('/');
+            return separator <= 0
+                ? string.Empty
+                : normalized.Substring(0, separator);
+        }
+
+        private static int CountVisibleBookmarks(IEnumerable<BookmarkNodeViewModel> nodes)
+        {
+            int count = 0;
+            foreach (BookmarkNodeViewModel node in nodes)
+            {
+                if (node is BookmarkItemNodeViewModel)
+                {
+                    count++;
+                }
+                else if (node is FolderNodeViewModel folderNode)
+                {
+                    count += CountVisibleBookmarks(folderNode.Children);
+                }
+            }
+
+            return count;
         }
 
         private static bool Contains(string? value, string search)
-            => value is { Length: > 0 } && value.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
+            => !string.IsNullOrWhiteSpace(value)
+                && value.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
 
-        private void OnPropertyChanged([CallerMemberName] string propertyName = "")
+        private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
+        private sealed class FolderBuilderNode
+        {
+            public FolderBuilderNode(string name, FolderBuilderNode? parent)
+            {
+                Name = name;
+                Parent = parent;
+            }
+
+            public string Name { get; }
+
+            public FolderBuilderNode? Parent { get; }
+
+            public string Path => string.IsNullOrEmpty(Parent?.Path)
+                ? Name
+                : string.Concat(Parent.Path, "/", Name);
+
+            public Dictionary<string, FolderBuilderNode> Children { get; } = new Dictionary<string, FolderBuilderNode>(StringComparer.OrdinalIgnoreCase);
+
+            public List<ManagedBookmark> Bookmarks { get; } = new List<ManagedBookmark>();
+        }
+    }
+
+    public abstract class BookmarkNodeViewModel
+    {
+        public abstract bool IsFolder { get; }
+
+        public abstract string DisplayText { get; }
+    }
+
+    public sealed class FolderNodeViewModel : BookmarkNodeViewModel
+    {
+        public FolderNodeViewModel(string folderPath)
+        {
+            FolderPath = BookmarkIdentity.NormalizeFolderPath(folderPath);
+        }
+
+        public string FolderPath { get; }
+
+        public string FolderName => FolderPath.Split('/').Last();
+
+        public ObservableCollection<BookmarkNodeViewModel> Children { get; } = new ObservableCollection<BookmarkNodeViewModel>();
+
+        public override bool IsFolder => true;
+
+        public override string DisplayText => FolderName;
+    }
+
+    public sealed class BookmarkItemNodeViewModel : BookmarkNodeViewModel
+    {
+        public BookmarkItemNodeViewModel(ManagedBookmark bookmark)
+        {
+            Bookmark = bookmark ?? throw new ArgumentNullException(nameof(bookmark));
+        }
+
+        public ManagedBookmark Bookmark { get; }
+
+        public override bool IsFolder => false;
+
+        public override string DisplayText => string.IsNullOrWhiteSpace(Bookmark.Label)
+            ? Bookmark.FileName
+            : Bookmark.Label;
     }
 }

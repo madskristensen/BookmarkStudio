@@ -1,21 +1,30 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using Community.VisualStudio.Toolkit;
+using Microsoft.VisualStudio.PlatformUI;
 
 namespace BookmarkStudio
 {
-    internal sealed class TextPromptWindow : Window
+    internal sealed class TextPromptWindow : DialogWindow
     {
         private readonly TextBox _inputTextBox;
+        private readonly bool _selectTextOnLoad;
 
-        private TextPromptWindow(string title, string prompt, string initialValue)
+        private TextPromptWindow(string title, string prompt, string initialValue, bool selectTextOnLoad)
         {
+            _selectTextOnLoad = selectTextOnLoad;
+
             Title = title;
             Width = 420;
             Height = 160;
             ResizeMode = ResizeMode.NoResize;
             WindowStartupLocation = WindowStartupLocation.CenterOwner;
             ShowInTaskbar = false;
+            SetResourceReference(BackgroundProperty, EnvironmentColors.ToolWindowBackgroundBrushKey);
+            SetResourceReference(ForegroundProperty, EnvironmentColors.ToolWindowTextBrushKey);
+            Themes.SetUseVsTheme(this, true);
+            Loaded += TextPromptWindow_Loaded;
 
             Grid grid = new Grid
             {
@@ -30,6 +39,7 @@ namespace BookmarkStudio
                 Margin = new Thickness(0, 0, 0, 8),
                 Text = prompt,
             };
+            promptBlock.SetResourceReference(ForegroundProperty, EnvironmentColors.ToolWindowTextBrushKey);
             Grid.SetRow(promptBlock, 0);
             grid.Children.Add(promptBlock);
 
@@ -38,6 +48,7 @@ namespace BookmarkStudio
                 Margin = new Thickness(0, 0, 0, 12),
                 Text = initialValue ?? string.Empty,
             };
+            _inputTextBox.SetResourceReference(StyleProperty, ToolkitResourceKeys.TextBoxStyleKey);
             Grid.SetRow(_inputTextBox, 1);
             grid.Children.Add(_inputTextBox);
 
@@ -47,7 +58,7 @@ namespace BookmarkStudio
                 Orientation = Orientation.Horizontal,
             };
 
-            Button okButton = new Button
+            DialogButton okButton = new DialogButton
             {
                 Content = "OK",
                 IsDefault = true,
@@ -57,7 +68,7 @@ namespace BookmarkStudio
             okButton.Click += OkButton_Click;
             buttons.Children.Add(okButton);
 
-            Button cancelButton = new Button
+            DialogButton cancelButton = new DialogButton
             {
                 Content = "Cancel",
                 IsCancel = true,
@@ -71,14 +82,11 @@ namespace BookmarkStudio
             Content = grid;
         }
 
-        public static string? Show(string title, string prompt, string initialValue)
+        public static string? Show(string title, string prompt, string initialValue, bool selectTextOnLoad = false)
         {
-            TextPromptWindow window = new TextPromptWindow(title, prompt, initialValue)
-            {
-                Owner = Application.Current?.MainWindow,
-            };
+            TextPromptWindow window = new TextPromptWindow(title, prompt, initialValue, selectTextOnLoad);
 
-            bool? result = window.ShowDialog();
+            bool? result = window.ShowModal();
             return result == true ? window._inputTextBox.Text : null;
         }
 
@@ -86,6 +94,19 @@ namespace BookmarkStudio
         {
             DialogResult = true;
             Close();
+        }
+
+        private void TextPromptWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            _inputTextBox.Focus();
+
+            if (_selectTextOnLoad)
+            {
+                _inputTextBox.SelectAll();
+                return;
+            }
+
+            _inputTextBox.CaretIndex = _inputTextBox.Text?.Length ?? 0;
         }
     }
 }

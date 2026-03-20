@@ -24,30 +24,32 @@ namespace BookmarkStudio
 
         private static CommandProgression Execute(Func<CancellationToken, Task> action)
         {
-            ThreadHelper.JoinableTaskFactory.Run(async delegate
-            {
-                try
-                {
-                    await action(CancellationToken.None);
-                }
-                catch (OperationCanceledException ex)
-                {
-                    await ex.LogAsync();
-                    await VS.StatusBar.ShowMessageAsync("The operation was canceled.");
-                }
-                catch (ArgumentException ex)
-                {
-                    await ex.LogAsync();
-                    await VS.StatusBar.ShowMessageAsync(ex.Message);
-                }
-                catch (InvalidOperationException ex)
-                {
-                    await ex.LogAsync();
-                    await VS.StatusBar.ShowMessageAsync(ex.Message);
-                }
-            });
+            _ = ThreadHelper.JoinableTaskFactory.RunAsync(() => ExecuteAsync(action));
 
             return CommandProgression.Stop;
+        }
+
+        private static async Task ExecuteAsync(Func<CancellationToken, Task> action)
+        {
+            try
+            {
+                await action(CancellationToken.None);
+            }
+            catch (OperationCanceledException ex)
+            {
+                await ex.LogAsync();
+                await VS.StatusBar.ShowMessageAsync("The operation was canceled.");
+            }
+            catch (ArgumentException ex)
+            {
+                await ex.LogAsync();
+                await VS.StatusBar.ShowMessageAsync(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                await ex.LogAsync();
+                await VS.StatusBar.ShowMessageAsync(ex.Message);
+            }
         }
     }
 }

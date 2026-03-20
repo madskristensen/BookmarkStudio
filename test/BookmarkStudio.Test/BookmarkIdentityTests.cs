@@ -49,4 +49,20 @@ public class BookmarkIdentityTests
         StringAssert.EndsWith(result, "|12");
         StringAssert.Contains(result, "SRC");
     }
+
+    [TestMethod]
+    public void GetRepositoryRelativePath_WhenGitRootExists_ReturnsRepoRelativePath()
+    {
+        string testRoot = Path.Combine(Path.GetTempPath(), "BookmarkStudio.Tests", Guid.NewGuid().ToString("N"));
+        string repoRoot = Path.Combine(testRoot, "repo");
+        string filePath = Path.Combine(repoRoot, "src", "file.cs");
+
+        Directory.CreateDirectory(Path.Combine(repoRoot, ".git"));
+        Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
+        File.WriteAllText(filePath, "// test");
+
+        string result = BookmarkIdentity.GetRepositoryRelativePath(filePath);
+
+        Assert.AreEqual("src/file.cs", result);
+    }
 }

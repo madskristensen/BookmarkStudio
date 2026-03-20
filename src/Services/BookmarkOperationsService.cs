@@ -6,6 +6,7 @@ using System.Threading;
 using EnvDTE;
 using EnvDTE80;
 using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
 
 namespace BookmarkStudio
 {
@@ -31,6 +32,41 @@ namespace BookmarkStudio
 
         public Task<ManagedBookmark?> ToggleBookmarkAsync(CancellationToken cancellationToken)
             => ToggleActiveBookmarkAsync(cancellationToken);
+
+        public bool CanToggleBookmarkInActiveDocument()
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            DTE2? dte = Package.GetGlobalService(typeof(DTE)) as DTE2;
+            Document? activeDocument = dte?.ActiveDocument;
+            if (activeDocument is null || string.IsNullOrWhiteSpace(activeDocument.FullName))
+            {
+                return false;
+            }
+
+            TextDocument? textDocument = activeDocument.Object("TextDocument") as TextDocument;
+            return textDocument is not null;
+        }
+
+        public bool IsSolutionOrFolderOpen()
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            DTE2? dte = Package.GetGlobalService(typeof(DTE)) as DTE2;
+            if (dte?.Solution?.IsOpen == true)
+            {
+                return true;
+            }
+
+            IVsSolution? solutionService = Package.GetGlobalService(typeof(SVsSolution)) as IVsSolution;
+            if (solutionService is null)
+            {
+                return false;
+            }
+
+            int hr = solutionService.GetProperty((int)__VSPROPID7.VSPROPID_IsInOpenFolderMode, out object value);
+            return hr == 0 && value is bool isOpenFolderMode && isOpenFolderMode;
+        }
 
         public Task<ManagedBookmark> GoToNextBookmarkAsync(CancellationToken cancellationToken)
             => NavigateRelativeAsync(1, cancellationToken);
@@ -96,6 +132,89 @@ namespace BookmarkStudio
             {
                 BookmarkMetadata targetMetadata = BookmarkRepositoryService.GetRequiredBookmark(metadata, targetBookmark.BookmarkId);
                 metadata.Remove(targetMetadata);
+            }, cancellationToken);
+        }
+
+        public async Task<IReadOnlyList<string>> GetFolderPathsAsync(CancellationToken cancellationToken)
+        {
+            BookmarkWorkspaceState workspace = await _session.LoadWorkspaceAsync(cancellationToken);
+            return workspace.FolderPaths
+                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+        }
+
+        public async Task<IReadOnlyList<ManagedBookmark>> CreateFolderAsync(string? parentFolderPath, string? folderName, CancellationToken cancellationToken)
+        {
+            string normalizedFolderName = ValidateFolderName(folderName);
+            string parentPath = BookmarkIdentity.NormalizeFolderPath(parentFolderPath);
+            string targetPath = string.IsNullOrEmpty(parentPath)
+                ? normalizedFolderName
+                : string.Concat(parentPath, "/", normalizedFolderName);
+
+            return await _session.UpdateWorkspaceAsync(workspace =>
+            {
+                if (workspace.FolderPaths.Contains(targetPath, StringComparer.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException("A folder with the same name already exists in this location.");
+                }
+
+                BookmarkRepositoryService.EnsureFolderPath(workspace, targetPath);
+            }, cancellationToken);
+        }
+
+        public async Task<IReadOnlyList<ManagedBookmark>> RenameFolderAsync(string? sourceFolderPath, string? targetFolderName, CancellationToken cancellationToken)
+        {
+            string sourcePath = BookmarkIdentity.NormalizeFolderPath(sourceFolderPath);
+            if (string.IsNullOrWhiteSpace(sourcePath))
+            {
+                throw new ArgumentException("Select a folder to rename.", nameof(sourceFolderPath));
+            }
+
+            string normalizedFolderName = ValidateFolderName(targetFolderName);
+            return await _session.UpdateWorkspaceAsync(workspace =>
+            {
+                string parentPath = GetParentFolderPath(sourcePath);
+                string targetPath = string.IsNullOrEmpty(parentPath)
+                    ? normalizedFolderName
+                    : string.Concat(parentPath, "/", normalizedFolderName);
+
+                if (workspace.FolderPaths.Contains(targetPath, StringComparer.OrdinalIgnoreCase)
+                    && !string.Equals(sourcePath, targetPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException("A folder with the same name already exists in this location.");
+                }
+
+                if (!BookmarkRepositoryService.RenameFolder(workspace, sourcePath, normalizedFolderName))
+                {
+                    throw new InvalidOperationException("The selected folder could not be renamed.");
+                }
+            }, cancellationToken);
+        }
+
+        public async Task<IReadOnlyList<ManagedBookmark>> DeleteFolderRecursiveAsync(string? folderPath, CancellationToken cancellationToken)
+        {
+            string normalizedFolderPath = BookmarkIdentity.NormalizeFolderPath(folderPath);
+            if (string.IsNullOrWhiteSpace(normalizedFolderPath))
+            {
+                throw new ArgumentException("Select a folder to delete.", nameof(folderPath));
+            }
+
+            return await _session.UpdateWorkspaceAsync(workspace =>
+            {
+                if (!BookmarkRepositoryService.DeleteFolderRecursive(workspace, normalizedFolderPath))
+                {
+                    throw new InvalidOperationException("The selected folder could not be deleted.");
+                }
+            }, cancellationToken);
+        }
+
+        public async Task<IReadOnlyList<ManagedBookmark>> MoveBookmarkToFolderAsync(string? bookmarkId, string? folderPath, CancellationToken cancellationToken)
+        {
+            ManagedBookmark targetBookmark = await GetRequiredBookmarkAsync(bookmarkId, cancellationToken);
+
+            return await _session.UpdateWorkspaceAsync(workspace =>
+            {
+                BookmarkRepositoryService.MoveBookmarkToFolder(workspace, targetBookmark.BookmarkId, folderPath);
             }, cancellationToken);
         }
 
@@ -183,7 +302,7 @@ namespace BookmarkStudio
                 throw new InvalidOperationException("Visual Studio automation services are unavailable.");
             }
 
-            Window window = dte.ItemOperations.OpenFile(bookmark.DocumentPath, Constants.vsViewKindTextView);
+            Window window = dte.ItemOperations.OpenFile(bookmark.DocumentPath, EnvDTE.Constants.vsViewKindTextView);
             Document? document = window.Document ?? dte.ActiveDocument;
             TextDocument? textDocument = document?.Object("TextDocument") as TextDocument;
             if (textDocument is null)
@@ -192,8 +311,7 @@ namespace BookmarkStudio
             }
 
             document?.Activate();
-            int column = bookmark.ColumnNumber > 0 ? bookmark.ColumnNumber : 1;
-            textDocument.Selection.MoveToLineAndOffset(bookmark.LineNumber, column, false);
+            textDocument.Selection.MoveToLineAndOffset(bookmark.LineNumber, 1, false);
         }
 
         private async Task<ManagedBookmark> NavigateRelativeAsync(int direction, CancellationToken cancellationToken)
@@ -201,7 +319,6 @@ namespace BookmarkStudio
             IReadOnlyList<ManagedBookmark> bookmarks = (await _session.RefreshAsync(cancellationToken))
                 .OrderBy(item => BookmarkIdentity.NormalizeDocumentPath(item.DocumentPath), StringComparer.Ordinal)
                 .ThenBy(item => item.LineNumber)
-                .ThenBy(item => item.ColumnNumber)
                 .ToArray();
 
             if (bookmarks.Count == 0)
@@ -271,7 +388,6 @@ namespace BookmarkStudio
             {
                 DocumentPath = activeDocument.FullName,
                 LineNumber = lineNumber,
-                ColumnNumber = activePoint.LineCharOffset,
                 LineText = lineText,
             };
         }
@@ -294,7 +410,7 @@ namespace BookmarkStudio
             }
 
             VirtualPoint activePoint = textDocument.Selection.ActivePoint;
-            return new ActiveBookmarkLocation(activeDocument.FullName, activePoint.Line, activePoint.LineCharOffset);
+            return new ActiveBookmarkLocation(activeDocument.FullName, activePoint.Line);
         }
 
         private static int CompareBookmark(ManagedBookmark bookmark, ActiveBookmarkLocation location)
@@ -315,7 +431,7 @@ namespace BookmarkStudio
                 return lineComparison;
             }
 
-            return bookmark.ColumnNumber.CompareTo(location.ColumnNumber);
+            return 0;
         }
 
         private async Task TouchLastVisitedAsync(string bookmarkId, CancellationToken cancellationToken)
@@ -404,20 +520,48 @@ namespace BookmarkStudio
             return string.Concat("\"", normalized.Replace("\"", "\"\""), "\"");
         }
 
+        private static string ValidateFolderName(string? folderName)
+        {
+            if (string.IsNullOrWhiteSpace(folderName))
+            {
+                throw new ArgumentException("Folder name cannot be empty.", nameof(folderName));
+            }
+
+            string normalized = BookmarkIdentity.NormalizeFolderPath(folderName);
+            if (string.IsNullOrWhiteSpace(normalized) || normalized.Contains("/"))
+            {
+                throw new ArgumentException("Folder name must be a single segment.", nameof(folderName));
+            }
+
+            if (string.Equals(normalized, "_bookmarks", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(normalized, "root", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("The folder name is reserved.", nameof(folderName));
+            }
+
+            return normalized;
+        }
+
+        private static string GetParentFolderPath(string folderPath)
+        {
+            string normalized = BookmarkIdentity.NormalizeFolderPath(folderPath);
+            int separatorIndex = normalized.LastIndexOf('/');
+            return separatorIndex <= 0
+                ? string.Empty
+                : normalized.Substring(0, separatorIndex);
+        }
+
         private sealed class ActiveBookmarkLocation
         {
-            public ActiveBookmarkLocation(string documentPath, int lineNumber, int columnNumber)
+            public ActiveBookmarkLocation(string documentPath, int lineNumber)
             {
                 NormalizedDocumentPath = BookmarkIdentity.NormalizeDocumentPath(documentPath);
                 LineNumber = lineNumber;
-                ColumnNumber = columnNumber;
             }
 
             public string NormalizedDocumentPath { get; }
 
             public int LineNumber { get; }
-
-            public int ColumnNumber { get; }
         }
     }
 }
