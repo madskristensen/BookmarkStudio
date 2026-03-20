@@ -1,12 +1,13 @@
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 
 namespace BookmarkStudio
 {
-    //internal partial class OptionsProvider
-    //{
-    //    [ComVisible(true)]
-    //    public class GeneralOptions : BaseOptionPage<General> { }
-    //}
+    internal partial class OptionsProvider
+    {
+        [ComVisible(true)]
+        public class GeneralOptions : BaseOptionPage<General> { }
+    }
 
     internal class General : BaseOptionModel<General>
     {

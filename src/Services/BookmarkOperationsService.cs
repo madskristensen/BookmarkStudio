@@ -27,6 +27,12 @@ namespace BookmarkStudio
         public Task<IReadOnlyList<ManagedBookmark>> RefreshAsync(CancellationToken cancellationToken)
             => _session.RefreshAsync(cancellationToken);
 
+        public Task<BookmarkStorageInfo> GetStorageInfoAsync(CancellationToken cancellationToken)
+            => _session.GetStorageInfoAsync(cancellationToken);
+
+        public Task<BookmarkStorageInfo> MoveToLocationAsync(BookmarkStorageLocation targetLocation, CancellationToken cancellationToken)
+            => _session.MoveToLocationAsync(targetLocation, cancellationToken);
+
         public Task<ManagedBookmark> GetBookmarkAsync(string? bookmarkId, CancellationToken cancellationToken)
             => GetRequiredBookmarkAsync(bookmarkId, cancellationToken);
 

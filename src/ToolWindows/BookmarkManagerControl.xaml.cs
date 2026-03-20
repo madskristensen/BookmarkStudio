@@ -260,6 +260,16 @@ namespace BookmarkStudio
             await RunAsync(cancellationToken => _viewModel.DeleteSelectedAsync(cancellationToken));
         }
 
+        private async void MoveToSolutionMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            await RunAsync(cancellationToken => _viewModel.MoveToSolutionAsync(cancellationToken));
+        }
+
+        private async void MoveToPersonalMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            await RunAsync(cancellationToken => _viewModel.MoveToPersonalAsync(cancellationToken));
+        }
+
         private async void RenameFolderMenuItem_Click(object sender, RoutedEventArgs e)
         {
             if (!SelectFolderFromContextMenu(sender))

@@ -8,8 +8,12 @@
   },
   "assetFiles": [
     {
-      "pathOnDisk": "art/github-node.png",
-      "targetPath": "art/github-node.png"
+      "pathOnDisk": "art/bookmark-manager.png",
+      "targetPath": "art/bookmark-manager.png"
+    },
+    {
+      "pathOnDisk": "art/glyphs.png",
+      "targetPath": "art/glyphs.png"
     }
   ],
   "overview": "README.md",

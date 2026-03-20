@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Windows.Data;
@@ -54,5 +53,21 @@ namespace BookmarkStudio
             brush.Freeze();
             return brush;
         }
+    }
+
+    internal sealed class BoolToVisibilityInverseConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is bool boolValue && boolValue)
+            {
+                return System.Windows.Visibility.Collapsed;
+            }
+
+            return System.Windows.Visibility.Visible;
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+            => throw new NotSupportedException();
     }
 }

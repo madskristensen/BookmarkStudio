@@ -21,6 +21,7 @@ namespace BookmarkStudio
         private int? _selectedSlotNumber;
         private string _selectedLabelText = string.Empty;
         private string _statusText = "Loading bookmarks...";
+        private BookmarkStorageInfo? _storageInfo;
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -175,15 +176,17 @@ namespace BookmarkStudio
             IReadOnlyList<ManagedBookmark> bookmarks = await _operations.RefreshAsync(cancellationToken);
             IReadOnlyList<string> folderPaths = await _operations.GetFolderPathsAsync(cancellationToken);
             IEnumerable<string> expandedFolders = await _operations.GetExpandedFoldersAsync(cancellationToken);
+            BookmarkStorageInfo storageInfo = await _operations.GetStorageInfoAsync(cancellationToken);
             string? selectedBookmarkId = SelectedBookmark?.BookmarkId;
             string? selectedFolderPath = SelectedNode is FolderNodeViewModel folderNode ? folderNode.FolderPath : null;
 
             ReloadData(bookmarks, folderPaths, expandedFolders);
+            _storageInfo = storageInfo;
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             RebuildTree();
             RestoreSelection(selectedBookmarkId, selectedFolderPath);
 
-            SetStatus(string.Concat(_bookmarks.Count.ToString(System.Globalization.CultureInfo.InvariantCulture), " bookmarks loaded."));
+            SetStatus(string.Concat(_bookmarks.Count.ToString(System.Globalization.CultureInfo.InvariantCulture), " bookmarks in ", storageInfo.RelativePath));
         }
 
         public async Task SaveSelectionAsync(CancellationToken cancellationToken)
@@ -261,6 +264,43 @@ namespace BookmarkStudio
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             RebuildTree();
             SetStatus("Bookmark removed.");
+        }
+
+        public async Task MoveToSolutionAsync(CancellationToken cancellationToken)
+        {
+            BookmarkStorageInfo newInfo = await _operations.MoveToLocationAsync(BookmarkStorageLocation.Solution, cancellationToken);
+            _storageInfo = newInfo;
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+            UpdateRootNodeStorageLocation();
+            string message = string.Concat("Bookmarks moved to ", newInfo.RelativePath);
+            SetStatus(string.Concat(_bookmarks.Count.ToString(System.Globalization.CultureInfo.InvariantCulture), " bookmarks in ", newInfo.RelativePath));
+            await VS.StatusBar.ShowMessageAsync(message);
+        }
+
+        public async Task MoveToPersonalAsync(CancellationToken cancellationToken)
+        {
+            BookmarkStorageInfo newInfo = await _operations.MoveToLocationAsync(BookmarkStorageLocation.Personal, cancellationToken);
+            _storageInfo = newInfo;
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+            UpdateRootNodeStorageLocation();
+            string message = string.Concat("Bookmarks moved to ", newInfo.RelativePath);
+            SetStatus(string.Concat(_bookmarks.Count.ToString(System.Globalization.CultureInfo.InvariantCulture), " bookmarks in ", newInfo.RelativePath));
+            await VS.StatusBar.ShowMessageAsync(message);
+        }
+
+        public bool CanMoveToSolution => _storageInfo?.Location == BookmarkStorageLocation.Personal;
+
+        public bool CanMoveToPersonal => _storageInfo?.Location == BookmarkStorageLocation.Solution;
+
+        private void UpdateRootNodeStorageLocation()
+        {
+            if (RootNodes.Count > 0 && RootNodes[0] is FolderNodeViewModel rootNode && rootNode.IsRoot)
+            {
+                rootNode.StorageLocation = _storageInfo?.Location;
+            }
+
+            OnPropertyChanged(nameof(CanMoveToSolution));
+            OnPropertyChanged(nameof(CanMoveToPersonal));
         }
 
         public async Task CreateFolderAsync(string folderName, CancellationToken cancellationToken)
@@ -518,7 +558,7 @@ namespace BookmarkStudio
                 folder.Bookmarks.Add(bookmark);
             }
 
-            FolderNodeViewModel rootNode = new FolderNodeViewModel(string.Empty, 0);
+            FolderNodeViewModel rootNode = new FolderNodeViewModel(string.Empty, 0, _storageInfo?.Location);
             rootNode.IsExpanded = true;
             rootNode.IsExpandedChanged += OnFolderExpandedChanged;
 
@@ -774,11 +814,18 @@ namespace BookmarkStudio
     public sealed class FolderNodeViewModel : BookmarkNodeViewModel, INotifyPropertyChanged
     {
         private bool _isExpanded;
+        private BookmarkStorageLocation? _storageLocation;
 
         public FolderNodeViewModel(string folderPath, int treeDepth)
+            : this(folderPath, treeDepth, storageLocation: null)
+        {
+        }
+
+        internal FolderNodeViewModel(string folderPath, int treeDepth, BookmarkStorageLocation? storageLocation)
         {
             FolderPath = BookmarkIdentity.NormalizeFolderPath(folderPath);
             TreeDepth = Math.Max(0, treeDepth);
+            _storageLocation = storageLocation;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -787,9 +834,52 @@ namespace BookmarkStudio
 
         public string FolderPath { get; }
 
-        public string FolderName => string.IsNullOrWhiteSpace(FolderPath)
-            ? "Root"
-            : FolderPath.Split('/').Last();
+        public bool IsRoot => string.IsNullOrWhiteSpace(FolderPath);
+
+        internal BookmarkStorageLocation? StorageLocation
+        {
+            get => _storageLocation;
+            set
+            {
+                if (_storageLocation != value)
+                {
+                    _storageLocation = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(StorageLocation)));
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(FolderName)));
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DisplayText)));
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsPersonalRoot)));
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsSolutionRoot)));
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CanMoveToSolution)));
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CanMoveToPersonal)));
+                }
+            }
+        }
+
+        public bool IsPersonalRoot => IsRoot && _storageLocation == BookmarkStorageLocation.Personal;
+
+        public bool IsSolutionRoot => IsRoot && _storageLocation == BookmarkStorageLocation.Solution;
+
+        public bool CanMoveToSolution => IsRoot && _storageLocation == BookmarkStorageLocation.Personal;
+
+        public bool CanMoveToPersonal => IsRoot && _storageLocation == BookmarkStorageLocation.Solution;
+
+        public string FolderName
+        {
+            get
+            {
+                if (!string.IsNullOrWhiteSpace(FolderPath))
+                {
+                    return FolderPath.Split('/').Last();
+                }
+
+                return _storageLocation switch
+                {
+                    BookmarkStorageLocation.Personal => "User",
+                    BookmarkStorageLocation.Solution => "Solution",
+                    _ => "Root",
+                };
+            }
+        }
 
         public int TreeDepth { get; }
 

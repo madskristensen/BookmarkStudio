@@ -9,11 +9,35 @@ using System.Threading;
 
 namespace BookmarkStudio
 {
+    public enum BookmarkStorageLocation
+    {
+        Personal,
+        Solution,
+    }
+
+    internal sealed class BookmarkStorageInfo
+    {
+        public BookmarkStorageInfo(BookmarkStorageLocation location, string absolutePath, string relativePath)
+        {
+            Location = location;
+            AbsolutePath = absolutePath;
+            RelativePath = relativePath;
+        }
+
+        public BookmarkStorageLocation Location { get; }
+
+        public string AbsolutePath { get; }
+
+        public string RelativePath { get; }
+    }
+
     internal sealed class BookmarkMetadataStore
     {
         private const string DateTimeFormat = "yyyy-MM-dd HH:mm:ss";
         private const string RootPropertyName = "root";
         private const string BookmarksPropertyName = "_bookmarks";
+        private const string BookmarksFileName = ".bookmarks.json";
+        private const string LegacyBookmarksFileName = "bookmarks.json";
 
         public async Task<IReadOnlyList<BookmarkMetadata>> LoadAsync(string solutionPath, CancellationToken cancellationToken)
             => (await LoadWorkspaceAsync(solutionPath, cancellationToken)).Bookmarks;
@@ -99,35 +123,146 @@ namespace BookmarkStudio
         }
 
         public string GetStoragePath(string solutionPath)
+            => GetStorageInfo(solutionPath).AbsolutePath;
+
+        public BookmarkStorageInfo GetStorageInfo(string solutionPath)
         {
             if (string.IsNullOrWhiteSpace(solutionPath))
             {
                 string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                return Path.Combine(localAppData, "BookmarkStudio", "Transient", "bookmarks.json");
+                string transientPath = Path.Combine(localAppData, "BookmarkStudio", "Transient", BookmarksFileName);
+                return new BookmarkStorageInfo(BookmarkStorageLocation.Personal, transientPath, BookmarksFileName);
             }
 
             string solutionDirectory = Path.GetDirectoryName(solutionPath) ?? string.Empty;
+            string? repoRoot = GetRepositoryRoot(solutionDirectory);
+            string baseDirectory = repoRoot ?? solutionDirectory;
 
-            // Check solution root first for team-shared bookmarks
-            string solutionRootPath = Path.Combine(solutionDirectory, "bookmarks.json");
+            // Check solution/repo root first for team-shared bookmarks (new name, then legacy)
+            string solutionRootPath = Path.Combine(baseDirectory, BookmarksFileName);
             if (File.Exists(solutionRootPath))
             {
-                return solutionRootPath;
+                return new BookmarkStorageInfo(BookmarkStorageLocation.Solution, solutionRootPath, BookmarksFileName);
             }
 
-            // Check repository root for team-shared bookmarks
-            string? repoRoot = GetRepositoryRoot(solutionDirectory);
-            if (!string.IsNullOrWhiteSpace(repoRoot))
+            string legacySolutionRootPath = Path.Combine(baseDirectory, LegacyBookmarksFileName);
+            if (File.Exists(legacySolutionRootPath))
             {
-                string repoRootPath = Path.Combine(repoRoot, "bookmarks.json");
-                if (File.Exists(repoRootPath))
+                return new BookmarkStorageInfo(BookmarkStorageLocation.Solution, legacySolutionRootPath, LegacyBookmarksFileName);
+            }
+
+            // Check .vs folder for user-specific bookmarks (new name, then legacy)
+            string personalPath = Path.Combine(solutionDirectory, ".vs", BookmarksFileName);
+            if (File.Exists(personalPath))
+            {
+                return new BookmarkStorageInfo(BookmarkStorageLocation.Personal, personalPath, ".vs/" + BookmarksFileName);
+            }
+
+            string legacyPersonalPath = Path.Combine(solutionDirectory, ".vs", LegacyBookmarksFileName);
+            if (File.Exists(legacyPersonalPath))
+            {
+                return new BookmarkStorageInfo(BookmarkStorageLocation.Personal, legacyPersonalPath, ".vs/" + LegacyBookmarksFileName);
+            }
+
+            // Default to personal location with new name
+            return new BookmarkStorageInfo(BookmarkStorageLocation.Personal, personalPath, ".vs/" + BookmarksFileName);
+        }
+
+        public string GetSolutionStoragePath(string solutionPath)
+        {
+            if (string.IsNullOrWhiteSpace(solutionPath))
+            {
+                throw new InvalidOperationException("Cannot determine solution storage path without a solution.");
+            }
+
+            string solutionDirectory = Path.GetDirectoryName(solutionPath) ?? string.Empty;
+            string? repoRoot = GetRepositoryRoot(solutionDirectory);
+            string baseDirectory = repoRoot ?? solutionDirectory;
+            return Path.Combine(baseDirectory, BookmarksFileName);
+        }
+
+        public string GetPersonalStoragePath(string solutionPath)
+        {
+            if (string.IsNullOrWhiteSpace(solutionPath))
+            {
+                string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                return Path.Combine(localAppData, "BookmarkStudio", "Transient", BookmarksFileName);
+            }
+
+            string solutionDirectory = Path.GetDirectoryName(solutionPath) ?? string.Empty;
+            return Path.Combine(solutionDirectory, ".vs", BookmarksFileName);
+        }
+
+        public async Task<BookmarkStorageInfo> MoveToLocationAsync(string solutionPath, BookmarkStorageLocation targetLocation, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(solutionPath))
+            {
+                throw new InvalidOperationException("Cannot move bookmarks without a solution.");
+            }
+
+            BookmarkStorageInfo currentInfo = GetStorageInfo(solutionPath);
+            if (currentInfo.Location == targetLocation)
+            {
+                return currentInfo;
+            }
+
+            string targetPath = targetLocation == BookmarkStorageLocation.Solution
+                ? GetSolutionStoragePath(solutionPath)
+                : GetPersonalStoragePath(solutionPath);
+
+            string? targetDirectory = Path.GetDirectoryName(targetPath);
+            if (string.IsNullOrWhiteSpace(targetDirectory))
+            {
+                throw new InvalidOperationException("Could not determine target directory for bookmarks.");
+            }
+
+            await Task.Run(() =>
+            {
+                Directory.CreateDirectory(targetDirectory);
+
+                // Move or copy the file to the new location
+                if (File.Exists(currentInfo.AbsolutePath))
                 {
-                    return repoRootPath;
+                    File.Copy(currentInfo.AbsolutePath, targetPath, overwrite: true);
+                    File.Delete(currentInfo.AbsolutePath);
+
+                    // Also clean up any legacy named files at the old location
+                    CleanupLegacyFiles(currentInfo.AbsolutePath);
+                }
+            }, cancellationToken);
+
+            return GetStorageInfo(solutionPath);
+        }
+
+        private static void CleanupLegacyFiles(string currentPath)
+        {
+            string? directory = Path.GetDirectoryName(currentPath);
+            if (string.IsNullOrWhiteSpace(directory))
+            {
+                return;
+            }
+
+            // If the current file uses the new name, also delete any legacy file
+            string currentFileName = Path.GetFileName(currentPath);
+            if (string.Equals(currentFileName, BookmarksFileName, StringComparison.OrdinalIgnoreCase))
+            {
+                string legacyPath = Path.Combine(directory, LegacyBookmarksFileName);
+                if (File.Exists(legacyPath))
+                {
+                    try
+                    {
+                        File.Delete(legacyPath);
+                    }
+                    catch (IOException)
+                    {
+                        // Ignore if we can't delete the legacy file
+                    }
+                    catch (UnauthorizedAccessException)
+                    {
+                        // Ignore if we don't have permission
+                    }
                 }
             }
-
-            // Fall back to .vs folder for user-specific bookmarks
-            return Path.Combine(solutionDirectory, ".vs", "bookmarks.json");
         }
 
         private static string? GetRepositoryRoot(string directoryPath)

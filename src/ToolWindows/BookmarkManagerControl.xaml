@@ -17,6 +17,8 @@
              toolkit:Themes.UseVsTheme="True">
     <UserControl.Resources>
         <local:BookmarkColorToBrushConverter x:Key="ColorToBrushConverter" />
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
+        <local:BoolToVisibilityInverseConverter x:Key="BoolToVisibilityInverseConverter" />
 
         <Style x:Key="TreeViewItemFocusVisual">
             <Setter Property="Control.Template">
@@ -134,8 +136,16 @@
             <Border Padding="0,1">
                 <Border.ContextMenu>
                     <ContextMenu>
-                        <MenuItem Header="Rename Folder" Click="RenameFolderMenuItem_Click" />
-                        <MenuItem Header="Delete Folder" Click="DeleteFolderMenuItem_Click" />
+                        <MenuItem Header="Move to Solution" 
+                                  Click="MoveToSolutionMenuItem_Click"
+                                  Visibility="{Binding CanMoveToSolution, Converter={StaticResource BoolToVisibilityConverter}}" />
+                        <MenuItem Header="Move to Personal" 
+                                  Click="MoveToPersonalMenuItem_Click"
+                                  Visibility="{Binding CanMoveToPersonal, Converter={StaticResource BoolToVisibilityConverter}}" />
+                        <MenuItem Header="Rename Folder" Click="RenameFolderMenuItem_Click" 
+                                  Visibility="{Binding IsRoot, Converter={StaticResource BoolToVisibilityInverseConverter}}" />
+                        <MenuItem Header="Delete Folder" Click="DeleteFolderMenuItem_Click"
+                                  Visibility="{Binding IsRoot, Converter={StaticResource BoolToVisibilityInverseConverter}}" />
                     </ContextMenu>
                 </Border.ContextMenu>
                 <Grid>
@@ -148,11 +158,27 @@
                         <ColumnDefinition Width="90" />
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <!-- Folder icon for non-root -->
                         <imaging:CrispImage Width="16"
                                             Height="16"
                                             Margin="0,0,6,0"
                                             VerticalAlignment="Center"
-                                            Moniker="{x:Static imageCatalog:KnownMonikers.FolderClosed}" />
+                                            Moniker="{x:Static imageCatalog:KnownMonikers.FolderClosed}"
+                                            Visibility="{Binding IsRoot, Converter={StaticResource BoolToVisibilityInverseConverter}}" />
+                        <!-- User icon for root personal -->
+                        <imaging:CrispImage Width="16"
+                                            Height="16"
+                                            Margin="0,0,6,0"
+                                            VerticalAlignment="Center"
+                                            Moniker="{x:Static imageCatalog:KnownMonikers.User}"
+                                            Visibility="{Binding IsPersonalRoot, Converter={StaticResource BoolToVisibilityConverter}}" />
+                        <!-- Solution icon for root solution -->
+                        <imaging:CrispImage Width="16"
+                                            Height="16"
+                                            Margin="0,0,6,0"
+                                            VerticalAlignment="Center"
+                                            Moniker="{x:Static imageCatalog:KnownMonikers.Solution}"
+                                            Visibility="{Binding IsSolutionRoot, Converter={StaticResource BoolToVisibilityConverter}}" />
                         <TextBlock Text="{Binding FolderName}"
                                    FontWeight="SemiBold"
                                    VerticalAlignment="Center"

@@ -198,6 +198,26 @@ namespace BookmarkStudio
             }
         }
 
+        public async Task<BookmarkStorageInfo> GetStorageInfoAsync(CancellationToken cancellationToken)
+        {
+            string solutionPath = await GetSolutionPathAsync(cancellationToken);
+            return _metadataStore.GetStorageInfo(solutionPath);
+        }
+
+        public async Task<BookmarkStorageInfo> MoveToLocationAsync(BookmarkStorageLocation targetLocation, CancellationToken cancellationToken)
+        {
+            await _repositoryGate.WaitAsync(cancellationToken);
+            try
+            {
+                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                return await _metadataStore.MoveToLocationAsync(solutionPath, targetLocation, cancellationToken);
+            }
+            finally
+            {
+                _repositoryGate.Release();
+            }
+        }
+
         private async Task<string> GetSolutionPathAsync(CancellationToken cancellationToken)
         {
             // Use cached path if available to avoid UI thread switch

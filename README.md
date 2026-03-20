@@ -99,16 +99,6 @@ Default keybindings:
 
 Bookmark Studio intercepts Visual Studio built-in bookmark commands so existing workflows continue to work while using Bookmark Studio metadata and UI.
 
-### Export
-
-Export bookmarks from the manager toolbar to:
-
-- **Plain text** (`.txt`)
-- **Markdown** (`.md`)
-- **CSV** (`.csv`)
-
-Exports include slot and color values.
-
 ### Tracking and Refresh
 
 Bookmark Studio keeps bookmarks accurate as files change:

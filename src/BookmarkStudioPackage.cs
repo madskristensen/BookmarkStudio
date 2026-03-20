@@ -17,6 +17,7 @@ namespace BookmarkStudio
     [ProvideToolWindowVisibility(typeof(BookmarkManagerToolWindow), VSConstants.UICONTEXT.SolutionHasSingleProject_string)]
     [ProvideToolWindowVisibility(typeof(BookmarkManagerToolWindow), VSConstants.UICONTEXT.SolutionHasMultipleProjects_string)]
     //[ProvideOptionPage(typeof(OptionsProvider.GeneralOptions), "Bookmark Studio", "General", 0, 0, true, ProvidesLocalizedCategoryName = false)]
+    [ProvideProfile(typeof(OptionsProvider.GeneralOptions), Vsix.Name, "General", 0, 0, false)]
     [Guid(PackageGuids.BookmarkStudioString)]
     public sealed class BookmarkStudioPackage : ToolkitPackage
     {
@@ -36,7 +37,7 @@ namespace BookmarkStudio
         private void OnAfterOpenSolution(Solution? obj)
         {
             BookmarkStudioSession.Current.InvalidateSolutionPath();
-            JoinableTaskFactory.RunAsync(async () =>
+            ThreadHelper.JoinableTaskFactory.StartOnIdle(async () =>
             {
                 await BookmarkStudioSession.Current.RefreshAsync(CancellationToken.None);
                 await BookmarkManagerToolWindow.RefreshIfVisibleAsync(CancellationToken.None);
@@ -45,9 +46,11 @@ namespace BookmarkStudio
 
         private void OnAfterCloseSolution()
         {
-            ThreadHelper.ThrowIfNotOnUIThread();
-            BookmarkStudioSession.Current.Clear();
-            BookmarkManagerToolWindow.ClearIfVisible();
+            ThreadHelper.JoinableTaskFactory.StartOnIdle(() =>
+            {
+                BookmarkStudioSession.Current.Clear();
+                BookmarkManagerToolWindow.ClearIfVisible();
+            }).FireAndForget();
         }
     }
 }
