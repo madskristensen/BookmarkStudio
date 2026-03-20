@@ -49,6 +49,45 @@ namespace BookmarkStudio
             return BookmarkRepositoryService.FindNextDefaultLabel(metadata);
         }
 
+        public async Task<string?> GetSelectedTextAsync(CancellationToken cancellationToken)
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+
+            DTE2? dte = await VS.GetServiceAsync<DTE, DTE2>();
+            Document? activeDocument = dte?.ActiveDocument;
+            if (activeDocument is null)
+            {
+                return null;
+            }
+
+            TextDocument? textDocument = activeDocument.Object("TextDocument") as TextDocument;
+            if (textDocument is null)
+            {
+                return null;
+            }
+
+            string? selectedText = textDocument.Selection?.Text;
+            if (string.IsNullOrWhiteSpace(selectedText))
+            {
+                return null;
+            }
+
+            // Trim and limit to first line, max 100 characters for a reasonable label
+            string trimmed = selectedText!.Trim();
+            int newlineIndex = trimmed.IndexOfAny(new[] { '\r', '\n' });
+            if (newlineIndex >= 0)
+            {
+                trimmed = trimmed.Substring(0, newlineIndex).Trim();
+            }
+
+            if (trimmed.Length > 100)
+            {
+                trimmed = trimmed.Substring(0, 100).Trim();
+            }
+
+            return string.IsNullOrWhiteSpace(trimmed) ? null : trimmed;
+        }
+
         public bool CanToggleBookmarkInActiveDocument()
         {
             ThreadHelper.ThrowIfNotOnUIThread();

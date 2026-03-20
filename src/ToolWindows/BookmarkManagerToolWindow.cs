@@ -21,12 +21,12 @@ namespace BookmarkStudio
 
         public override async Task<FrameworkElement> CreateAsync(int toolWindowId, CancellationToken cancellationToken)
         {
-            // Start loading data on background thread before creating the control
-            Task<ToolWindowInitData> loadTask = Task.Run(() => LoadInitDataAsync(cancellationToken), cancellationToken);
+            // Load data on background thread (CreateAsync is called off UI thread by VS)
+            ToolWindowInitData initData = await LoadInitDataAsync(cancellationToken);
 
             // Create control on UI thread
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
-            _currentControl = new BookmarkManagerControl(loadTask);
+            _currentControl = new BookmarkManagerControl(initData);
             return _currentControl;
         }
 

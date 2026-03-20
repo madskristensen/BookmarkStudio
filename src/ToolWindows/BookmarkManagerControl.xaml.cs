@@ -11,7 +11,7 @@ namespace BookmarkStudio
     {
         private static readonly string BookmarkDragFormat = DataFormats.UnicodeText;
         private readonly BookmarkManagerViewModel _viewModel = new BookmarkManagerViewModel();
-        private readonly Task<ToolWindowInitData>? _initDataTask;
+        private readonly ToolWindowInitData? _initData;
         private Point _dragStartPoint;
         private string? _dragBookmarkId;
 
@@ -20,9 +20,9 @@ namespace BookmarkStudio
         {
         }
 
-        internal BookmarkManagerControl(Task<ToolWindowInitData>? initDataTask)
+        internal BookmarkManagerControl(ToolWindowInitData? initData)
         {
-            _initDataTask = initDataTask;
+            _initData = initData;
             InitializeComponent();
             DataContext = _viewModel;
             Loaded += BookmarkManagerControl_Loaded;
@@ -75,14 +75,10 @@ namespace BookmarkStudio
         {
             Loaded -= BookmarkManagerControl_Loaded;
 
-            if (_initDataTask is not null)
+            if (_initData is not null)
             {
                 // Use pre-loaded data from background thread
-                await RunAsync(async cancellationToken =>
-                {
-                    ToolWindowInitData data = await _initDataTask;
-                    _viewModel.InitializeWithData(data.Bookmarks, data.FolderPaths, data.ExpandedFolders);
-                });
+                _viewModel.InitializeWithData(_initData.Bookmarks, _initData.FolderPaths, _initData.ExpandedFolders);
             }
             else
             {
