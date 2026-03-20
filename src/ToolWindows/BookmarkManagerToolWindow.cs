@@ -31,6 +31,16 @@ namespace BookmarkStudio
         internal static string? GetSelectedFolderPath()
             => _currentControl?.SelectedFolderPath;
 
+        internal static async Task<BookmarkManagerControl?> GetControlAsync()
+        {
+            if (_currentControl is null)
+            {
+                await ShowAsync();
+            }
+
+            return _currentControl;
+        }
+
         internal static void ClearIfVisible()
                 {
                     ThreadHelper.ThrowIfNotOnUIThread();

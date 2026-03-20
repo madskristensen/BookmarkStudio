@@ -35,12 +35,15 @@ namespace BookmarkStudio
 
     internal sealed class BookmarkTextBufferTracker : IDisposable
     {
+        private const int DebounceDelayMs = 500;
+
         private readonly string _documentPath;
         private readonly string _normalizedDocumentPath;
         private readonly SemaphoreSlim _updateGate = new(1, 1);
         private readonly ITextBuffer _textBuffer;
         private int _attachedViewCount;
         private int _isDisposed;
+        private CancellationTokenSource? _debounceCts;
 
         public BookmarkTextBufferTracker(ITextBuffer textBuffer, string documentPath)
         {
@@ -85,8 +88,30 @@ namespace BookmarkStudio
             ITextSnapshot before = e.Before;
             ITextSnapshot after = e.After;
 
+            // Cancel any pending debounced update
+            _debounceCts?.Cancel();
+            _debounceCts?.Dispose();
+            _debounceCts = new CancellationTokenSource();
+            CancellationToken debounceToken = _debounceCts.Token;
+
             ThreadHelper.JoinableTaskFactory.RunAsync(async delegate
             {
+                try
+                {
+                    // Debounce: wait before processing to coalesce rapid changes
+                    await Task.Delay(DebounceDelayMs, debounceToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    // A newer change came in, skip this one
+                    return;
+                }
+
+                if (Volatile.Read(ref _isDisposed) == 1)
+                {
+                    return;
+                }
+
                 await _updateGate.WaitAsync();
                 try
                 {
@@ -117,6 +142,8 @@ namespace BookmarkStudio
                 return;
             }
 
+            _debounceCts?.Cancel();
+            _debounceCts?.Dispose();
             _textBuffer.ChangedLowPriority -= OnTextBufferChanged;
             _updateGate.Dispose();
         }

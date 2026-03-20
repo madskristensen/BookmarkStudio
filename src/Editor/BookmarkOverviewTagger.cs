@@ -53,12 +53,14 @@ namespace BookmarkStudio
         private readonly string _normalizedDocumentPath;
         private int _attachedViewCount;
         private int _isDisposed;
+        private volatile IReadOnlyList<ManagedBookmark> _cachedDocumentBookmarks = Array.Empty<ManagedBookmark>();
 
         public BookmarkOverviewTagger(ITextBuffer buffer, string documentPath)
         {
             _buffer = buffer ?? throw new ArgumentNullException(nameof(buffer));
             _documentPath = documentPath ?? string.Empty;
             _normalizedDocumentPath = BookmarkIdentity.NormalizeDocumentPath(_documentPath);
+            RefreshCachedBookmarks();
             BookmarkStudioSession.Current.BookmarksChanged += OnBookmarksChanged;
         }
 
@@ -96,7 +98,9 @@ namespace BookmarkStudio
             int startLine = spans[0].Start.GetContainingLine().LineNumber;
             int endLine = spans[spans.Count - 1].End.GetContainingLine().LineNumber;
 
-            foreach (ManagedBookmark bookmark in BookmarkStudioSession.Current.CachedBookmarks.Where(MatchesDocumentPath))
+            // Use cached bookmarks for this document instead of filtering all bookmarks
+            IReadOnlyList<ManagedBookmark> documentBookmarks = _cachedDocumentBookmarks;
+            foreach (ManagedBookmark bookmark in documentBookmarks)
             {
                 int lineIndex = bookmark.LineNumber - 1;
                 if (lineIndex < startLine || lineIndex > endLine || lineIndex < 0 || lineIndex >= snapshot.LineCount)
@@ -126,12 +130,21 @@ namespace BookmarkStudio
         private bool MatchesDocumentPath(ManagedBookmark bookmark)
             => string.Equals(BookmarkIdentity.NormalizeDocumentPath(bookmark.DocumentPath), _normalizedDocumentPath, StringComparison.Ordinal);
 
+        private void RefreshCachedBookmarks()
+        {
+            _cachedDocumentBookmarks = BookmarkStudioSession.Current.CachedBookmarks
+                .Where(MatchesDocumentPath)
+                .ToArray();
+        }
+
         private void OnBookmarksChanged(object sender, EventArgs e)
         {
             if (Volatile.Read(ref _isDisposed) == 1)
             {
                 return;
             }
+
+            RefreshCachedBookmarks();
 
             ITextSnapshot snapshot = _buffer.CurrentSnapshot;
             SnapshotSpan fullSpan = new SnapshotSpan(snapshot, 0, snapshot.Length);

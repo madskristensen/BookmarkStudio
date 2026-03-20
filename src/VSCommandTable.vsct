@@ -17,11 +17,17 @@
       <Group guid="BookmarkStudio" id="BookmarkManagerToolbarDeleteGroup" priority="0x0200">
         <Parent guid="BookmarkStudio" id="BookmarkManagerToolbar"/>
       </Group>
+      <Group guid="BookmarkStudio" id="BookmarkManagerToolbarFilterGroup" priority="0x0250">
+        <Parent guid="BookmarkStudio" id="BookmarkManagerToolbar"/>
+      </Group>
       <Group guid="BookmarkStudio" id="BookmarkManagerToolbarSettingsGroup" priority="0x0300">
         <Parent guid="BookmarkStudio" id="BookmarkManagerToolbar"/>
       </Group>
       <Group guid="BookmarkStudio" id="SettingsMenuGroup" priority="0x0000">
         <Parent guid="BookmarkStudio" id="SettingsMenu"/>
+      </Group>
+      <Group guid="BookmarkStudio" id="FilterByColorMenuGroup" priority="0x0000">
+        <Parent guid="BookmarkStudio" id="FilterByColorMenu"/>
       </Group>
     </Groups>
 
@@ -39,6 +45,14 @@
         <CommandFlag>IconIsMoniker</CommandFlag>
         <Strings>
           <ButtonText>Settings</ButtonText>
+        </Strings>
+      </Menu>
+      <Menu guid="BookmarkStudio" id="FilterByColorMenu" priority="0x0100" type="Menu">
+        <Parent guid="BookmarkStudio" id="BookmarkManagerToolbarFilterGroup"/>
+        <Icon guid="ImageCatalogGuid" id="Filter" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Filter by Color</ButtonText>
         </Strings>
       </Menu>
     </Menus>
@@ -181,6 +195,70 @@
           <LocCanonicalName>.BookmarkStudio.TogglePromptForName</LocCanonicalName>
         </Strings>
       </Button>
+
+      <Button guid="BookmarkStudio" id="FilterByColorAllCommand" priority="0x0100" type="Button">
+        <Parent guid="BookmarkStudio" id="FilterByColorMenuGroup"/>
+        <Strings>
+          <ButtonText>All Colors</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.FilterByColorAll</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="BookmarkStudio" id="FilterByColorBlueCommand" priority="0x0200" type="Button">
+        <Parent guid="BookmarkStudio" id="FilterByColorMenuGroup"/>
+        <Strings>
+          <ButtonText>Blue</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.FilterByColorBlue</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="BookmarkStudio" id="FilterByColorRedCommand" priority="0x0201" type="Button">
+        <Parent guid="BookmarkStudio" id="FilterByColorMenuGroup"/>
+        <Strings>
+          <ButtonText>Red</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.FilterByColorRed</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="BookmarkStudio" id="FilterByColorOrangeCommand" priority="0x0202" type="Button">
+        <Parent guid="BookmarkStudio" id="FilterByColorMenuGroup"/>
+        <Strings>
+          <ButtonText>Orange</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.FilterByColorOrange</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="BookmarkStudio" id="FilterByColorYellowCommand" priority="0x0203" type="Button">
+        <Parent guid="BookmarkStudio" id="FilterByColorMenuGroup"/>
+        <Strings>
+          <ButtonText>Yellow</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.FilterByColorYellow</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="BookmarkStudio" id="FilterByColorGreenCommand" priority="0x0204" type="Button">
+        <Parent guid="BookmarkStudio" id="FilterByColorMenuGroup"/>
+        <Strings>
+          <ButtonText>Green</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.FilterByColorGreen</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="BookmarkStudio" id="FilterByColorPurpleCommand" priority="0x0205" type="Button">
+        <Parent guid="BookmarkStudio" id="FilterByColorMenuGroup"/>
+        <Strings>
+          <ButtonText>Purple</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.FilterByColorPurple</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="BookmarkStudio" id="FilterByColorPinkCommand" priority="0x0206" type="Button">
+        <Parent guid="BookmarkStudio" id="FilterByColorMenuGroup"/>
+        <Strings>
+          <ButtonText>Pink</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.FilterByColorPink</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="BookmarkStudio" id="FilterByColorTealCommand" priority="0x0207" type="Button">
+        <Parent guid="BookmarkStudio" id="FilterByColorMenuGroup"/>
+        <Strings>
+          <ButtonText>Teal</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.FilterByColorTeal</LocCanonicalName>
+        </Strings>
+      </Button>
     </Buttons>
   </Commands>
 
@@ -232,6 +310,18 @@
       <IDSymbol name="GoToSlot8Command" value="0x0507" />
       <IDSymbol name="GoToSlot9Command" value="0x0508" />
             <IDSymbol name="TogglePromptForNameCommand" value="0x0600" />
-          </GuidSymbol>
+                  <IDSymbol name="BookmarkManagerToolbarFilterGroup" value="0x1005" />
+                  <IDSymbol name="FilterByColorMenu" value="0x1020" />
+                  <IDSymbol name="FilterByColorMenuGroup" value="0x1021" />
+                  <IDSymbol name="FilterByColorAllCommand" value="0x0700" />
+                  <IDSymbol name="FilterByColorBlueCommand" value="0x0701" />
+                  <IDSymbol name="FilterByColorRedCommand" value="0x0702" />
+                  <IDSymbol name="FilterByColorOrangeCommand" value="0x0703" />
+                  <IDSymbol name="FilterByColorYellowCommand" value="0x0704" />
+                  <IDSymbol name="FilterByColorGreenCommand" value="0x0705" />
+                  <IDSymbol name="FilterByColorPurpleCommand" value="0x0706" />
+                  <IDSymbol name="FilterByColorPinkCommand" value="0x0707" />
+                  <IDSymbol name="FilterByColorTealCommand" value="0x0708" />
+                      </GuidSymbol>
   </Symbols>
 </CommandTable>

@@ -14,6 +14,7 @@ namespace BookmarkStudio
         private readonly SemaphoreSlim _repositoryGate = new SemaphoreSlim(1, 1);
         private IReadOnlyList<ManagedBookmark> _cachedBookmarks = Array.Empty<ManagedBookmark>();
         private IReadOnlyList<string> _cachedFolderPaths = new[] { string.Empty };
+        private string? _cachedSolutionPath;
 
         private BookmarkStudioSession()
         {
@@ -29,6 +30,14 @@ namespace BookmarkStudio
         public IReadOnlyList<string> CachedFolderPaths => _cachedFolderPaths;
 
         public BookmarkMetadataStore MetadataStore => _metadataStore;
+
+        /// <summary>
+        /// Invalidates the cached solution path. Call when solution opens or closes.
+        /// </summary>
+        public void InvalidateSolutionPath()
+        {
+            _cachedSolutionPath = null;
+        }
 
         public async Task<IReadOnlyList<ManagedBookmark>> RefreshAsync(CancellationToken cancellationToken)
         {
@@ -136,7 +145,10 @@ namespace BookmarkStudio
                 }
 
         public void Clear()
-            => SetCachedState(Array.Empty<ManagedBookmark>(), new[] { string.Empty });
+        {
+            InvalidateSolutionPath();
+            SetCachedState(Array.Empty<ManagedBookmark>(), new[] { string.Empty });
+        }
 
         public async Task<BookmarkWorkspaceState> LoadWorkspaceAsync(CancellationToken cancellationToken)
         {
@@ -186,12 +198,19 @@ namespace BookmarkStudio
             }
         }
 
-        private static async Task<string> GetSolutionPathAsync(CancellationToken cancellationToken)
+        private async Task<string> GetSolutionPathAsync(CancellationToken cancellationToken)
         {
+            // Use cached path if available to avoid UI thread switch
+            if (_cachedSolutionPath is not null)
+            {
+                return _cachedSolutionPath;
+            }
+
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
             EnvDTE80.DTE2? dte = await VS.GetServiceAsync<EnvDTE.DTE, EnvDTE80.DTE2>();
-            return dte?.Solution?.FullName ?? string.Empty;
+            _cachedSolutionPath = dte?.Solution?.FullName ?? string.Empty;
+            return _cachedSolutionPath;
         }
 
         private void SetCachedBookmarks(IReadOnlyList<ManagedBookmark> bookmarks)

@@ -17,6 +17,7 @@ namespace BookmarkStudio
         private bool _isTestMode;
         private BookmarkNodeViewModel? _selectedNode;
         private string _searchText = string.Empty;
+        private BookmarkColor? _filterColor;
         private int? _selectedSlotNumber;
         private string _selectedLabelText = string.Empty;
         private string _statusText = "Loading bookmarks...";
@@ -90,6 +91,22 @@ namespace BookmarkStudio
                 }
 
                 _searchText = value ?? string.Empty;
+                OnPropertyChanged();
+                RebuildTree();
+            }
+        }
+
+        public BookmarkColor? FilterColor
+        {
+            get => _filterColor;
+            set
+            {
+                if (_filterColor == value)
+                {
+                    return;
+                }
+
+                _filterColor = value;
                 OnPropertyChanged();
                 RebuildTree();
             }
@@ -458,6 +475,12 @@ namespace BookmarkStudio
             if (!string.IsNullOrWhiteSpace(search))
             {
                 sourceBookmarks = sourceBookmarks.Where(bookmark => MatchesSearch(bookmark, search));
+            }
+
+            if (_filterColor.HasValue)
+            {
+                BookmarkColor filterValue = _filterColor.Value;
+                sourceBookmarks = sourceBookmarks.Where(bookmark => bookmark.Color == filterValue);
             }
 
             List<ManagedBookmark> visibleBookmarks = sourceBookmarks.ToList();

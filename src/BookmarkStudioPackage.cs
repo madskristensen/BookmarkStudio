@@ -35,6 +35,7 @@ namespace BookmarkStudio
 
         private void OnAfterOpenSolution(Solution? obj)
         {
+            BookmarkStudioSession.Current.InvalidateSolutionPath();
             JoinableTaskFactory.RunAsync(async () =>
             {
                 await BookmarkStudioSession.Current.RefreshAsync(CancellationToken.None);

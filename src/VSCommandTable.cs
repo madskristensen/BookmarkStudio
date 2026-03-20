@@ -46,5 +46,17 @@ namespace BookmarkStudio
         public const int GoToSlot8Command = 0x0507;
         public const int GoToSlot9Command = 0x0508;
                 public const int TogglePromptForNameCommand = 0x0600;
-            }
+                        public const int BookmarkManagerToolbarFilterGroup = 0x1005;
+                        public const int FilterByColorMenu = 0x1020;
+                        public const int FilterByColorMenuGroup = 0x1021;
+                        public const int FilterByColorAllCommand = 0x0700;
+                        public const int FilterByColorBlueCommand = 0x0701;
+                        public const int FilterByColorRedCommand = 0x0702;
+                        public const int FilterByColorOrangeCommand = 0x0703;
+                        public const int FilterByColorYellowCommand = 0x0704;
+                        public const int FilterByColorGreenCommand = 0x0705;
+                        public const int FilterByColorPurpleCommand = 0x0706;
+                        public const int FilterByColorPinkCommand = 0x0707;
+                        public const int FilterByColorTealCommand = 0x0708;
+                    }
 }
