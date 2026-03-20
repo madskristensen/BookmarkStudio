@@ -73,6 +73,7 @@
     <Compile Include="ToolWindows\BookmarkManagerControl.xaml.cs">
       <DependentUpon>BookmarkManagerControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="ToolWindows\ToolWindowInitData.cs" />
     <Compile Include="VSCommandTable.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>

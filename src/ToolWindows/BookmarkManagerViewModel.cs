@@ -160,6 +160,16 @@ namespace BookmarkStudio
         public Task InitializeAsync(CancellationToken cancellationToken)
             => RefreshAsync(cancellationToken);
 
+        public void InitializeWithData(
+            IReadOnlyList<ManagedBookmark> bookmarks,
+            IReadOnlyList<string> folderPaths,
+            IEnumerable<string> expandedFolders)
+        {
+            ReloadData(bookmarks, folderPaths, expandedFolders);
+            RebuildTree();
+            SetStatus(string.Concat(_bookmarks.Count.ToString(System.Globalization.CultureInfo.InvariantCulture), " bookmarks loaded."));
+        }
+
         public async Task RefreshAsync(CancellationToken cancellationToken)
         {
             IReadOnlyList<ManagedBookmark> bookmarks = await _operations.RefreshAsync(cancellationToken);
@@ -333,14 +343,22 @@ namespace BookmarkStudio
 
         internal int ApplySearchText(string searchText)
         {
-            ThreadHelper.ThrowIfNotOnUIThread();
+            if (!_isTestMode)
+            {
+                ThrowIfNotOnUIThread();
+            }
+
             SearchText = searchText;
             return CountVisibleBookmarks(RootNodes);
         }
 
         internal void Clear()
         {
-            ThreadHelper.ThrowIfNotOnUIThread();
+            if (!_isTestMode)
+            {
+                ThrowIfNotOnUIThread();
+            }
+
             _bookmarks.Clear();
             RootNodes.Clear();
             BookmarkRows.Clear();
@@ -352,10 +370,14 @@ namespace BookmarkStudio
         }
 
         internal void ClearSearch()
-                {
-                    ThreadHelper.ThrowIfNotOnUIThread();
-                    SearchText = string.Empty;
-                }
+        {
+            if (!_isTestMode)
+            {
+                ThrowIfNotOnUIThread();
+            }
+
+            SearchText = string.Empty;
+        }
 
         internal void SelectBookmark(string? bookmarkId)
         {
@@ -452,7 +474,11 @@ namespace BookmarkStudio
 
         private void RebuildTree()
         {
-            ThreadHelper.ThrowIfNotOnUIThread();
+            if (!_isTestMode)
+            {
+                ThrowIfNotOnUIThread();
+            }
+
             string? selectedBookmarkId = SelectedBookmark?.BookmarkId;
             string? selectedFolderPath = SelectedNode is FolderNodeViewModel folderNode ? folderNode.FolderPath : null;
 
@@ -711,6 +737,10 @@ namespace BookmarkStudio
 
         private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static void ThrowIfNotOnUIThread()
+            => ThreadHelper.ThrowIfNotOnUIThread();
 
         private sealed class FolderBuilderNode
         {

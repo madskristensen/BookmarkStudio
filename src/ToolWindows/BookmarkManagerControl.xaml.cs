@@ -11,11 +11,18 @@ namespace BookmarkStudio
     {
         private static readonly string BookmarkDragFormat = DataFormats.UnicodeText;
         private readonly BookmarkManagerViewModel _viewModel = new BookmarkManagerViewModel();
+        private readonly Task<ToolWindowInitData>? _initDataTask;
         private Point _dragStartPoint;
         private string? _dragBookmarkId;
 
         public BookmarkManagerControl()
+            : this(null)
         {
+        }
+
+        internal BookmarkManagerControl(Task<ToolWindowInitData>? initDataTask)
+        {
+            _initDataTask = initDataTask;
             InitializeComponent();
             DataContext = _viewModel;
             Loaded += BookmarkManagerControl_Loaded;
@@ -67,7 +74,21 @@ namespace BookmarkStudio
         private async void BookmarkManagerControl_Loaded(object sender, RoutedEventArgs e)
         {
             Loaded -= BookmarkManagerControl_Loaded;
-            await RunAsync(cancellationToken => _viewModel.InitializeAsync(cancellationToken));
+
+            if (_initDataTask is not null)
+            {
+                // Use pre-loaded data from background thread
+                await RunAsync(async cancellationToken =>
+                {
+                    ToolWindowInitData data = await _initDataTask;
+                    _viewModel.InitializeWithData(data.Bookmarks, data.FolderPaths, data.ExpandedFolders);
+                });
+            }
+            else
+            {
+                // Fallback to loading data now
+                await RunAsync(cancellationToken => _viewModel.InitializeAsync(cancellationToken));
+            }
         }
 
         private void BookmarkTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)

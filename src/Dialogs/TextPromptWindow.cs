@@ -21,6 +21,9 @@ namespace BookmarkStudio
             ResizeMode = ResizeMode.NoResize;
             WindowStartupLocation = WindowStartupLocation.CenterOwner;
             ShowInTaskbar = false;
+            HasMaximizeButton = false;
+            HasMinimizeButton = false;
+            HasHelpButton = false;
             SetResourceReference(BackgroundProperty, EnvironmentColors.ToolWindowBackgroundBrushKey);
             SetResourceReference(ForegroundProperty, EnvironmentColors.ToolWindowTextBrushKey);
             Loaded += TextPromptWindow_Loaded;
@@ -63,9 +66,8 @@ namespace BookmarkStudio
                 Content = "OK",
                 IsDefault = true,
                 Margin = new Thickness(0, 0, 8, 0),
-                Width = 88,
-                Height = 26,
-                VerticalAlignment = VerticalAlignment.Center,
+                MinWidth = 75,
+                MinHeight = 23,
             };
             okButton.SetResourceReference(StyleProperty, VsResourceKeys.ThemedDialogButtonStyleKey);
             okButton.Click += OkButton_Click;
@@ -75,9 +77,8 @@ namespace BookmarkStudio
             {
                 Content = "Cancel",
                 IsCancel = true,
-                Width = 88,
-                Height = 26,
-                VerticalAlignment = VerticalAlignment.Center,
+                MinWidth = 75,
+                MinHeight = 23,
             };
             cancelButton.SetResourceReference(StyleProperty, VsResourceKeys.ThemedDialogButtonStyleKey);
             buttons.Children.Add(cancelButton);

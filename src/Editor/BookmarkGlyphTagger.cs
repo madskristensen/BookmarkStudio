@@ -114,8 +114,20 @@ namespace BookmarkStudio
 
             RefreshCachedBookmarks();
 
+            // Capture disposal state before scheduling async work to avoid queuing
+            // unnecessary UI thread operations during solution close
+            if (Volatile.Read(ref _isDisposed) == 1)
+            {
+                return;
+            }
+
             ThreadHelper.JoinableTaskFactory.RunAsync(async delegate
             {
+                if (Volatile.Read(ref _isDisposed) == 1)
+                {
+                    return;
+                }
+
                 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
                 if (Volatile.Read(ref _isDisposed) == 1)

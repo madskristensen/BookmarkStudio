@@ -94,6 +94,13 @@ namespace BookmarkStudio
             _debounceCts = new CancellationTokenSource();
             CancellationToken debounceToken = _debounceCts.Token;
 
+            // Check disposal again before scheduling async work to avoid queuing
+            // unnecessary operations during solution close
+            if (Volatile.Read(ref _isDisposed) == 1)
+            {
+                return;
+            }
+
             ThreadHelper.JoinableTaskFactory.RunAsync(async delegate
             {
                 try
@@ -103,7 +110,7 @@ namespace BookmarkStudio
                 }
                 catch (OperationCanceledException)
                 {
-                    // A newer change came in, skip this one
+                    // A newer change came in or disposal occurred, skip this one
                     return;
                 }
 
@@ -112,21 +119,26 @@ namespace BookmarkStudio
                     return;
                 }
 
-                await _updateGate.WaitAsync();
+                await _updateGate.WaitAsync(debounceToken);
                 try
                 {
+                    if (Volatile.Read(ref _isDisposed) == 1)
+                    {
+                        return;
+                    }
+
                     IReadOnlyList<ManagedBookmark> bookmarks = await BookmarkStudioSession.Current.TryUpdateBookmarksAsync(
                         metadata => UpdateBookmarks(metadata, before, after),
-                        CancellationToken.None);
+                        debounceToken);
 
                     if (bookmarks.Any(bookmark => MatchesDocumentPath(bookmark.DocumentPath)))
                     {
-                        await BookmarkManagerToolWindow.RefreshIfVisibleAsync(CancellationToken.None);
+                        await BookmarkManagerToolWindow.RefreshIfVisibleAsync(debounceToken);
                     }
                 }
-                catch (OperationCanceledException ex)
+                catch (OperationCanceledException)
                 {
-                    await ex.LogAsync();
+                    // Disposal or cancellation occurred, exit gracefully
                 }
                 finally
                 {

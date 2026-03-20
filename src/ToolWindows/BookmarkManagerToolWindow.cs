@@ -19,10 +19,24 @@ namespace BookmarkStudio
         public override Type PaneType
             => typeof(Pane);
 
-        public override Task<FrameworkElement> CreateAsync(int toolWindowId, CancellationToken cancellationToken)
+        public override async Task<FrameworkElement> CreateAsync(int toolWindowId, CancellationToken cancellationToken)
         {
-            _currentControl = new BookmarkManagerControl();
-            return Task.FromResult<FrameworkElement>(_currentControl);
+            // Start loading data on background thread before creating the control
+            Task<ToolWindowInitData> loadTask = Task.Run(() => LoadInitDataAsync(cancellationToken), cancellationToken);
+
+            // Create control on UI thread
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+            _currentControl = new BookmarkManagerControl(loadTask);
+            return _currentControl;
+        }
+
+        private static async Task<ToolWindowInitData> LoadInitDataAsync(CancellationToken cancellationToken)
+        {
+            BookmarkOperationsService operations = BookmarkOperationsService.Current;
+            IReadOnlyList<ManagedBookmark> bookmarks = await operations.RefreshAsync(cancellationToken);
+            IReadOnlyList<string> folderPaths = await operations.GetFolderPathsAsync(cancellationToken);
+            IEnumerable<string> expandedFolders = await operations.GetExpandedFoldersAsync(cancellationToken);
+            return new ToolWindowInitData(bookmarks, folderPaths, expandedFolders);
         }
 
         internal static string? GetSelectedBookmarkId()
