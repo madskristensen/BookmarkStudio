@@ -389,7 +389,20 @@ namespace BookmarkStudio
                 }
             }
 
-            SelectedNode = RootNodes.FirstOrDefault();
+            SelectedNode = GetDefaultSelectedNode();
+        }
+
+        private BookmarkNodeViewModel? GetDefaultSelectedNode()
+        {
+            BookmarkNodeViewModel? firstNode = RootNodes.FirstOrDefault();
+            if (firstNode is not FolderNodeViewModel rootNode
+                || !string.IsNullOrWhiteSpace(rootNode.FolderPath)
+                || rootNode.Children.Count == 0)
+            {
+                return firstNode;
+            }
+
+            return rootNode.Children[0];
         }
 
         private void RebuildTree()
@@ -421,16 +434,20 @@ namespace BookmarkStudio
                 folder.Bookmarks.Add(bookmark);
             }
 
+            FolderNodeViewModel rootNode = new FolderNodeViewModel(string.Empty, 0);
+
             foreach (FolderBuilderNode childFolder in root.Children.Values.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
             {
-                FolderNodeViewModel node = BuildFolderNode(childFolder);
-                RootNodes.Add(node);
+                FolderNodeViewModel node = BuildFolderNode(childFolder, 1);
+                rootNode.Children.Add(node);
             }
 
             foreach (ManagedBookmark rootBookmark in root.Bookmarks.OrderBy(item => item.LineNumber).ThenBy(item => item.FileName, StringComparer.OrdinalIgnoreCase))
             {
-                RootNodes.Add(new BookmarkItemNodeViewModel(rootBookmark));
+                rootNode.Children.Add(new BookmarkItemNodeViewModel(rootBookmark, 1));
             }
+
+            RootNodes.Add(rootNode);
 
             RestoreSelection(selectedBookmarkId, selectedFolderPath);
         }
@@ -495,19 +512,19 @@ namespace BookmarkStudio
             return current;
         }
 
-        private static FolderNodeViewModel BuildFolderNode(FolderBuilderNode folderNode)
+        private static FolderNodeViewModel BuildFolderNode(FolderBuilderNode folderNode, int treeDepth)
         {
-            FolderNodeViewModel node = new FolderNodeViewModel(folderNode.Path);
+            FolderNodeViewModel node = new FolderNodeViewModel(folderNode.Path, treeDepth);
 
             foreach (FolderBuilderNode child in folderNode.Children.Values.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
             {
-                FolderNodeViewModel childNode = BuildFolderNode(child);
+                FolderNodeViewModel childNode = BuildFolderNode(child, treeDepth + 1);
                 node.Children.Add(childNode);
             }
 
             foreach (ManagedBookmark bookmark in folderNode.Bookmarks.OrderBy(item => item.LineNumber).ThenBy(item => item.FileName, StringComparer.OrdinalIgnoreCase))
             {
-                node.Children.Add(new BookmarkItemNodeViewModel(bookmark));
+                node.Children.Add(new BookmarkItemNodeViewModel(bookmark, treeDepth + 1));
             }
 
             return node;
@@ -633,14 +650,19 @@ namespace BookmarkStudio
 
     public sealed class FolderNodeViewModel : BookmarkNodeViewModel
     {
-        public FolderNodeViewModel(string folderPath)
+        public FolderNodeViewModel(string folderPath, int treeDepth)
         {
             FolderPath = BookmarkIdentity.NormalizeFolderPath(folderPath);
+            TreeDepth = Math.Max(0, treeDepth);
         }
 
         public string FolderPath { get; }
 
-        public string FolderName => FolderPath.Split('/').Last();
+        public string FolderName => string.IsNullOrWhiteSpace(FolderPath)
+            ? "Root"
+            : FolderPath.Split('/').Last();
+
+        public int TreeDepth { get; }
 
         public ObservableCollection<BookmarkNodeViewModel> Children { get; } = new ObservableCollection<BookmarkNodeViewModel>();
 
@@ -651,12 +673,21 @@ namespace BookmarkStudio
 
     public sealed class BookmarkItemNodeViewModel : BookmarkNodeViewModel
     {
-        public BookmarkItemNodeViewModel(ManagedBookmark bookmark)
+        public BookmarkItemNodeViewModel(ManagedBookmark bookmark, int treeDepth)
         {
             Bookmark = bookmark ?? throw new ArgumentNullException(nameof(bookmark));
+            TreeDepth = Math.Max(0, treeDepth);
         }
 
         public ManagedBookmark Bookmark { get; }
+
+        public int TreeDepth { get; }
+
+        public Thickness NonNameColumnMargin => new Thickness(-(TreeDepth * 19), 0, 0, 0);
+
+        public Thickness NonNameRightAlignedMargin => new Thickness(-(TreeDepth * 19), 0, 4, 0);
+
+        public Thickness ColorIndicatorMargin => new Thickness(6 - (TreeDepth * 19), 0, 0, 0);
 
         public override bool IsFolder => false;
 

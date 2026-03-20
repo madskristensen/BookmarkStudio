@@ -117,12 +117,16 @@ public class BookmarkManagerViewModelTests
             new ManagedBookmark { BookmarkId = "a-1", DocumentPath = @"C:\repo\a1.cs", LineNumber = 4, Group = "Team/Backlog" },
         }, new[] { string.Empty, "Zeta", "Team", "Team/Backlog" });
 
-        Assert.AreEqual("Team", viewModel.RootNodes[0].DisplayText);
-        Assert.AreEqual("Zeta", viewModel.RootNodes[1].DisplayText);
-        Assert.AreEqual("a.cs", viewModel.RootNodes[2].DisplayText);
-        Assert.AreEqual("z.cs", viewModel.RootNodes[3].DisplayText);
+        Assert.AreEqual(1, viewModel.RootNodes.Count);
+        Assert.AreEqual("Root", viewModel.RootNodes[0].DisplayText);
 
-        FolderNodeViewModel teamFolder = (FolderNodeViewModel)viewModel.RootNodes[0];
+        FolderNodeViewModel rootFolder = (FolderNodeViewModel)viewModel.RootNodes[0];
+        Assert.AreEqual("Team", rootFolder.Children[0].DisplayText);
+        Assert.AreEqual("Zeta", rootFolder.Children[1].DisplayText);
+        Assert.AreEqual("a.cs", rootFolder.Children[2].DisplayText);
+        Assert.AreEqual("z.cs", rootFolder.Children[3].DisplayText);
+
+        FolderNodeViewModel teamFolder = (FolderNodeViewModel)rootFolder.Children[0];
         FolderNodeViewModel backlogFolder = (FolderNodeViewModel)teamFolder.Children[0];
 
         CollectionAssert.AreEqual(

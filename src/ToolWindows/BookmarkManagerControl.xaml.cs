@@ -1,9 +1,7 @@
 using System.ComponentModel;
-using System.Linq;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -20,7 +18,6 @@ namespace BookmarkStudio
         {
             InitializeComponent();
             DataContext = _viewModel;
-            ConfigureGrouping();
             Loaded += BookmarkManagerControl_Loaded;
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
         }
@@ -51,38 +48,48 @@ namespace BookmarkStudio
             await RunAsync(cancellationToken => _viewModel.InitializeAsync(cancellationToken));
         }
 
-        private void BookmarkDataGrid_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        private void BookmarkTreeView_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
         {
-            if (BookmarkDataGrid.SelectedItem is BookmarkGridRowViewModel row)
+            if (e.NewValue is BookmarkNodeViewModel node)
             {
-                _viewModel.SelectBookmark(row.BookmarkId);
+                _viewModel.SelectedNode = node;
                 return;
             }
 
             _viewModel.SelectedNode = null;
         }
 
-        private async void BookmarkDataGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+        private async void BookmarkTreeView_MouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (BookmarkDataGrid.SelectedItem is not BookmarkGridRowViewModel row
-                || row.IsFolderPlaceholder
-                || string.IsNullOrWhiteSpace(row.BookmarkId))
+            BookmarkNodeViewModel? node = GetNodeFromVisual(e.OriginalSource as DependencyObject);
+            if (node is not BookmarkItemNodeViewModel bookmarkNode)
             {
                 return;
             }
 
-            _viewModel.SelectBookmark(row.BookmarkId);
+            _viewModel.SelectedNode = bookmarkNode;
             e.Handled = true;
             await RunAsync(cancellationToken => _viewModel.NavigateSelectedAsync(cancellationToken));
         }
 
-        private void BookmarkDataGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        private void BookmarkTreeView_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            _dragStartPoint = e.GetPosition(BookmarkDataGrid);
-            _dragBookmarkId = GetRowFromVisual(e.OriginalSource as DependencyObject)?.BookmarkId;
+            _dragStartPoint = e.GetPosition(BookmarkTreeView);
+            _dragBookmarkId = (GetNodeFromVisual(e.OriginalSource as DependencyObject) as BookmarkItemNodeViewModel)?.Bookmark.BookmarkId;
         }
 
-        private void BookmarkDataGrid_PreviewMouseMove(object sender, MouseEventArgs e)
+        private void BookmarkTreeView_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            BookmarkNodeViewModel? node = GetNodeFromVisual(e.OriginalSource as DependencyObject);
+            if (node is null)
+            {
+                return;
+            }
+
+            _viewModel.SelectedNode = node;
+        }
+
+        private void BookmarkTreeView_PreviewMouseMove(object sender, MouseEventArgs e)
         {
             if (e.LeftButton != MouseButtonState.Pressed
                 || string.IsNullOrWhiteSpace(_dragBookmarkId))
@@ -90,7 +97,7 @@ namespace BookmarkStudio
                 return;
             }
 
-            Point currentPosition = e.GetPosition(BookmarkDataGrid);
+            Point currentPosition = e.GetPosition(BookmarkTreeView);
             if (Math.Abs(currentPosition.X - _dragStartPoint.X) < SystemParameters.MinimumHorizontalDragDistance
                 && Math.Abs(currentPosition.Y - _dragStartPoint.Y) < SystemParameters.MinimumVerticalDragDistance)
             {
@@ -99,11 +106,11 @@ namespace BookmarkStudio
 
             DataObject data = new DataObject();
             data.SetData(BookmarkDragFormat, _dragBookmarkId, false);
-            DragDrop.DoDragDrop(BookmarkDataGrid, data, DragDropEffects.Move);
+            DragDrop.DoDragDrop(BookmarkTreeView, data, DragDropEffects.Move);
             _dragBookmarkId = null;
         }
 
-        private void BookmarkDataGrid_DragOver(object sender, DragEventArgs e)
+        private void BookmarkTreeView_DragOver(object sender, DragEventArgs e)
         {
             e.Effects = e.Data.GetDataPresent(BookmarkDragFormat, false)
                 ? DragDropEffects.Move
@@ -111,7 +118,7 @@ namespace BookmarkStudio
             e.Handled = true;
         }
 
-        private async void BookmarkDataGrid_Drop(object sender, DragEventArgs e)
+        private async void BookmarkTreeView_Drop(object sender, DragEventArgs e)
         {
             if (!e.Data.GetDataPresent(BookmarkDragFormat, false))
             {
@@ -146,13 +153,21 @@ namespace BookmarkStudio
         }
 
         private async void NavigateMenuItem_Click(object sender, RoutedEventArgs e)
-            => await RunAsync(cancellationToken => _viewModel.NavigateSelectedAsync(cancellationToken));
+        {
+            SelectNodeFromContextMenu(sender);
+            await RunAsync(cancellationToken => _viewModel.NavigateSelectedAsync(cancellationToken));
+        }
 
         private async void CopyLocationMenuItem_Click(object sender, RoutedEventArgs e)
-            => await CopyLocationAsync();
+        {
+            SelectNodeFromContextMenu(sender);
+            await CopyLocationAsync();
+        }
 
         private async void EditLabelMenuItem_Click(object sender, RoutedEventArgs e)
         {
+            SelectNodeFromContextMenu(sender);
+
             ManagedBookmark? bookmark = _viewModel.SelectedBookmark;
             if (bookmark is null)
             {
@@ -171,6 +186,8 @@ namespace BookmarkStudio
 
         private async void AssignSlotMenuItem_Click(object sender, RoutedEventArgs e)
         {
+            SelectNodeFromContextMenu(sender);
+
             if (sender is not MenuItem menuItem || menuItem.Tag is null || !int.TryParse(menuItem.Tag.ToString(), out int slotNumber))
             {
                 return;
@@ -180,10 +197,15 @@ namespace BookmarkStudio
         }
 
         private async void ClearSlotMenuItem_Click(object sender, RoutedEventArgs e)
-            => await RunAsync(cancellationToken => _viewModel.ClearSelectedSlotAsync(cancellationToken));
+        {
+            SelectNodeFromContextMenu(sender);
+            await RunAsync(cancellationToken => _viewModel.ClearSelectedSlotAsync(cancellationToken));
+        }
 
         private async void SetColorMenuItem_Click(object sender, RoutedEventArgs e)
         {
+            SelectNodeFromContextMenu(sender);
+
             if (sender is not MenuItem menuItem || menuItem.Tag is null || !int.TryParse(menuItem.Tag.ToString(), out int colorValue))
             {
                 return;
@@ -194,16 +216,10 @@ namespace BookmarkStudio
         }
 
         private async void DeleteBookmarkMenuItem_Click(object sender, RoutedEventArgs e)
-            => await RunAsync(cancellationToken => _viewModel.DeleteSelectedAsync(cancellationToken));
-
-        private void FolderHeader_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            SelectFolderFromHeader(sender);
-            e.Handled = true;
+            SelectNodeFromContextMenu(sender);
+            await RunAsync(cancellationToken => _viewModel.DeleteSelectedAsync(cancellationToken));
         }
-
-        private void FolderHeader_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
-            => SelectFolderFromHeader(sender);
 
         private async void RenameFolderMenuItem_Click(object sender, RoutedEventArgs e)
         {
@@ -222,15 +238,21 @@ namespace BookmarkStudio
                 return;
             }
 
+            if (_viewModel.SelectedNode is FolderNodeViewModel folderNode
+                && string.IsNullOrWhiteSpace(folderNode.FolderPath))
+            {
+                _viewModel.SetStatus("The Root folder cannot be deleted.");
+                return;
+            }
+
             await RunAsync(cancellationToken => _viewModel.DeleteSelectedAsync(cancellationToken));
         }
 
         private void ViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-            if (string.Equals(e.PropertyName, nameof(BookmarkManagerViewModel.SelectedNode), StringComparison.Ordinal)
-                || string.Equals(e.PropertyName, nameof(BookmarkManagerViewModel.SelectedBookmark), StringComparison.Ordinal))
+            if (string.Equals(e.PropertyName, nameof(BookmarkManagerViewModel.SelectedNode), StringComparison.Ordinal))
             {
-                SelectRowByBookmarkId(_viewModel.SelectedBookmark?.BookmarkId);
+                SelectTreeNode(_viewModel.SelectedNode);
             }
         }
 
@@ -250,6 +272,12 @@ namespace BookmarkStudio
             if (_viewModel.SelectedNode is not FolderNodeViewModel folderNode)
             {
                 _viewModel.SetStatus("Select a folder first.");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(folderNode.FolderPath))
+            {
+                _viewModel.SetStatus("The Root folder cannot be renamed.");
                 return;
             }
 
@@ -310,79 +338,104 @@ namespace BookmarkStudio
             }
         }
 
-        private void SelectRowByBookmarkId(string? bookmarkId)
+        private void SelectTreeNode(BookmarkNodeViewModel? node)
         {
-            if (string.IsNullOrWhiteSpace(bookmarkId))
-            {
-                if (BookmarkDataGrid.SelectedItem is not null)
-                {
-                    BookmarkDataGrid.SelectedItem = null;
-                }
-
-                return;
-            }
-
-            BookmarkGridRowViewModel? row = _viewModel.BookmarkRows.FirstOrDefault(item => string.Equals(item.BookmarkId, bookmarkId, StringComparison.Ordinal));
-            if (ReferenceEquals(BookmarkDataGrid.SelectedItem, row))
+            if (node is null)
             {
                 return;
             }
 
-            BookmarkDataGrid.SelectedItem = row;
-            if (row is not null)
-            {
-                BookmarkDataGrid.ScrollIntoView(row);
-            }
-        }
-
-        private void ConfigureGrouping()
-        {
-            if (Resources["BookmarksGroupedView"] is not CollectionViewSource collectionViewSource)
+            TreeViewItem? treeViewItem = FindTreeViewItem(BookmarkTreeView, node);
+            if (treeViewItem is null || treeViewItem.IsSelected)
             {
                 return;
             }
 
-            collectionViewSource.GroupDescriptions.Clear();
-            collectionViewSource.GroupDescriptions.Add(new PropertyGroupDescription(nameof(BookmarkGridRowViewModel.FolderDisplayName)));
-        }
-
-        private void SelectFolderFromHeader(object sender)
-        {
-            if (sender is not FrameworkElement element || element.DataContext is not CollectionViewGroup group)
-            {
-                return;
-            }
-
-            _viewModel.SelectFolder(GetFolderPathFromGroupName(group.Name as string));
+            treeViewItem.IsSelected = true;
+            treeViewItem.BringIntoView();
         }
 
         private bool SelectFolderFromContextMenu(object sender)
         {
             if (sender is not MenuItem menuItem
-                || menuItem.Parent is not ContextMenu contextMenu
+                || GetOwningContextMenu(menuItem) is not ContextMenu contextMenu
                 || contextMenu.PlacementTarget is not FrameworkElement placementTarget
-                || placementTarget.DataContext is not CollectionViewGroup group)
+                || placementTarget.DataContext is not FolderNodeViewModel folderNode)
             {
                 return false;
             }
 
-            _viewModel.SelectFolder(GetFolderPathFromGroupName(group.Name as string));
-            return _viewModel.SelectedNode is FolderNodeViewModel;
+            _viewModel.SelectedNode = folderNode;
+            return true;
         }
 
-        private static string GetFolderPathFromGroupName(string? groupName)
-            => string.Equals(groupName, "Root", StringComparison.Ordinal)
-                ? string.Empty
-                : BookmarkIdentity.NormalizeFolderPath(groupName);
+        private void SelectNodeFromContextMenu(object sender)
+        {
+            if (sender is not MenuItem menuItem
+                || GetOwningContextMenu(menuItem) is not ContextMenu contextMenu
+                || contextMenu.PlacementTarget is not FrameworkElement placementTarget
+                || placementTarget.DataContext is not BookmarkNodeViewModel node)
+            {
+                return;
+            }
 
-        private static BookmarkGridRowViewModel? GetRowFromVisual(DependencyObject? source)
+            _viewModel.SelectedNode = node;
+        }
+
+        private static ContextMenu? GetOwningContextMenu(DependencyObject? source)
         {
             DependencyObject? current = source;
             while (current is not null)
             {
-                if (current is DataGridRow row && row.Item is BookmarkGridRowViewModel bookmarkRow)
+                if (current is ContextMenu contextMenu)
                 {
-                    return bookmarkRow;
+                    return contextMenu;
+                }
+
+                current = LogicalTreeHelper.GetParent(current);
+            }
+
+            return null;
+        }
+
+        private static TreeViewItem? FindTreeViewItem(ItemsControl parent, object item)
+        {
+            if (parent.ItemContainerGenerator.ContainerFromItem(item) is TreeViewItem directMatch)
+            {
+                return directMatch;
+            }
+
+            foreach (object child in parent.Items)
+            {
+                if (parent.ItemContainerGenerator.ContainerFromItem(child) is not TreeViewItem childContainer)
+                {
+                    continue;
+                }
+
+                bool wasExpanded = childContainer.IsExpanded;
+                childContainer.IsExpanded = true;
+                childContainer.UpdateLayout();
+
+                TreeViewItem? match = FindTreeViewItem(childContainer, item);
+                if (match is not null)
+                {
+                    return match;
+                }
+
+                childContainer.IsExpanded = wasExpanded;
+            }
+
+            return null;
+        }
+
+        private static BookmarkNodeViewModel? GetNodeFromVisual(DependencyObject? source)
+        {
+            DependencyObject? current = source;
+            while (current is not null)
+            {
+                if (current is TreeViewItem item && item.DataContext is BookmarkNodeViewModel node)
+                {
+                    return node;
                 }
 
                 current = VisualTreeHelper.GetParent(current);
@@ -393,23 +446,13 @@ namespace BookmarkStudio
 
         private static string GetDropTargetFolderPath(DependencyObject? source)
         {
-            DependencyObject? current = source;
-            while (current is not null)
+            BookmarkNodeViewModel? targetNode = GetNodeFromVisual(source);
+            if (targetNode is FolderNodeViewModel folderNode)
             {
-                if (current is DataGridRow row && row.Item is BookmarkGridRowViewModel bookmarkRow)
-                {
-                    return bookmarkRow.FolderPath;
-                }
-
-                if (current is GroupItem groupItem && groupItem.DataContext is CollectionViewGroup group)
-                {
-                    return GetFolderPathFromGroupName(group.Name as string);
-                }
-
-                current = VisualTreeHelper.GetParent(current);
+                return folderNode.FolderPath;
             }
 
-            return string.Empty;
+            return (targetNode as BookmarkItemNodeViewModel)?.Bookmark.FolderPath ?? string.Empty;
         }
     }
 }
