@@ -7,6 +7,9 @@ namespace BookmarkStudio
             => await BookmarkCommandActions.ToggleBookmarkAsync(System.Threading.CancellationToken.None);
 
         protected override void BeforeQueryStatus(EventArgs e)
-            => Command.Enabled = BookmarkOperationsService.Current.CanToggleBookmarkInActiveDocument();
+                {
+                    ThreadHelper.ThrowIfNotOnUIThread();
+                    Command.Enabled = BookmarkOperationsService.Current.CanToggleBookmarkInActiveDocument();
+                }
     }
 }

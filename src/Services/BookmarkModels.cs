@@ -46,7 +46,7 @@ namespace BookmarkStudio
                 return string.Empty;
             }
 
-            string normalized = folderPath.Trim()
+            string normalized = folderPath!.Trim()
                 .Replace('\\', '/');
 
             string[] segments = normalized.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
@@ -82,11 +82,11 @@ namespace BookmarkStudio
             }
             catch (ArgumentException)
             {
-                return documentPath;
+                return documentPath!;
             }
             catch (NotSupportedException)
             {
-                return documentPath;
+                return documentPath!;
             }
 
             string? directoryPath = Path.GetDirectoryName(fullPath);
@@ -101,7 +101,7 @@ namespace BookmarkStudio
                 return Path.GetFileName(fullPath);
             }
 
-            string rootWithSeparator = repositoryRoot.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+            string rootWithSeparator = repositoryRoot!.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
                 + Path.DirectorySeparatorChar;
 
             if (!fullPath.StartsWith(rootWithSeparator, StringComparison.OrdinalIgnoreCase))

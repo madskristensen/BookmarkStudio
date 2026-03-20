@@ -226,7 +226,7 @@ namespace BookmarkStudio
                         string? folderPath = folderElement.GetString();
                         if (!string.IsNullOrEmpty(folderPath))
                         {
-                            state.ExpandedFolders.Add(folderPath);
+                            state.ExpandedFolders.Add(folderPath!);
                         }
                     }
                 }

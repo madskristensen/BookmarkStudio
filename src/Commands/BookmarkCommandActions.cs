@@ -6,7 +6,25 @@ namespace BookmarkStudio
     {
         public static async Task ToggleBookmarkAsync(CancellationToken cancellationToken)
         {
-            ManagedBookmark? bookmark = await BookmarkOperationsService.Current.ToggleBookmarkAsync(cancellationToken);
+            string? label = null;
+
+            if (General.Instance.PromptForBookmarkName)
+            {
+                bool hasExistingBookmark = await BookmarkOperationsService.Current.HasBookmarkAtCurrentLocationAsync(cancellationToken);
+
+                if (!hasExistingBookmark)
+                {
+                    string defaultLabel = await BookmarkOperationsService.Current.GetNextDefaultLabelAsync(cancellationToken);
+                    label = TextPromptWindow.Show("New Bookmark", "Enter a name for this bookmark:", defaultLabel, selectTextOnLoad: true);
+
+                    if (label is null)
+                    {
+                        return;
+                    }
+                }
+            }
+
+            ManagedBookmark? bookmark = await BookmarkOperationsService.Current.ToggleBookmarkAsync(label, cancellationToken);
             await BookmarkManagerToolWindow.RefreshIfVisibleAsync(bookmark?.BookmarkId, cancellationToken);
         }
 

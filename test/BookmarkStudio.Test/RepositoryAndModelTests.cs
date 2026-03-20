@@ -1,6 +1,4 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.IO;
-using System.Linq;
 
 namespace BookmarkStudio.Test;
 
@@ -134,9 +132,9 @@ public class RepositoryAndModelTests
         await store.SaveWorkspaceAsync(solutionPath, workspace, CancellationToken.None);
         BookmarkWorkspaceState loaded = await store.LoadWorkspaceAsync(solutionPath, CancellationToken.None);
 
-        Assert.AreEqual(1, loaded.Bookmarks.Count);
-        Assert.IsTrue(loaded.FolderPaths.Contains("FolderA"));
-        Assert.IsTrue(loaded.FolderPaths.Contains("FolderA/Sub"));
+        Assert.HasCount(1, loaded.Bookmarks);
+        Assert.Contains("FolderA", loaded.FolderPaths);
+        Assert.Contains("FolderA/Sub", loaded.FolderPaths);
         Assert.AreEqual("FolderA/Sub", loaded.Bookmarks[0].Group);
         Assert.AreEqual(23, loaded.Bookmarks[0].LineNumber);
     }
@@ -154,11 +152,11 @@ public class RepositoryAndModelTests
 
         BookmarkWorkspaceState loaded = await store.LoadWorkspaceAsync(solutionPath, CancellationToken.None);
 
-        Assert.AreEqual(1, loaded.Bookmarks.Count);
+        Assert.HasCount(1, loaded.Bookmarks);
         Assert.AreEqual(Path.Combine(solutionDirectory, "src", "file.cs"), loaded.Bookmarks[0].DocumentPath);
         Assert.AreEqual("Legacy/Sub", loaded.Bookmarks[0].Group);
-        Assert.IsTrue(loaded.FolderPaths.Contains("Legacy"));
-        Assert.IsTrue(loaded.FolderPaths.Contains("Legacy/Sub"));
+        Assert.Contains("Legacy", loaded.FolderPaths);
+        Assert.Contains("Legacy/Sub", loaded.FolderPaths);
     }
 
     [TestMethod]
@@ -231,11 +229,11 @@ public class RepositoryAndModelTests
         bool changed = BookmarkRepositoryService.DeleteFolderRecursive(workspace, "A/B");
 
         Assert.IsTrue(changed);
-        Assert.AreEqual(1, workspace.Bookmarks.Count);
+        Assert.HasCount(1, workspace.Bookmarks);
         Assert.AreEqual("3", workspace.Bookmarks[0].BookmarkId);
-        Assert.IsFalse(workspace.FolderPaths.Contains("A/B"));
-        Assert.IsFalse(workspace.FolderPaths.Contains("A/B/C"));
-        Assert.IsTrue(workspace.FolderPaths.Contains("X"));
+        Assert.DoesNotContain("A/B", workspace.FolderPaths);
+        Assert.DoesNotContain("A/B/C", workspace.FolderPaths);
+        Assert.Contains("X", workspace.FolderPaths);
     }
 
     [TestMethod]
@@ -245,9 +243,9 @@ public class RepositoryAndModelTests
 
         BookmarkRepositoryService.EnsureFolderPath(workspace, @" Team\\Backlog/Sprint1 ");
 
-        Assert.IsTrue(workspace.FolderPaths.Contains("Team"));
-        Assert.IsTrue(workspace.FolderPaths.Contains("Team/Backlog"));
-        Assert.IsTrue(workspace.FolderPaths.Contains("Team/Backlog/Sprint1"));
+        Assert.Contains("Team", workspace.FolderPaths);
+        Assert.Contains("Team/Backlog", workspace.FolderPaths);
+        Assert.Contains("Team/Backlog/Sprint1", workspace.FolderPaths);
     }
 
     [TestMethod]
@@ -266,10 +264,10 @@ public class RepositoryAndModelTests
         bool renamed = BookmarkRepositoryService.RenameFolder(workspace, "Team/Backlog", "Done");
 
         Assert.IsTrue(renamed);
-        Assert.IsTrue(workspace.FolderPaths.Contains("Team/Done"));
-        Assert.IsTrue(workspace.FolderPaths.Contains("Team/Done/Sprint1"));
-        Assert.IsFalse(workspace.FolderPaths.Contains("Team/Backlog"));
-        Assert.IsFalse(workspace.FolderPaths.Contains("Team/Backlog/Sprint1"));
+        Assert.Contains("Team/Done", workspace.FolderPaths);
+        Assert.Contains("Team/Done/Sprint1", workspace.FolderPaths);
+        Assert.DoesNotContain("Team/Backlog", workspace.FolderPaths);
+        Assert.DoesNotContain("Team/Backlog/Sprint1", workspace.FolderPaths);
         Assert.AreEqual("Team/Done", workspace.Bookmarks.Single(item => item.BookmarkId == "1").Group);
         Assert.AreEqual("Team/Done/Sprint1", workspace.Bookmarks.Single(item => item.BookmarkId == "2").Group);
         Assert.AreEqual("Other", workspace.Bookmarks.Single(item => item.BookmarkId == "3").Group);
@@ -287,7 +285,7 @@ public class RepositoryAndModelTests
         bool renamed = BookmarkRepositoryService.RenameFolder(workspace, "Team/Backlog", "BACKLOG");
 
         Assert.IsFalse(renamed);
-        Assert.IsTrue(workspace.FolderPaths.Contains("Team/Backlog"));
+        Assert.Contains("Team/Backlog", workspace.FolderPaths);
         Assert.AreEqual("Team/Backlog", workspace.Bookmarks.Single(item => item.BookmarkId == "1").Group);
     }
 
@@ -305,8 +303,8 @@ public class RepositoryAndModelTests
         bool changed = BookmarkRepositoryService.DeleteFolderRecursive(workspace, folderPath);
 
         Assert.IsFalse(changed);
-        Assert.AreEqual(1, workspace.Bookmarks.Count);
-        Assert.IsTrue(workspace.FolderPaths.Contains("A"));
+        Assert.HasCount(1, workspace.Bookmarks);
+        Assert.Contains("A", workspace.FolderPaths);
     }
 
     [TestMethod]
@@ -319,9 +317,9 @@ public class RepositoryAndModelTests
         BookmarkRepositoryService.MoveBookmarkToFolder(workspace, "1", "Feature/Area/Task");
 
         Assert.AreEqual("Feature/Area/Task", workspace.Bookmarks.Single(item => item.BookmarkId == "1").Group);
-        Assert.IsTrue(workspace.FolderPaths.Contains("Feature"));
-        Assert.IsTrue(workspace.FolderPaths.Contains("Feature/Area"));
-        Assert.IsTrue(workspace.FolderPaths.Contains("Feature/Area/Task"));
+        Assert.Contains("Feature", workspace.FolderPaths);
+        Assert.Contains("Feature/Area", workspace.FolderPaths);
+        Assert.Contains("Feature/Area/Task", workspace.FolderPaths);
     }
 
     [TestMethod]
@@ -364,9 +362,9 @@ public class RepositoryAndModelTests
 
         // Verify empty folders are preserved
         BookmarkWorkspaceState loaded = await store.LoadWorkspaceAsync(solutionPath, CancellationToken.None);
-        Assert.AreEqual(0, loaded.Bookmarks.Count);
-        Assert.IsTrue(loaded.FolderPaths.Contains("FolderA"), "FolderA should be preserved even when empty");
-        Assert.IsTrue(loaded.FolderPaths.Contains("EmptyFolder"), "EmptyFolder should be preserved");
+        Assert.IsEmpty(loaded.Bookmarks);
+        Assert.Contains("FolderA", loaded.FolderPaths, "FolderA should be preserved even when empty");
+        Assert.Contains("EmptyFolder", loaded.FolderPaths, "EmptyFolder should be preserved");
     }
 
     private static string CreateTestSolutionPath()

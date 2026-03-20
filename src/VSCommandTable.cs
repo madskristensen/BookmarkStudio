@@ -23,7 +23,12 @@ namespace BookmarkStudio
     internal sealed partial class PackageIds
     {
         public const int BookmarkManagerToolbar = 0x1000;
-        public const int BookmarkManagerToolbarGroup = 0x1001;
+        public const int BookmarkManagerToolbarRefreshGroup = 0x1001;
+        public const int BookmarkManagerToolbarNewItemsGroup = 0x1002;
+        public const int BookmarkManagerToolbarDeleteGroup = 0x1003;
+        public const int BookmarkManagerToolbarSettingsGroup = 0x1004;
+        public const int SettingsMenu = 0x1010;
+        public const int SettingsMenuGroup = 0x1011;
         public const int OpenBookmarkManagerCommand = 0x0100;
         public const int AddBookmarkCommand = 0x0102;
         public const int RefreshBookmarkManagerCommand = 0x0101;
@@ -40,5 +45,6 @@ namespace BookmarkStudio
         public const int GoToSlot7Command = 0x0506;
         public const int GoToSlot8Command = 0x0507;
         public const int GoToSlot9Command = 0x0508;
-    }
+                public const int TogglePromptForNameCommand = 0x0600;
+            }
 }

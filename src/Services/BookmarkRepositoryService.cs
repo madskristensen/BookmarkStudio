@@ -77,36 +77,39 @@ namespace BookmarkStudio
         }
 
         public async Task<ManagedBookmark?> ToggleAsync(string solutionPath, BookmarkSnapshot snapshot, CancellationToken cancellationToken)
-        {
-            if (snapshot is null)
-            {
-                throw new ArgumentNullException(nameof(snapshot));
-            }
+                    => await ToggleAsync(solutionPath, snapshot, label: null, cancellationToken);
 
-            List<BookmarkMetadata> bookmarks = (await LoadAsync(solutionPath, cancellationToken)).ToList();
-            BookmarkMetadata existingBookmark = FindBySnapshot(bookmarks, snapshot);
-            if (existingBookmark is not null)
-            {
-                bookmarks.Remove(existingBookmark);
-                await SaveAsync(solutionPath, bookmarks, cancellationToken);
-                return null;
-            }
+                public async Task<ManagedBookmark?> ToggleAsync(string solutionPath, BookmarkSnapshot snapshot, string? label, CancellationToken cancellationToken)
+                {
+                    if (snapshot is null)
+                    {
+                        throw new ArgumentNullException(nameof(snapshot));
+                    }
 
-            DateTime now = DateTime.UtcNow;
-            BookmarkMetadata createdBookmark = new BookmarkMetadata
-            {
-                BookmarkId = Guid.NewGuid().ToString("N"),
-                CreatedUtc = now,
-                SlotNumber = FindNextAvailableSlot(bookmarks),
-                Label = FindNextDefaultLabel(bookmarks),
-                Color = BookmarkColor.Orange,
-            };
+                    List<BookmarkMetadata> bookmarks = (await LoadAsync(solutionPath, cancellationToken)).ToList();
+                    BookmarkMetadata existingBookmark = FindBySnapshot(bookmarks, snapshot);
+                    if (existingBookmark is not null)
+                    {
+                        bookmarks.Remove(existingBookmark);
+                        await SaveAsync(solutionPath, bookmarks, cancellationToken);
+                        return null;
+                    }
 
-            createdBookmark.UpdateFromSnapshot(snapshot, now);
-            bookmarks.Add(createdBookmark);
-            await SaveAsync(solutionPath, bookmarks, cancellationToken);
-            return createdBookmark.ToManagedBookmark();
-        }
+                    DateTime now = DateTime.UtcNow;
+                    BookmarkMetadata createdBookmark = new BookmarkMetadata
+                    {
+                        BookmarkId = Guid.NewGuid().ToString("N"),
+                        CreatedUtc = now,
+                        SlotNumber = FindNextAvailableSlot(bookmarks),
+                        Label = string.IsNullOrWhiteSpace(label) ? FindNextDefaultLabel(bookmarks) : label!,
+                        Color = BookmarkColor.Orange,
+                    };
+
+                    createdBookmark.UpdateFromSnapshot(snapshot, now);
+                    bookmarks.Add(createdBookmark);
+                    await SaveAsync(solutionPath, bookmarks, cancellationToken);
+                    return createdBookmark.ToManagedBookmark();
+                }
 
         public static BookmarkMetadata GetRequiredBookmark(IEnumerable<BookmarkMetadata> bookmarks, string bookmarkId)
             => bookmarks.FirstOrDefault(item => string.Equals(item.BookmarkId, bookmarkId, StringComparison.Ordinal))
@@ -269,7 +272,10 @@ namespace BookmarkStudio
             return null;
         }
 
-        private static string FindNextDefaultLabel(IEnumerable<BookmarkMetadata> bookmarks)
+        /// <summary>
+        /// Returns the next default label in the format "Bookmark1", "Bookmark2", etc.
+        /// </summary>
+        internal static string FindNextDefaultLabel(IEnumerable<BookmarkMetadata> bookmarks)
         {
             const string prefix = "Bookmark";
             HashSet<int> usedNumbers = new HashSet<int>();

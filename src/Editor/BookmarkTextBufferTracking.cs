@@ -85,7 +85,7 @@ namespace BookmarkStudio
             ITextSnapshot before = e.Before;
             ITextSnapshot after = e.After;
 
-            _ = ThreadHelper.JoinableTaskFactory.RunAsync(async delegate
+            ThreadHelper.JoinableTaskFactory.RunAsync(async delegate
             {
                 await _updateGate.WaitAsync();
                 try
@@ -107,7 +107,7 @@ namespace BookmarkStudio
                 {
                     _ = _updateGate.Release();
                 }
-            });
+            }).FireAndForget();
         }
 
         public void Dispose()

@@ -14,7 +14,10 @@ namespace BookmarkStudio
     internal sealed class ClearAllBookmarksCommand : BookmarkCommandBase<ClearAllBookmarksCommand>
     {
         protected override void BeforeQueryStatus(EventArgs e)
-            => Command.Visible = BookmarkOperationsService.Current.IsSolutionOrFolderOpen();
+                {
+                    ThreadHelper.ThrowIfNotOnUIThread();
+                    Command.Visible = BookmarkOperationsService.Current.IsSolutionOrFolderOpen();
+                }
 
         protected override async Task ExecuteAsync(OleMenuCmdEventArgs e)
         {

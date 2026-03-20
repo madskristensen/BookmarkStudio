@@ -17,6 +17,12 @@
       <Group guid="BookmarkStudio" id="BookmarkManagerToolbarDeleteGroup" priority="0x0200">
         <Parent guid="BookmarkStudio" id="BookmarkManagerToolbar"/>
       </Group>
+      <Group guid="BookmarkStudio" id="BookmarkManagerToolbarSettingsGroup" priority="0x0300">
+        <Parent guid="BookmarkStudio" id="BookmarkManagerToolbar"/>
+      </Group>
+      <Group guid="BookmarkStudio" id="SettingsMenuGroup" priority="0x0000">
+        <Parent guid="BookmarkStudio" id="SettingsMenu"/>
+      </Group>
     </Groups>
 
     <Menus>
@@ -25,6 +31,14 @@
         <Strings>
           <ButtonText>Bookmark Manager Toolbar</ButtonText>
           <CommandName>Bookmark Manager Toolbar</CommandName>
+        </Strings>
+      </Menu>
+      <Menu guid="BookmarkStudio" id="SettingsMenu" priority="0x0100" type="Menu">
+        <Parent guid="BookmarkStudio" id="BookmarkManagerToolbarSettingsGroup"/>
+        <Icon guid="ImageCatalogGuid" id="Settings" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Settings</ButtonText>
         </Strings>
       </Menu>
     </Menus>
@@ -159,6 +173,14 @@
           <LocCanonicalName>.BookmarkStudio.GoToSlot9</LocCanonicalName>
         </Strings>
       </Button>
+
+      <Button guid="BookmarkStudio" id="TogglePromptForNameCommand" priority="0x0100" type="Button">
+        <Parent guid="BookmarkStudio" id="SettingsMenuGroup"/>
+        <Strings>
+          <ButtonText>Always prompt for name</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.TogglePromptForName</LocCanonicalName>
+        </Strings>
+      </Button>
     </Buttons>
   </Commands>
 
@@ -190,6 +212,9 @@
       <IDSymbol name="BookmarkManagerToolbarRefreshGroup" value="0x1001" />
       <IDSymbol name="BookmarkManagerToolbarNewItemsGroup" value="0x1002" />
       <IDSymbol name="BookmarkManagerToolbarDeleteGroup" value="0x1003" />
+      <IDSymbol name="BookmarkManagerToolbarSettingsGroup" value="0x1004" />
+      <IDSymbol name="SettingsMenu" value="0x1010" />
+      <IDSymbol name="SettingsMenuGroup" value="0x1011" />
       <IDSymbol name="OpenBookmarkManagerCommand" value="0x0100" />
       <IDSymbol name="AddBookmarkCommand" value="0x0102" />
       <IDSymbol name="RefreshBookmarkManagerCommand" value="0x0101" />
@@ -206,6 +231,7 @@
       <IDSymbol name="GoToSlot7Command" value="0x0506" />
       <IDSymbol name="GoToSlot8Command" value="0x0507" />
       <IDSymbol name="GoToSlot9Command" value="0x0508" />
-    </GuidSymbol>
+            <IDSymbol name="TogglePromptForNameCommand" value="0x0600" />
+          </GuidSymbol>
   </Symbols>
 </CommandTable>

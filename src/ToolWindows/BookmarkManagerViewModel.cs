@@ -152,6 +152,7 @@ namespace BookmarkStudio
             string? selectedFolderPath = SelectedNode is FolderNodeViewModel folderNode ? folderNode.FolderPath : null;
 
             ReloadData(bookmarks, folderPaths, expandedFolders);
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             RebuildTree();
             RestoreSelection(selectedBookmarkId, selectedFolderPath);
 
@@ -163,6 +164,7 @@ namespace BookmarkStudio
             ManagedBookmark selectedBookmark = GetRequiredSelection();
             IReadOnlyList<ManagedBookmark> bookmarks = await _operations.RenameLabelAsync(selectedBookmark.BookmarkId, SelectedLabelText, cancellationToken);
             ReloadBookmarks(bookmarks);
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             RebuildTree();
             SelectBookmark(selectedBookmark.BookmarkId);
             SetStatus("Bookmark metadata updated.");
@@ -178,6 +180,7 @@ namespace BookmarkStudio
 
             IReadOnlyList<ManagedBookmark> bookmarks = await _operations.AssignSlotAsync(SelectedSlotNumber.Value, selectedBookmark.BookmarkId, cancellationToken);
             ReloadBookmarks(bookmarks);
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             RebuildTree();
             SelectBookmark(selectedBookmark.BookmarkId);
             SetStatus(string.Concat("Slot ", SelectedSlotNumber.Value.ToString(System.Globalization.CultureInfo.InvariantCulture), " assigned."));
@@ -194,6 +197,7 @@ namespace BookmarkStudio
             ManagedBookmark selectedBookmark = GetRequiredSelection();
             IReadOnlyList<ManagedBookmark> bookmarks = await _operations.ClearSlotAsync(selectedBookmark.BookmarkId, cancellationToken);
             ReloadBookmarks(bookmarks);
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             RebuildTree();
             SelectBookmark(selectedBookmark.BookmarkId);
             SetStatus("Bookmark slot cleared.");
@@ -204,6 +208,7 @@ namespace BookmarkStudio
             ManagedBookmark selectedBookmark = GetRequiredSelection();
             IReadOnlyList<ManagedBookmark> bookmarks = await _operations.SetColorAsync(selectedBookmark.BookmarkId, color, cancellationToken);
             ReloadBookmarks(bookmarks);
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             RebuildTree();
             SelectBookmark(selectedBookmark.BookmarkId);
             SetStatus(string.Concat("Bookmark color set to ", color.ToString(), "."));
@@ -217,6 +222,7 @@ namespace BookmarkStudio
                 ReloadBookmarks(bookmarks);
                 _folderPaths.RemoveWhere(path => string.Equals(path, folderNode.FolderPath, StringComparison.OrdinalIgnoreCase)
                     || path.StartsWith(string.Concat(folderNode.FolderPath, "/"), StringComparison.OrdinalIgnoreCase));
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
                 RebuildTree();
                 SetStatus("Folder deleted recursively.");
                 return;
@@ -225,6 +231,7 @@ namespace BookmarkStudio
             ManagedBookmark selectedBookmark = GetRequiredSelection();
             IReadOnlyList<ManagedBookmark> updated = await _operations.RemoveBookmarkAsync(selectedBookmark.BookmarkId, cancellationToken);
             ReloadBookmarks(updated);
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             RebuildTree();
             SetStatus("Bookmark removed.");
         }
@@ -246,6 +253,7 @@ namespace BookmarkStudio
                 : string.Concat(parentPath, "/", BookmarkIdentity.NormalizeFolderPath(folderName));
 
             _folderPaths.Add(createdPath);
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             RebuildTree();
             SelectFolder(createdPath);
             SetStatus("Folder created.");
@@ -279,6 +287,7 @@ namespace BookmarkStudio
                 _folderPaths.Add(string.Concat(renamedPath, suffix));
             }
 
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             RebuildTree();
             SelectFolder(renamedPath);
             SetStatus("Folder renamed.");
@@ -290,6 +299,7 @@ namespace BookmarkStudio
             IReadOnlyList<ManagedBookmark> bookmarks = await _operations.MoveBookmarkToFolderAsync(selectedBookmark.BookmarkId, targetFolderPath, cancellationToken);
             ReloadBookmarks(bookmarks);
             _folderPaths.Add(BookmarkIdentity.NormalizeFolderPath(targetFolderPath));
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             RebuildTree();
             SelectBookmark(selectedBookmark.BookmarkId);
             SetStatus("Bookmark moved.");
@@ -306,12 +316,14 @@ namespace BookmarkStudio
 
         internal int ApplySearchText(string searchText)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             SearchText = searchText;
             return CountVisibleBookmarks(RootNodes);
         }
 
         internal void Clear()
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             _bookmarks.Clear();
             RootNodes.Clear();
             BookmarkRows.Clear();
@@ -323,7 +335,10 @@ namespace BookmarkStudio
         }
 
         internal void ClearSearch()
-            => SearchText = string.Empty;
+                {
+                    ThreadHelper.ThrowIfNotOnUIThread();
+                    SearchText = string.Empty;
+                }
 
         internal void SelectBookmark(string? bookmarkId)
         {
@@ -333,7 +348,7 @@ namespace BookmarkStudio
                 return;
             }
 
-            BookmarkItemNodeViewModel? node = FindBookmarkNode(RootNodes, bookmarkId);
+            BookmarkItemNodeViewModel? node = FindBookmarkNode(RootNodes, bookmarkId!);
             SelectedNode = node;
         }
 
@@ -420,6 +435,7 @@ namespace BookmarkStudio
 
         private void RebuildTree()
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             string? selectedBookmarkId = SelectedBookmark?.BookmarkId;
             string? selectedFolderPath = SelectedNode is FolderNodeViewModel folderNode ? folderNode.FolderPath : null;
 
@@ -668,7 +684,7 @@ namespace BookmarkStudio
 
         private static bool Contains(string? value, string search)
             => !string.IsNullOrWhiteSpace(value)
-                && value.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
+                && value!.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
 
         private void OnPropertyChanged([CallerMemberName] string? propertyName = null)
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
@@ -687,7 +703,7 @@ namespace BookmarkStudio
 
             public string Path => string.IsNullOrEmpty(Parent?.Path)
                 ? Name
-                : string.Concat(Parent.Path, "/", Name);
+                : string.Concat(Parent!.Path, "/", Name);
 
             public Dictionary<string, FolderBuilderNode> Children { get; } = new Dictionary<string, FolderBuilderNode>(StringComparer.OrdinalIgnoreCase);
 

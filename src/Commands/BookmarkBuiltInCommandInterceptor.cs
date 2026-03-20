@@ -24,7 +24,7 @@ namespace BookmarkStudio
 
         private static CommandProgression Execute(Func<CancellationToken, Task> action)
         {
-            _ = ThreadHelper.JoinableTaskFactory.RunAsync(() => ExecuteAsync(action));
+            ThreadHelper.JoinableTaskFactory.RunAsync(() => ExecuteAsync(action)).FireAndForget();
 
             return CommandProgression.Stop;
         }

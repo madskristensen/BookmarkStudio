@@ -17,21 +17,62 @@ namespace BookmarkStudio
             BookmarkGlyphTag? bookmarkTag = tag as BookmarkGlyphTag;
             string tooltip = BuildTooltip(bookmarkTag);
             Brush background = GetGlyphBrush(bookmarkTag);
-
-            Border glyph = new Border
-            {
-                Width = 10,
-                Height = 10,
-                Background = background,
-                CornerRadius = new CornerRadius(2),
-                ToolTip = tooltip,
-                Margin = new Thickness(0, 2, 0, 0),
-            };
+            ContextMenu? contextMenu = null;
 
             if (bookmarkTag is not null && !string.IsNullOrEmpty(bookmarkTag.BookmarkId))
             {
-                glyph.ContextMenu = BuildGlyphContextMenu(bookmarkTag.BookmarkId);
+                contextMenu = BuildGlyphContextMenu(bookmarkTag.BookmarkId);
             }
+
+            // If there's a slot number, render it as text on the glyph
+            if (bookmarkTag?.SlotNumber.HasValue == true)
+            {
+                Grid container = new Grid
+                {
+                    Width = 14,
+                    Height = 14,
+                    Margin = new Thickness(0, 0, 0, 0),
+                    ToolTip = tooltip,
+                    ContextMenu = contextMenu,
+                };
+
+                container.Children.Add(new Border
+                {
+                    Background = background,
+                    CornerRadius = new CornerRadius(3),
+                });
+
+                container.Children.Add(new TextBlock
+                {
+                    Text = bookmarkTag.SlotNumber.Value.ToString(),
+                    Foreground = Brushes.White,
+                    FontSize = 11,
+                    FontWeight = FontWeights.Bold,
+                    FontFamily = new FontFamily("Segoe UI"),
+                    HorizontalAlignment = HorizontalAlignment.Center,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Effect = new System.Windows.Media.Effects.DropShadowEffect
+                    {
+                        Color = Colors.Black,
+                        BlurRadius = 1,
+                        ShadowDepth = 0,
+                        Opacity = 0.5,
+                    },
+                });
+
+                return container;
+            }
+
+            Border glyph = new Border
+            {
+                Width = 14,
+                Height = 14,
+                Background = background,
+                CornerRadius = new CornerRadius(3),
+                ToolTip = tooltip,
+                Margin = new Thickness(0, 0, 0, 0),
+                ContextMenu = contextMenu,
+            };
 
             return glyph;
         }
@@ -70,7 +111,7 @@ namespace BookmarkStudio
 
                     await BookmarkOperationsService.Current.RenameLabelAsync(bookmarkId, newLabel, CancellationToken.None);
                     await BookmarkManagerToolWindow.RefreshIfVisibleAsync(bookmarkId, CancellationToken.None);
-                });
+                }).FireAndForget();
             };
 
             menu.Items.Add(item);
@@ -93,7 +134,7 @@ namespace BookmarkStudio
                 {
                     await BookmarkOperationsService.Current.SetColorAsync(bookmarkId, color, CancellationToken.None);
                     await BookmarkManagerToolWindow.RefreshIfVisibleAsync(bookmarkId, CancellationToken.None);
-                });
+                }).FireAndForget();
             };
 
             menu.Items.Add(item);

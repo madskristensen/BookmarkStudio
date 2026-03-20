@@ -32,7 +32,10 @@ namespace BookmarkStudio
             => _currentControl?.SelectedFolderPath;
 
         internal static void ClearIfVisible()
-            => _currentControl?.ViewModel.Clear();
+                {
+                    ThreadHelper.ThrowIfNotOnUIThread();
+                    _currentControl?.ViewModel.Clear();
+                }
 
         internal static async Task ShowAndRefreshAsync(CancellationToken cancellationToken)
         {
@@ -123,7 +126,10 @@ namespace BookmarkStudio
             }
 
             public override void ClearSearch()
-                => _currentControl?.ViewModel.ClearSearch();
+                        {
+                            ThreadHelper.ThrowIfNotOnUIThread();
+                            _currentControl?.ViewModel.ClearSearch();
+                        }
         }
 
         private sealed class BookmarkManagerSearchTask : VsSearchTask
@@ -149,11 +155,11 @@ namespace BookmarkStudio
                     }
                     else
                     {
-                        _ = ThreadHelper.JoinableTaskFactory.RunAsync(async delegate
+                        ThreadHelper.JoinableTaskFactory.RunAsync(async delegate
                         {
                             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                             ApplySearchResults();
-                        });
+                        }).FireAndForget();
                     }
                 }
                 catch (Exception ex)
@@ -167,6 +173,7 @@ namespace BookmarkStudio
 
             private void ApplySearchResults()
             {
+                ThreadHelper.ThrowIfNotOnUIThread();
                 uint resultCount = (uint)_viewModel.ApplySearchText(SearchQuery.SearchString);
                 SearchResults = resultCount;
                 _viewModel.SetStatus(string.Concat(resultCount.ToString(System.Globalization.CultureInfo.InvariantCulture), " matching bookmarks."));

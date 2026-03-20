@@ -311,6 +311,11 @@ namespace BookmarkStudio
                 await ex.LogAsync();
                 _viewModel.SetStatus(ex.Message);
             }
+            catch (Exception ex)
+            {
+                await ex.LogAsync();
+                _viewModel.SetStatus("An unexpected error occurred.");
+            }
         }
 
         private async Task CopyLocationAsync()
@@ -335,6 +340,11 @@ namespace BookmarkStudio
             {
                 await ex.LogAsync();
                 _viewModel.SetStatus(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                await ex.LogAsync();
+                _viewModel.SetStatus("An unexpected error occurred.");
             }
         }
 

@@ -1,10 +1,7 @@
-global using Community.VisualStudio.Toolkit;
-
-global using Microsoft.VisualStudio.Shell;
-
 global using System;
 global using System.Threading.Tasks;
-
+global using Community.VisualStudio.Toolkit;
+global using Microsoft.VisualStudio.Shell;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.VisualStudio;
@@ -17,6 +14,9 @@ namespace BookmarkStudio
     [ProvideAutoLoad(VSConstants.UICONTEXT.NoSolution_string, PackageAutoLoadFlags.BackgroundLoad)]
     [ProvideAutoLoad(VSConstants.UICONTEXT.SolutionExists_string, PackageAutoLoadFlags.BackgroundLoad)]
     [ProvideToolWindow(typeof(BookmarkManagerToolWindow.Pane), Style = VsDockStyle.Tabbed, Window = "34e76e81-ee4a-11d0-ae2e-00a0c90fffc3")]
+    [ProvideToolWindowVisibility(typeof(BookmarkManagerToolWindow), VSConstants.UICONTEXT.SolutionHasSingleProject_string)]
+    [ProvideToolWindowVisibility(typeof(BookmarkManagerToolWindow), VSConstants.UICONTEXT.SolutionHasMultipleProjects_string)]
+    //[ProvideOptionPage(typeof(OptionsProvider.GeneralOptions), "Bookmark Studio", "General", 0, 0, true, ProvidesLocalizedCategoryName = false)]
     [Guid(PackageGuids.BookmarkStudioString)]
     public sealed class BookmarkStudioPackage : ToolkitPackage
     {
@@ -44,6 +44,7 @@ namespace BookmarkStudio
 
         private void OnAfterCloseSolution()
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             BookmarkStudioSession.Current.Clear();
             BookmarkManagerToolWindow.ClearIfVisible();
         }

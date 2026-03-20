@@ -100,7 +100,7 @@ public class BookmarkManagerViewModelTests
 
         viewModel.Clear();
 
-        Assert.AreEqual(0, viewModel.RootNodes.Count);
+        Assert.IsEmpty(viewModel.RootNodes);
         Assert.IsNull(viewModel.SelectedBookmark);
         Assert.AreEqual(string.Empty, viewModel.SearchText);
         Assert.AreEqual("No solution loaded.", viewModel.StatusText);
@@ -118,7 +118,7 @@ public class BookmarkManagerViewModelTests
             new ManagedBookmark { BookmarkId = "a-1", DocumentPath = @"C:\repo\a1.cs", LineNumber = 4, Group = "Team/Backlog" },
         }, new[] { string.Empty, "Zeta", "Team", "Team/Backlog" });
 
-        Assert.AreEqual(1, viewModel.RootNodes.Count);
+        Assert.HasCount(1, viewModel.RootNodes);
         Assert.AreEqual("Root", viewModel.RootNodes[0].DisplayText);
 
         FolderNodeViewModel rootFolder = (FolderNodeViewModel)viewModel.RootNodes[0];
@@ -181,7 +181,7 @@ public class BookmarkManagerViewModelTests
         BookmarkManagerViewModel viewModel = new BookmarkManagerViewModel();
         viewModel.LoadForTests(Array.Empty<ManagedBookmark>(), new[] { string.Empty, "FolderA", "FolderA/Sub" });
 
-        Assert.AreEqual(2, viewModel.BookmarkRows.Count);
+        Assert.HasCount(2, viewModel.BookmarkRows);
         Assert.IsTrue(viewModel.BookmarkRows.All(row => row.IsFolderPlaceholder));
         CollectionAssert.AreEquivalent(
             new[] { "FolderA", "FolderA/Sub" },

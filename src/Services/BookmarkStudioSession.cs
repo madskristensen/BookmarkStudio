@@ -115,22 +115,25 @@ namespace BookmarkStudio
         }
 
         public async Task<ManagedBookmark?> ToggleBookmarkAsync(BookmarkSnapshot snapshot, CancellationToken cancellationToken)
-        {
-            await _repositoryGate.WaitAsync(cancellationToken);
-            try
-            {
-                string solutionPath = await GetSolutionPathAsync(cancellationToken);
-                ManagedBookmark? bookmark = await _repositoryService.ToggleAsync(solutionPath, snapshot, cancellationToken);
-                BookmarkWorkspaceState workspace = await _repositoryService.LoadWorkspaceAsync(solutionPath, cancellationToken);
-                BookmarkRepositoryService.NormalizeWorkspaceState(workspace);
-                SetCachedState(BookmarkRepositoryService.ToManagedBookmarks(workspace.Bookmarks), workspace.FolderPaths);
-                return bookmark;
-            }
-            finally
-            {
-                _repositoryGate.Release();
-            }
-        }
+                    => await ToggleBookmarkAsync(snapshot, label: null, cancellationToken);
+
+                public async Task<ManagedBookmark?> ToggleBookmarkAsync(BookmarkSnapshot snapshot, string? label, CancellationToken cancellationToken)
+                {
+                    await _repositoryGate.WaitAsync(cancellationToken);
+                    try
+                    {
+                        string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                        ManagedBookmark? bookmark = await _repositoryService.ToggleAsync(solutionPath, snapshot, label, cancellationToken);
+                        BookmarkWorkspaceState workspace = await _repositoryService.LoadWorkspaceAsync(solutionPath, cancellationToken);
+                        BookmarkRepositoryService.NormalizeWorkspaceState(workspace);
+                        SetCachedState(BookmarkRepositoryService.ToManagedBookmarks(workspace.Bookmarks), workspace.FolderPaths);
+                        return bookmark;
+                    }
+                    finally
+                    {
+                        _repositoryGate.Release();
+                    }
+                }
 
         public void Clear()
             => SetCachedState(Array.Empty<ManagedBookmark>(), new[] { string.Empty });

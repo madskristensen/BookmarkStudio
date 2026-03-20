@@ -31,7 +31,23 @@ namespace BookmarkStudio
             => GetRequiredBookmarkAsync(bookmarkId, cancellationToken);
 
         public Task<ManagedBookmark?> ToggleBookmarkAsync(CancellationToken cancellationToken)
-            => ToggleActiveBookmarkAsync(cancellationToken);
+            => ToggleActiveBookmarkAsync(label: null, cancellationToken);
+
+        public Task<ManagedBookmark?> ToggleBookmarkAsync(string? label, CancellationToken cancellationToken)
+            => ToggleActiveBookmarkAsync(label, cancellationToken);
+
+        public async Task<bool> HasBookmarkAtCurrentLocationAsync(CancellationToken cancellationToken)
+        {
+            IReadOnlyList<ManagedBookmark> bookmarks = await _session.RefreshAsync(cancellationToken);
+            ManagedBookmark? activeBookmark = await GetActiveBookmarkAsync(bookmarks, cancellationToken);
+            return activeBookmark is not null;
+        }
+
+        public async Task<string> GetNextDefaultLabelAsync(CancellationToken cancellationToken)
+        {
+            IReadOnlyList<BookmarkMetadata> metadata = await _session.LoadMetadataAsync(cancellationToken);
+            return BookmarkRepositoryService.FindNextDefaultLabel(metadata);
+        }
 
         public bool CanToggleBookmarkInActiveDocument()
         {
@@ -373,10 +389,10 @@ namespace BookmarkStudio
             return bookmark;
         }
 
-        private async Task<ManagedBookmark?> ToggleActiveBookmarkAsync(CancellationToken cancellationToken)
+        private async Task<ManagedBookmark?> ToggleActiveBookmarkAsync(string? label, CancellationToken cancellationToken)
         {
             BookmarkSnapshot snapshot = await CaptureActiveSnapshotAsync(cancellationToken);
-            ManagedBookmark? bookmark = await _session.ToggleBookmarkAsync(snapshot, cancellationToken);
+            ManagedBookmark? bookmark = await _session.ToggleBookmarkAsync(snapshot, label, cancellationToken);
 
             if (bookmark is null)
             {

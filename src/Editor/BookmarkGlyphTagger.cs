@@ -101,7 +101,7 @@ namespace BookmarkStudio
                 return;
             }
 
-            _ = ThreadHelper.JoinableTaskFactory.RunAsync(async delegate
+            ThreadHelper.JoinableTaskFactory.RunAsync(async delegate
             {
                 await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
 
@@ -113,7 +113,7 @@ namespace BookmarkStudio
                 ITextSnapshot snapshot = _buffer.CurrentSnapshot;
                 SnapshotSpan span = new SnapshotSpan(snapshot, 0, snapshot.Length);
                 TagsChanged?.Invoke(this, new SnapshotSpanEventArgs(span));
-            });
+            }).FireAndForget();
         }
     }
 }
