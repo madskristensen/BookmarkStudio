@@ -1,76 +1,136 @@
-# BookmarkStudio
+[marketplace]: <https://marketplace.visualstudio.com/items?itemName=MadsKristensen.BookmarkStudio>
+[vsixgallery]: <https://www.vsixgallery.com/extension/BookmarkStudio.7ed28d42-37b3-4773-8a6e-e9ca6403a0fc>
+[repo]: <https://github.com/madskristensen/BookmarkStudio>
+
+# BookmarkStudio for Visual Studio
 
 [![Build](https://github.com/madskristensen/BookmarkStudio/actions/workflows/build.yaml/badge.svg)](https://github.com/madskristensen/BookmarkStudio/actions/workflows/build.yaml)
 
-BookmarkStudio is a Visual Studio extension for managing code bookmarks across an entire solution. It adds a dedicated bookmark manager, richer bookmark metadata, quick slot navigation, export options, and bookmark tracking that stays useful as files change.
+Download this extension from the [Visual Studio Marketplace][marketplace]
+or get the latest CI build from [Open VSIX Gallery][vsixgallery].
 
-## Install
+--------------------------------------
 
-Download from the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=MadsKristensen.BookmarkStudio) or grab the latest CI build from the [Open VSIX Gallery](https://www.vsixgallery.com/).
+**BookmarkStudio helps you manage bookmarks across your entire solution, not just the current file.**
+
+## ✨ Key Features at a Glance
+
+- **Solution-wide Bookmark Manager** — View all bookmarks in one place
+- **Color-coded bookmarks** — Assign Orange, Red, Yellow, Green, Blue, Purple, Pink, or Teal
+- **Quick slots (1-9)** — Auto-assign, reassign, clear, and jump directly to slot bookmarks
+- **Built-in command interception** — Existing VS bookmark shortcuts work with BookmarkStudio
+- **Fast navigation** — Go to next/previous bookmark and jump from the manager
+- **Search + sorting** — Filter bookmarks and sort by slot, file, line, label, preview, or color
+- **Editor glyphs** — Colored glyphs in the margin with contextual actions
+- **Export options** — Export as plain text, Markdown, or CSV
+- **Persistent metadata** — Saves labels, colors, slots, and history per solution
+
+## Why BookmarkStudio?
+
+Visual Studio bookmarks are useful, but they can be hard to manage across larger solutions. BookmarkStudio adds a dedicated workflow for organizing, navigating, and exporting bookmarks with richer metadata and color support.
 
 ## Features
 
-- Toggle a BookmarkStudio bookmark at the current caret location.
-- Open a dedicated **Bookmark Manager** tool window from **View > Other Windows**.
-- Navigate to the next or previous BookmarkStudio bookmark.
-- Assign bookmarks to quick-access slots **1-9** and jump directly to those slots.
-- Add a custom **label** and **group** to each bookmark.
-- Search bookmarks from the tool window search box.
-- Sort bookmarks by **slot**, **file**, **line**, **label**, **group**, or **created date**.
-- Group bookmarks by **group**, **file**, or **slot**.
-- Double-click a bookmark or use the context menu to navigate to it.
-- Copy a bookmark location to the clipboard.
-- Export bookmarks as **plain text**, **Markdown**, or **CSV**.
-- Show bookmark glyphs in the editor margin.
-- Automatically refresh bookmark data when documents open, save, or window focus changes.
-- Track bookmark positions as text moves in edited files.
-- Persist bookmark metadata per solution.
+### Bookmark Manager Tool Window
+
+Open **View > Other Windows > Bookmark Manager** to manage bookmarks in a dedicated grid.
+
+- Search bookmarks by label, file, path, preview text, location, slot, or color
+- Sort by slot, file, line, label, preview, or color
+- Navigate by double-click or context menu
+- Edit label, assign/clear slot, set color, copy location, and remove bookmarks
+
+### Color Support
+
+Each bookmark has a color and shows as a colored square in both:
+
+- Bookmark Manager grid
+- Editor glyph margin
+
+Available colors:
+
+- Orange (default)
+- Red
+- Yellow
+- Green
+- Blue
+- Purple
+- Pink
+- Teal
+
+You can change color from:
+
+- Bookmark Manager context menu (**Set Color**)
+- Glyph context menu in the editor margin
+
+### Slot-based Navigation (1-9)
+
+BookmarkStudio supports quick-access slots:
+
+- New bookmarks are auto-assigned the first available slot when possible
+- Assign a bookmark to any slot from 1 to 9
+- Reassigning a slot moves it to the selected bookmark
+- Clear slot assignment without removing the bookmark
+- Navigate directly with **Go To Bookmark Slot 1-9** commands
+
+Default keybindings:
+
+- **Alt+Shift+1** through **Alt+Shift+9**
+
+### Built-in Bookmark Command Integration
+
+BookmarkStudio intercepts Visual Studio built-in bookmark commands so existing workflows continue to work while using BookmarkStudio metadata and UI.
+
+### Export
+
+Export bookmarks from the manager toolbar to:
+
+- **Plain text** (`.txt`)
+- **Markdown** (`.md`)
+- **CSV** (`.csv`)
+
+Exports include slot and color values.
+
+### Tracking and Refresh
+
+BookmarkStudio keeps bookmarks accurate as files change:
+
+- Tracks bookmark positions as text moves
+- Refreshes bookmark data when documents open, save, or focus changes
+- Updates manager and glyphs as metadata changes
 
 ## Bookmark metadata
 
-Each bookmark can store:
+Each bookmark stores:
 
-- Slot number
+- Slot number (optional)
 - Label
-- Group
-- File and line location
+- Color
+- File path, line, and column location
 - Line preview text
 - Created timestamp
 - Last visited timestamp
 
-## How to use
-
-1. Run **Toggle BookmarkStudio Bookmark** to add or remove a bookmark on the current line.
-2. Open **Bookmark Manager** from **View > Other Windows**.
-3. Select a bookmark to edit its **Label**, **Group**, or **Slot**.
-4. Use **Navigate**, **Remove**, **Clear Group**, **Clear Slot**, or **Copy Location** from the tool window.
-5. Use the manager toolbar to **refresh** or **export** bookmarks.
-
 ## Commands
 
-BookmarkStudio exposes commands for:
+BookmarkStudio provides commands for:
 
-- Opening the Bookmark Manager
-- Toggling the current bookmark
-- Navigating to the next bookmark
-- Navigating to the previous bookmark
-- Assigning slot 1 through 9
-- Going to slot 1 through 9
-- Renaming a bookmark label
-- Setting or clearing a bookmark group
-- Clearing a bookmark slot
-- Copying a bookmark location
-- Exporting bookmarks
-
-These commands can be bound to keyboard shortcuts from Visual Studio's keyboard settings.
+- Open Bookmark Manager
+- Refresh Bookmark Manager
+- Toggle BookmarkStudio bookmark at caret
+- Go to next BookmarkStudio bookmark
+- Go to previous BookmarkStudio bookmark
+- Go to bookmark slot 1 through 9
+- Export bookmarks
+- Delete selected bookmark (from manager toolbar)
 
 ## Storage
 
-BookmarkStudio stores solution-specific bookmark metadata under:
+Solution-specific metadata is stored at:
 
-`.vs/<solution-name>/BookmarkStudio/bookmark-metadata.dat`
+`.vs/bookmarks.json`
 
-If no solution is available, it falls back to a transient location under local app data.
+If no solution is loaded, BookmarkStudio uses a transient location under local app data.
 
 ## Compatibility
 

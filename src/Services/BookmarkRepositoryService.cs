@@ -107,7 +107,7 @@ namespace BookmarkStudio
         /// </summary>
         private static int? FindNextAvailableSlot(IEnumerable<BookmarkMetadata> bookmarks)
         {
-            HashSet<int> usedSlots = new HashSet<int>(bookmarks.Where(b => b.SlotNumber.HasValue).Select(b => b.SlotNumber.Value));
+            HashSet<int> usedSlots = new HashSet<int>(bookmarks.Where(b => b.SlotNumber.HasValue).Select(b => b.SlotNumber.GetValueOrDefault()));
 
             for (int slot = 1; slot <= 9; slot++)
             {

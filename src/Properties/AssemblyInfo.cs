@@ -1,7 +1,8 @@
-﻿using BookmarkStudio;
+using BookmarkStudio;
 
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 [assembly: AssemblyTitle(Vsix.Name)]
 [assembly: AssemblyDescription(Vsix.Description)]
@@ -16,6 +17,7 @@ using System.Runtime.InteropServices;
 
 [assembly: AssemblyVersion(Vsix.Version)]
 [assembly: AssemblyFileVersion(Vsix.Version)]
+[assembly: InternalsVisibleTo("BookmarkStudio.Test")]
 
 namespace System.Runtime.CompilerServices
 {

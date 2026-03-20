@@ -33,7 +33,7 @@ namespace BookmarkStudio
             VS.Events.SolutionEvents.OnAfterCloseSolution += OnAfterCloseSolution;
         }
 
-        private void OnAfterOpenSolution(Solution obj)
+        private void OnAfterOpenSolution(Solution? obj)
         {
             JoinableTaskFactory.RunAsync(async () =>
             {

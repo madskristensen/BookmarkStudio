@@ -1,6 +1,4 @@
-using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
@@ -46,13 +44,13 @@ namespace BookmarkStudio
 
         private async void EditLabelMenuItem_Click(object sender, RoutedEventArgs e)
         {
-            ManagedBookmark bookmark = _viewModel.SelectedBookmark;
+            ManagedBookmark? bookmark = _viewModel.SelectedBookmark;
             if (bookmark is null)
             {
                 return;
             }
 
-            string newLabel = TextPromptWindow.Show("Edit Label", "Enter a label for the bookmark:", bookmark.Label);
+            string? newLabel = TextPromptWindow.Show("Edit Label", "Enter a label for the bookmark:", bookmark.Label);
             if (newLabel is null)
             {
                 return;
@@ -181,5 +179,5 @@ namespace BookmarkStudio
             }
         }
 
-            }
-        }
+    }
+}

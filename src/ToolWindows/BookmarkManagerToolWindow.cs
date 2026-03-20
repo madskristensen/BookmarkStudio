@@ -83,7 +83,7 @@ namespace BookmarkStudio
             {
                 if (_currentControl is null || pSearchQuery is null || pSearchCallback is null)
                 {
-                    return null;
+                    return null!;
                 }
 
                 return new BookmarkManagerSearchTask(dwCookie, pSearchQuery, pSearchCallback, _currentControl.ViewModel);

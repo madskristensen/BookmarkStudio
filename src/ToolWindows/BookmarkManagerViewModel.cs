@@ -17,7 +17,7 @@ namespace BookmarkStudio
         private int? _selectedSlotNumber;
         private string _selectedLabelText = string.Empty;
         private string _statusText = "Loading bookmarks...";
-        private string _columnSortProperty;
+        private string? _columnSortProperty;
         private ListSortDirection _columnSortDirection = ListSortDirection.Ascending;
 
         public BookmarkManagerViewModel()
@@ -35,7 +35,7 @@ namespace BookmarkStudio
 
         public IReadOnlyList<int> SlotOptions { get; } = Enumerable.Range(1, 9).ToArray();
 
-        internal string ColumnSortProperty => _columnSortProperty;
+        internal string? ColumnSortProperty => _columnSortProperty;
 
         internal ListSortDirection ColumnSortDirection => _columnSortDirection;
 
@@ -325,7 +325,7 @@ namespace BookmarkStudio
         }
 
         private static bool Contains(string? value, string search)
-            => !string.IsNullOrWhiteSpace(value) && value.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
+            => value is { Length: > 0 } && value.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
 
         private void OnPropertyChanged([CallerMemberName] string propertyName = "")
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));

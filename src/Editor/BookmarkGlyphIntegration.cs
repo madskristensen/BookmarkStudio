@@ -35,30 +35,34 @@ namespace BookmarkStudio
     internal sealed class BookmarkGlyphTaggerProvider : IViewTaggerProvider
     {
         [Import]
-        internal ITextDocumentFactoryService TextDocumentFactoryService = null;
+        internal ITextDocumentFactoryService TextDocumentFactoryService = null!;
 
         public ITagger<T> CreateTagger<T>(ITextView textView, ITextBuffer buffer)
             where T : ITag
         {
             if (textView is null || buffer is null || textView.TextBuffer != buffer)
             {
-                return null;
+                return null!;
             }
 
             if (!TextDocumentFactoryService.TryGetTextDocument(buffer, out ITextDocument document))
             {
-                return null;
+                return null!;
             }
 
-            return buffer.Properties.GetOrCreateSingletonProperty(() => new BookmarkGlyphTagger(buffer, document.FilePath)) as ITagger<T>;
+            BookmarkGlyphTagger tagger = buffer.Properties.GetOrCreateSingletonProperty(() => new BookmarkGlyphTagger(buffer, document.FilePath));
+            tagger.AttachToView(textView);
+            return tagger as ITagger<T> ?? null!;
         }
     }
 
-    internal sealed class BookmarkGlyphTagger : ITagger<BookmarkGlyphTag>
+    internal sealed class BookmarkGlyphTagger : ITagger<BookmarkGlyphTag>, IDisposable
     {
         private readonly ITextBuffer _buffer;
         private readonly string _documentPath;
         private readonly string _normalizedDocumentPath;
+        private int _attachedViewCount;
+        private int _isDisposed;
 
         public BookmarkGlyphTagger(ITextBuffer buffer, string documentPath)
         {
@@ -68,7 +72,28 @@ namespace BookmarkStudio
             BookmarkStudioSession.Current.BookmarksChanged += OnBookmarksChanged;
         }
 
-        public event EventHandler<SnapshotSpanEventArgs> TagsChanged;
+        public void AttachToView(ITextView textView)
+        {
+            if (textView is null)
+            {
+                return;
+            }
+
+            Interlocked.Increment(ref _attachedViewCount);
+            EventHandler? closedHandler = null;
+            closedHandler = (sender, args) =>
+            {
+                textView.Closed -= closedHandler;
+                if (Interlocked.Decrement(ref _attachedViewCount) == 0)
+                {
+                    Dispose();
+                }
+            };
+
+            textView.Closed += closedHandler;
+        }
+
+        public event EventHandler<SnapshotSpanEventArgs>? TagsChanged;
 
         public IEnumerable<ITagSpan<BookmarkGlyphTag>> GetTags(NormalizedSnapshotSpanCollection spans)
         {
@@ -108,9 +133,24 @@ namespace BookmarkStudio
 
         private void OnBookmarksChanged(object sender, EventArgs e)
         {
+            if (Volatile.Read(ref _isDisposed) == 1)
+            {
+                return;
+            }
+
             ITextSnapshot snapshot = _buffer.CurrentSnapshot;
             SnapshotSpan span = new SnapshotSpan(snapshot, 0, snapshot.Length);
             TagsChanged?.Invoke(this, new SnapshotSpanEventArgs(span));
+        }
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _isDisposed, 1) == 1)
+            {
+                return;
+            }
+
+            BookmarkStudioSession.Current.BookmarksChanged -= OnBookmarksChanged;
         }
     }
 
@@ -129,7 +169,7 @@ namespace BookmarkStudio
     {
         public UIElement GenerateGlyph(IWpfTextViewLine line, IGlyphTag tag)
         {
-            BookmarkGlyphTag bookmarkTag = tag as BookmarkGlyphTag;
+            BookmarkGlyphTag? bookmarkTag = tag as BookmarkGlyphTag;
             string tooltip = BuildTooltip(bookmarkTag);
             Brush background = GetGlyphBrush(bookmarkTag);
 
@@ -190,7 +230,7 @@ namespace BookmarkStudio
             menu.Items.Add(item);
         }
 
-        private static Brush GetGlyphBrush(BookmarkGlyphTag bookmarkTag)
+        private static Brush GetGlyphBrush(BookmarkGlyphTag? bookmarkTag)
         {
             if (bookmarkTag is null)
             {
@@ -200,7 +240,7 @@ namespace BookmarkStudio
             return BookmarkColorToBrushConverter.GetBrush(bookmarkTag.Color);
         }
 
-        private static string BuildTooltip(BookmarkGlyphTag bookmarkTag)
+        private static string BuildTooltip(BookmarkGlyphTag? bookmarkTag)
         {
             if (bookmarkTag is null)
             {
@@ -212,7 +252,7 @@ namespace BookmarkStudio
 
             if (hasLabel && hasSlot)
             {
-                return string.Concat(bookmarkTag.Label, " [Slot ", bookmarkTag.SlotNumber.Value.ToString(), "]");
+                return string.Concat(bookmarkTag.Label, " [Slot ", bookmarkTag.SlotNumber.GetValueOrDefault().ToString(), "]");
             }
 
             if (hasLabel)
@@ -222,7 +262,7 @@ namespace BookmarkStudio
 
             if (hasSlot)
             {
-                return string.Concat("Slot ", bookmarkTag.SlotNumber.Value.ToString());
+                return string.Concat("Slot ", bookmarkTag.SlotNumber.GetValueOrDefault().ToString());
             }
 
             return "BookmarkStudio bookmark";

@@ -10,6 +10,7 @@ namespace BookmarkStudio
 
         private readonly BookmarkMetadataStore _metadataStore = new BookmarkMetadataStore();
         private readonly BookmarkRepositoryService _repositoryService;
+        private readonly SemaphoreSlim _repositoryGate = new SemaphoreSlim(1, 1);
         private IReadOnlyList<ManagedBookmark> _cachedBookmarks = Array.Empty<ManagedBookmark>();
 
         private BookmarkStudioSession()
@@ -27,44 +28,92 @@ namespace BookmarkStudio
 
         public async Task<IReadOnlyList<ManagedBookmark>> RefreshAsync(CancellationToken cancellationToken)
         {
-            string solutionPath = await GetSolutionPathAsync(cancellationToken);
-            SetCachedBookmarks(await _repositoryService.ListAsync(solutionPath, cancellationToken));
-            return _cachedBookmarks;
+            await _repositoryGate.WaitAsync(cancellationToken);
+            try
+            {
+                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                SetCachedBookmarks(await _repositoryService.ListAsync(solutionPath, cancellationToken));
+                return _cachedBookmarks;
+            }
+            finally
+            {
+                _repositoryGate.Release();
+            }
         }
 
         public async Task<IReadOnlyList<BookmarkMetadata>> LoadMetadataAsync(CancellationToken cancellationToken)
         {
-            string solutionPath = await GetSolutionPathAsync(cancellationToken);
-            return await _repositoryService.LoadAsync(solutionPath, cancellationToken);
+            await _repositoryGate.WaitAsync(cancellationToken);
+            try
+            {
+                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                return await _repositoryService.LoadAsync(solutionPath, cancellationToken);
+            }
+            finally
+            {
+                _repositoryGate.Release();
+            }
         }
 
         public async Task SaveMetadataAsync(IEnumerable<BookmarkMetadata> metadata, CancellationToken cancellationToken)
         {
-            string solutionPath = await GetSolutionPathAsync(cancellationToken);
-            await _repositoryService.SaveAsync(solutionPath, metadata, cancellationToken);
-            SetCachedBookmarks(BookmarkRepositoryService.ToManagedBookmarks(metadata));
+            await _repositoryGate.WaitAsync(cancellationToken);
+            try
+            {
+                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                await _repositoryService.SaveAsync(solutionPath, metadata, cancellationToken);
+                SetCachedBookmarks(BookmarkRepositoryService.ToManagedBookmarks(metadata));
+            }
+            finally
+            {
+                _repositoryGate.Release();
+            }
         }
 
         public async Task<IReadOnlyList<ManagedBookmark>> UpdateBookmarksAsync(Action<List<BookmarkMetadata>> updateAction, CancellationToken cancellationToken)
         {
-            string solutionPath = await GetSolutionPathAsync(cancellationToken);
-            SetCachedBookmarks(await _repositoryService.UpdateAsync(solutionPath, updateAction, cancellationToken));
-            return _cachedBookmarks;
+            await _repositoryGate.WaitAsync(cancellationToken);
+            try
+            {
+                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                SetCachedBookmarks(await _repositoryService.UpdateAsync(solutionPath, updateAction, cancellationToken));
+                return _cachedBookmarks;
+            }
+            finally
+            {
+                _repositoryGate.Release();
+            }
         }
 
         public async Task<IReadOnlyList<ManagedBookmark>> TryUpdateBookmarksAsync(Func<List<BookmarkMetadata>, bool> updateAction, CancellationToken cancellationToken)
         {
-            string solutionPath = await GetSolutionPathAsync(cancellationToken);
-            SetCachedBookmarks(await _repositoryService.TryUpdateAsync(solutionPath, updateAction, cancellationToken));
-            return _cachedBookmarks;
+            await _repositoryGate.WaitAsync(cancellationToken);
+            try
+            {
+                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                SetCachedBookmarks(await _repositoryService.TryUpdateAsync(solutionPath, updateAction, cancellationToken));
+                return _cachedBookmarks;
+            }
+            finally
+            {
+                _repositoryGate.Release();
+            }
         }
 
         public async Task<ManagedBookmark?> ToggleBookmarkAsync(BookmarkSnapshot snapshot, CancellationToken cancellationToken)
         {
-            string solutionPath = await GetSolutionPathAsync(cancellationToken);
-            ManagedBookmark? bookmark = await _repositoryService.ToggleAsync(solutionPath, snapshot, cancellationToken);
-            SetCachedBookmarks(await _repositoryService.ListAsync(solutionPath, cancellationToken));
-            return bookmark;
+            await _repositoryGate.WaitAsync(cancellationToken);
+            try
+            {
+                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                ManagedBookmark? bookmark = await _repositoryService.ToggleAsync(solutionPath, snapshot, cancellationToken);
+                SetCachedBookmarks(await _repositoryService.ListAsync(solutionPath, cancellationToken));
+                return bookmark;
+            }
+            finally
+            {
+                _repositoryGate.Release();
+            }
         }
 
         public void Clear()
@@ -72,8 +121,16 @@ namespace BookmarkStudio
 
         public async Task<string> GetStoragePathAsync(CancellationToken cancellationToken)
         {
-            string solutionPath = await GetSolutionPathAsync(cancellationToken);
-            return _metadataStore.GetStoragePath(solutionPath);
+            await _repositoryGate.WaitAsync(cancellationToken);
+            try
+            {
+                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                return _metadataStore.GetStoragePath(solutionPath);
+            }
+            finally
+            {
+                _repositoryGate.Release();
+            }
         }
 
         private static async Task<string> GetSolutionPathAsync(CancellationToken cancellationToken)

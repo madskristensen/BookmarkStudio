@@ -5,7 +5,7 @@ namespace BookmarkStudio
     {
         protected override async Task ExecuteAsync(OleMenuCmdEventArgs e)
         {
-            string bookmarkId = SelectedBookmarkId;
+            string? bookmarkId = SelectedBookmarkId;
             if (string.IsNullOrWhiteSpace(bookmarkId))
             {
                 return;

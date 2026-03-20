@@ -18,7 +18,7 @@ namespace BookmarkStudio
 
     internal static class BookmarkIdentity
     {
-        public static string NormalizeDocumentPath(string path)
+        public static string NormalizeDocumentPath(string? path)
         {
             if (string.IsNullOrWhiteSpace(path))
             {
@@ -28,7 +28,7 @@ namespace BookmarkStudio
             return Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).ToUpperInvariant();
         }
 
-        public static string NormalizeLineText(string lineText)
+        public static string NormalizeLineText(string? lineText)
             => (lineText ?? string.Empty).Trim();
 
         public static string CreateExactMatchKey(string documentPath, int lineNumber)

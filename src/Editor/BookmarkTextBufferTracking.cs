@@ -14,7 +14,7 @@ namespace BookmarkStudio
     internal sealed class BookmarkTextViewCreationListener : IWpfTextViewCreationListener
     {
         [Import]
-        internal ITextDocumentFactoryService TextDocumentFactoryService = null;
+        internal ITextDocumentFactoryService TextDocumentFactoryService = null!;
 
         public void TextViewCreated(IWpfTextView textView)
         {
@@ -28,16 +28,19 @@ namespace BookmarkStudio
                 return;
             }
 
-            textView.TextBuffer.Properties.GetOrCreateSingletonProperty(() => new BookmarkTextBufferTracker(textView.TextBuffer, document.FilePath));
+            BookmarkTextBufferTracker tracker = textView.TextBuffer.Properties.GetOrCreateSingletonProperty(() => new BookmarkTextBufferTracker(textView.TextBuffer, document.FilePath));
+            tracker.AttachToView(textView);
         }
     }
 
-    internal sealed class BookmarkTextBufferTracker
+    internal sealed class BookmarkTextBufferTracker : IDisposable
     {
         private readonly string _documentPath;
         private readonly string _normalizedDocumentPath;
-        private readonly SemaphoreSlim _updateGate = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim _updateGate = new(1, 1);
         private readonly ITextBuffer _textBuffer;
+        private int _attachedViewCount;
+        private int _isDisposed;
 
         public BookmarkTextBufferTracker(ITextBuffer textBuffer, string documentPath)
         {
@@ -47,8 +50,33 @@ namespace BookmarkStudio
             _textBuffer.ChangedLowPriority += OnTextBufferChanged;
         }
 
+        public void AttachToView(IWpfTextView textView)
+        {
+            if (textView is null)
+            {
+                return;
+            }
+
+            _ = Interlocked.Increment(ref _attachedViewCount);
+            void closedHandler(object sender, EventArgs args)
+            {
+                textView.Closed -= closedHandler;
+                if (Interlocked.Decrement(ref _attachedViewCount) == 0)
+                {
+                    Dispose();
+                }
+            }
+
+            textView.Closed += closedHandler;
+        }
+
         private void OnTextBufferChanged(object sender, TextContentChangedEventArgs e)
         {
+            if (Volatile.Read(ref _isDisposed) == 1)
+            {
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(_normalizedDocumentPath) || e is null || e.Before is null || e.After is null || e.Changes.Count == 0)
             {
                 return;
@@ -77,14 +105,25 @@ namespace BookmarkStudio
                 }
                 finally
                 {
-                    _updateGate.Release();
+                    _ = _updateGate.Release();
                 }
             });
         }
 
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _isDisposed, 1) == 1)
+            {
+                return;
+            }
+
+            _textBuffer.ChangedLowPriority -= OnTextBufferChanged;
+            _updateGate.Dispose();
+        }
+
         private bool UpdateBookmarks(List<BookmarkMetadata> metadata, ITextSnapshot beforeSnapshot, ITextSnapshot afterSnapshot)
         {
-            List<BookmarkMetadata> documentBookmarks = metadata.Where(bookmark => MatchesDocumentPath(bookmark.DocumentPath)).ToList();
+            var documentBookmarks = metadata.Where(bookmark => MatchesDocumentPath(bookmark.DocumentPath)).ToList();
             if (documentBookmarks.Count == 0)
             {
                 return false;
@@ -116,7 +155,7 @@ namespace BookmarkStudio
             int beforeLineNumber = Clamp(bookmark.LineNumber - 1, 0, Math.Max(beforeSnapshot.LineCount - 1, 0));
             ITextSnapshotLine beforeLine = beforeSnapshot.GetLineFromLineNumber(beforeLineNumber);
             int beforeColumn = Clamp(bookmark.ColumnNumber - 1, 0, beforeLine.Length);
-            SnapshotPoint beforePoint = new SnapshotPoint(beforeSnapshot, beforeLine.Start.Position + beforeColumn);
+            var beforePoint = new SnapshotPoint(beforeSnapshot, beforeLine.Start.Position + beforeColumn);
             SnapshotPoint afterPoint = beforePoint.TranslateTo(afterSnapshot, PointTrackingMode.Positive);
             ITextSnapshotLine afterLine = afterPoint.GetContainingLine();
 
@@ -139,12 +178,7 @@ namespace BookmarkStudio
                 return minimum;
             }
 
-            if (value > maximum)
-            {
-                return maximum;
-            }
-
-            return value;
+            return value > maximum ? maximum : value;
         }
     }
 }
