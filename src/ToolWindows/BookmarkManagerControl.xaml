@@ -1,4 +1,5 @@
 <UserControl x:Class="BookmarkStudio.BookmarkManagerControl"
+             x:Name="Root"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -17,15 +18,30 @@
     <UserControl.Resources>
         <local:BookmarkColorToBrushConverter x:Key="ColorToBrushConverter" />
 
-        <Style x:Key="BookmarkTreeViewItemStyle"
-               TargetType="TreeViewItem"
-               BasedOn="{StaticResource {x:Type TreeViewItem}}">
-            <Setter Property="HorizontalAlignment" Value="Stretch" />
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-            <Setter Property="Padding" Value="2,1" />
+        <CollectionViewSource x:Key="BookmarksGroupedView"
+                              Source="{Binding DataContext.BookmarkRows, Source={x:Reference Root}}" />
+
+        <Style x:Key="RightAlignedTextBlockStyle" TargetType="TextBlock">
+            <Setter Property="HorizontalAlignment" Value="Right" />
+            <Setter Property="TextAlignment" Value="Right" />
+            <Setter Property="Margin" Value="0,0,4,0" />
+        </Style>
+
+        <Style x:Key="ThemedDataGridStyle" TargetType="DataGrid">
+            <Setter Property="Background" Value="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowBackgroundBrushKey}}" />
+            <Setter Property="Foreground" Value="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowTextBrushKey}}" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+        </Style>
+
+        <Style x:Key="ThemedDataGridRowStyle" TargetType="DataGridRow">
             <Setter Property="Background" Value="Transparent" />
             <Setter Property="Foreground" Value="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowTextBrushKey}}" />
             <Style.Triggers>
+                <DataTrigger Binding="{Binding IsFolderPlaceholder}" Value="True">
+                    <Setter Property="Visibility" Value="Collapsed" />
+                    <Setter Property="Height" Value="0" />
+                    <Setter Property="MinHeight" Value="0" />
+                </DataTrigger>
                 <Trigger Property="IsSelected" Value="True">
                     <Setter Property="Background" Value="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarSelectedBrushKey}}" />
                     <Setter Property="Foreground" Value="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarTextActiveBrushKey}}" />
@@ -33,7 +49,7 @@
                 <MultiTrigger>
                     <MultiTrigger.Conditions>
                         <Condition Property="IsSelected" Value="True" />
-                        <Condition Property="IsSelectionActive" Value="True" />
+                        <Condition Property="Selector.IsSelectionActive" Value="True" />
                     </MultiTrigger.Conditions>
                     <Setter Property="Background" Value="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarHoverOverSelectedBrushKey}}" />
                     <Setter Property="Foreground" Value="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarTextHoverOverSelectedBrushKey}}" />
@@ -41,99 +57,162 @@
             </Style.Triggers>
         </Style>
 
-        <HierarchicalDataTemplate DataType="{x:Type local:FolderNodeViewModel}" ItemsSource="{Binding Children}">
-            <Grid HorizontalAlignment="Stretch">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="24" />
-                    <ColumnDefinition Width="*" />
-                </Grid.ColumnDefinitions>
-                <imaging:CrispImage Grid.Column="0"
-                                    Margin="0,0,4,0"
-                                    Width="16"
-                                    Height="16"
-                                    VerticalAlignment="Center">
-                    <imaging:CrispImage.Style>
-                        <Style TargetType="imaging:CrispImage">
-                            <Setter Property="Moniker" Value="{x:Static imageCatalog:KnownMonikers.FolderClosed}" />
-                            <Style.Triggers>
-                                <DataTrigger Binding="{Binding RelativeSource={RelativeSource AncestorType=TreeViewItem}, Path=IsExpanded}" Value="True">
-                                    <Setter Property="Moniker" Value="{x:Static imageCatalog:KnownMonikers.FolderOpened}" />
-                                </DataTrigger>
-                            </Style.Triggers>
-                        </Style>
-                    </imaging:CrispImage.Style>
-                </imaging:CrispImage>
-                <TextBlock Grid.Column="1"
-                           Text="{Binding DisplayText}"
-                           TextTrimming="CharacterEllipsis" />
-            </Grid>
-        </HierarchicalDataTemplate>
+        <Style x:Key="ThemedDataGridCellStyle" TargetType="DataGridCell">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowTextBrushKey}}" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Padding" Value="4,2" />
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarHoverOverSelectedBrushKey}}" />
+                    <Setter Property="Foreground" Value="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarTextHoverOverSelectedBrushKey}}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
 
-        <DataTemplate DataType="{x:Type local:BookmarkItemNodeViewModel}">
-            <Grid Margin="0,1" HorizontalAlignment="Stretch">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="18" />
-                    <ColumnDefinition Width="170" />
-                    <ColumnDefinition Width="220" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="50" />
-                </Grid.ColumnDefinitions>
-                <Border Grid.Column="0"
-                        Width="10"
-                        Height="10"
-                        CornerRadius="2"
-                        BorderThickness="1"
-                        BorderBrush="SaddleBrown"
-                        VerticalAlignment="Center"
-                        Background="{Binding Bookmark.Color, Converter={StaticResource ColorToBrushConverter}}" />
-                <TextBlock Grid.Column="1"
-                           Text="{Binding DisplayText}"
-                           TextTrimming="CharacterEllipsis"
-                           Margin="4,0,8,0"
-                           ToolTip="{Binding Bookmark.DocumentPath}" />
-                <TextBlock Grid.Column="2"
-                           Text="{Binding Bookmark.RepositoryRelativePath}"
-                           TextTrimming="CharacterEllipsis"
-                           Margin="0,0,8,0"
-                           ToolTip="{Binding Bookmark.DocumentPath}" />
-                <TextBlock Grid.Column="3"
-                           Text="{Binding Bookmark.LineText}"
-                           TextTrimming="CharacterEllipsis"
-                           Margin="0,0,8,0" />
-                <TextBlock Grid.Column="4"
-                           HorizontalAlignment="Right"
-                           Text="{Binding Bookmark.LineNumber}" />
-            </Grid>
-        </DataTemplate>
+        <Style x:Key="ThemedDataGridHeaderStyle" TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowBackgroundBrushKey}}" />
+            <Setter Property="Foreground" Value="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowTextBrushKey}}" />
+            <Setter Property="BorderThickness" Value="0,0,0,1" />
+            <Setter Property="BorderBrush" Value="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarSelectedBrushKey}}" />
+            <Setter Property="Padding" Value="6,4" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+
+        <Style x:Key="BookmarkGroupItemStyle" TargetType="GroupItem">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="GroupItem">
+                        <StackPanel Margin="0,2,0,0">
+                            <Border Background="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowBackgroundBrushKey}}"
+                                    Padding="6,4,6,4"
+                                    MouseLeftButtonDown="FolderHeader_MouseLeftButtonDown"
+                                    PreviewMouseRightButtonDown="FolderHeader_PreviewMouseRightButtonDown">
+                                <Border.ContextMenu>
+                                    <ContextMenu>
+                                        <MenuItem Header="Rename Folder" Click="RenameFolderMenuItem_Click" />
+                                        <MenuItem Header="Delete Folder" Click="DeleteFolderMenuItem_Click" />
+                                    </ContextMenu>
+                                </Border.ContextMenu>
+                                <DockPanel>
+                                    <imaging:CrispImage Width="16"
+                                                        Height="16"
+                                                        Margin="0,0,4,0"
+                                                        VerticalAlignment="Center"
+                                                        Moniker="{x:Static imageCatalog:KnownMonikers.FolderClosed}" />
+                                    <TextBlock Text="{Binding Name}"
+                                               FontWeight="SemiBold"
+                                               Foreground="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowTextBrushKey}}"
+                                               VerticalAlignment="Center" />
+                                </DockPanel>
+                            </Border>
+                            <ItemsPresenter />
+                        </StackPanel>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
     </UserControl.Resources>
 
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-
-        <TreeView x:Name="BookmarkTreeView"
-                  ItemsSource="{Binding RootNodes}"
-                  ItemContainerStyle="{StaticResource BookmarkTreeViewItemStyle}"
-                  SelectedItemChanged="BookmarkTreeView_SelectedItemChanged"
-                  PreviewMouseLeftButtonDown="BookmarkTreeView_PreviewMouseLeftButtonDown"
-                  PreviewMouseMove="BookmarkTreeView_PreviewMouseMove"
-                  AllowDrop="True"
-                  DragOver="BookmarkTreeView_DragOver"
-                  Drop="BookmarkTreeView_Drop"
-                  HorizontalContentAlignment="Stretch"
+        <DataGrid x:Name="BookmarkDataGrid"
+                  ItemsSource="{Binding Source={StaticResource BookmarksGroupedView}}"
+                  SelectionChanged="BookmarkDataGrid_SelectionChanged"
+                  MouseDoubleClick="BookmarkDataGrid_MouseDoubleClick"
+                  PreviewMouseLeftButtonDown="BookmarkDataGrid_PreviewMouseLeftButtonDown"
+                  PreviewMouseMove="BookmarkDataGrid_PreviewMouseMove"
+                  Style="{StaticResource ThemedDataGridStyle}"
+                  RowStyle="{StaticResource ThemedDataGridRowStyle}"
+                  CellStyle="{StaticResource ThemedDataGridCellStyle}"
+                  ColumnHeaderStyle="{StaticResource ThemedDataGridHeaderStyle}"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False"
+                  CanUserDeleteRows="False"
+                  CanUserReorderColumns="False"
+                  CanUserResizeRows="False"
+                  CanUserSortColumns="True"
+                  HeadersVisibility="Column"
+                  IsReadOnly="True"
+                  RowHeaderWidth="0"
+                  GridLinesVisibility="None"
                   BorderThickness="0"
-                  Background="Transparent"
-                  ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-            <TreeView.ContextMenu>
+                  HorizontalGridLinesBrush="Transparent"
+                  VerticalGridLinesBrush="Transparent"
+                  ScrollViewer.CanContentScroll="True"
+                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                  ScrollViewer.VerticalScrollBarVisibility="Auto"
+                  SelectionMode="Single"
+                  SelectionUnit="FullRow"
+                  AllowDrop="True"
+                  DragOver="BookmarkDataGrid_DragOver"
+                  Drop="BookmarkDataGrid_Drop">
+            <DataGrid.GroupStyle>
+                <GroupStyle>
+                    <GroupStyle.ContainerStyle>
+                        <StaticResource ResourceKey="BookmarkGroupItemStyle" />
+                    </GroupStyle.ContainerStyle>
+                </GroupStyle>
+            </DataGrid.GroupStyle>
+            <DataGrid.Columns>
+                <DataGridTemplateColumn Header=""
+                                        Width="64"
+                                        SortMemberPath="Color">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Border Width="10"
+                                    Height="10"
+                                    Margin="{Binding ColorIndentMargin}"
+                                    CornerRadius="2"
+                                    BorderThickness="1"
+                                    BorderBrush="SaddleBrown"
+                                    VerticalAlignment="Center"
+                                    HorizontalAlignment="Center"
+                                    Background="{Binding Color, Converter={StaticResource ColorToBrushConverter}}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTemplateColumn Header="Name"
+                                        Width="280"
+                                        MinWidth="220"
+                                        SortMemberPath="Name">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Name}"
+                                       Margin="{Binding NameIndentMargin}"
+                                       VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="File"
+                                    Binding="{Binding File}"
+                                    Width="320"
+                                    MinWidth="240"
+                                    SortMemberPath="File" />
+                <DataGridTextColumn Header="Line Text"
+                                    Binding="{Binding LineText}"
+                                    Width="*"
+                                    MinWidth="260"
+                                    SortMemberPath="LineText" />
+                <DataGridTextColumn Header="Line"
+                                    Binding="{Binding Line}"
+                                    Width="90"
+                                    MinWidth="70"
+                                    SortMemberPath="Line"
+                                    ElementStyle="{StaticResource RightAlignedTextBlockStyle}" />
+                <DataGridTextColumn Header="Slot"
+                                    Binding="{Binding Slot}"
+                                    Width="90"
+                                    MinWidth="70"
+                                    SortMemberPath="Slot"
+                                    ElementStyle="{StaticResource RightAlignedTextBlockStyle}" />
+            </DataGrid.Columns>
+            <DataGrid.ContextMenu>
                 <ContextMenu>
                     <MenuItem Header="Navigate" Click="NavigateMenuItem_Click" />
                     <MenuItem Header="Copy Location" Click="CopyLocationMenuItem_Click" />
                     <Separator />
                     <MenuItem Header="Edit Label" Click="EditLabelMenuItem_Click" />
-                    <Separator />
-                    <MenuItem Header="Add Folder" Click="AddFolderMenuItem_Click" />
-                    <MenuItem Header="Rename Folder" Click="RenameFolderMenuItem_Click" />
                     <Separator />
                     <MenuItem Header="Assign Slot">
                         <MenuItem Header="1" Tag="1" Click="AssignSlotMenuItem_Click" />
@@ -161,7 +240,7 @@
                     <Separator />
                     <MenuItem Header="Delete" Click="DeleteBookmarkMenuItem_Click" />
                 </ContextMenu>
-            </TreeView.ContextMenu>
-        </TreeView>
+            </DataGrid.ContextMenu>
+        </DataGrid>
     </Grid>
 </UserControl>

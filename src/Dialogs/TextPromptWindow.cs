@@ -1,12 +1,12 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
-using Community.VisualStudio.Toolkit;
+using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.PlatformUI;
 
 namespace BookmarkStudio
 {
-    internal sealed class TextPromptWindow : DialogWindow
+    internal sealed class TextPromptWindow : VsUIDialogWindow
     {
         private readonly TextBox _inputTextBox;
         private readonly bool _selectTextOnLoad;
@@ -23,7 +23,6 @@ namespace BookmarkStudio
             ShowInTaskbar = false;
             SetResourceReference(BackgroundProperty, EnvironmentColors.ToolWindowBackgroundBrushKey);
             SetResourceReference(ForegroundProperty, EnvironmentColors.ToolWindowTextBrushKey);
-            Themes.SetUseVsTheme(this, true);
             Loaded += TextPromptWindow_Loaded;
 
             Grid grid = new Grid
@@ -34,12 +33,13 @@ namespace BookmarkStudio
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-            TextBlock promptBlock = new TextBlock
+            Label promptBlock = new Label
             {
                 Margin = new Thickness(0, 0, 0, 8),
-                Text = prompt,
+                Content = prompt,
+                Padding = new Thickness(0),
             };
-            promptBlock.SetResourceReference(ForegroundProperty, EnvironmentColors.ToolWindowTextBrushKey);
+            promptBlock.SetResourceReference(StyleProperty, VsResourceKeys.ThemedDialogLabelStyleKey);
             Grid.SetRow(promptBlock, 0);
             grid.Children.Add(promptBlock);
 
@@ -48,7 +48,7 @@ namespace BookmarkStudio
                 Margin = new Thickness(0, 0, 0, 12),
                 Text = initialValue ?? string.Empty,
             };
-            _inputTextBox.SetResourceReference(StyleProperty, ToolkitResourceKeys.TextBoxStyleKey);
+            _inputTextBox.SetResourceReference(StyleProperty, VsResourceKeys.ThemedDialogTextBoxStyleKey);
             Grid.SetRow(_inputTextBox, 1);
             grid.Children.Add(_inputTextBox);
 
@@ -63,8 +63,11 @@ namespace BookmarkStudio
                 Content = "OK",
                 IsDefault = true,
                 Margin = new Thickness(0, 0, 8, 0),
-                MinWidth = 80,
+                Width = 88,
+                Height = 26,
+                VerticalAlignment = VerticalAlignment.Center,
             };
+            okButton.SetResourceReference(StyleProperty, VsResourceKeys.ThemedDialogButtonStyleKey);
             okButton.Click += OkButton_Click;
             buttons.Children.Add(okButton);
 
@@ -72,8 +75,11 @@ namespace BookmarkStudio
             {
                 Content = "Cancel",
                 IsCancel = true,
-                MinWidth = 80,
+                Width = 88,
+                Height = 26,
+                VerticalAlignment = VerticalAlignment.Center,
             };
+            cancelButton.SetResourceReference(StyleProperty, VsResourceKeys.ThemedDialogButtonStyleKey);
             buttons.Children.Add(cancelButton);
 
             Grid.SetRow(buttons, 2);
@@ -86,7 +92,7 @@ namespace BookmarkStudio
         {
             TextPromptWindow window = new TextPromptWindow(title, prompt, initialValue, selectTextOnLoad);
 
-            bool? result = window.ShowModal();
+            bool? result = window.ShowDialog();
             return result == true ? window._inputTextBox.Text : null;
         }
 

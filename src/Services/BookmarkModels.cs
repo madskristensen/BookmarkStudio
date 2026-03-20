@@ -50,6 +50,21 @@ namespace BookmarkStudio
                 .Replace('\\', '/');
 
             string[] segments = normalized.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Length == 0)
+            {
+                return string.Empty;
+            }
+
+            if (string.Equals(segments[0], "Root", StringComparison.OrdinalIgnoreCase))
+            {
+                segments = segments.Skip(1).ToArray();
+            }
+
+            if (segments.Length == 0)
+            {
+                return string.Empty;
+            }
+
             return string.Join("/", segments);
         }
 

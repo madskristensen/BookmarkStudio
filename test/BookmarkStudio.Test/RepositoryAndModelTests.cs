@@ -239,6 +239,92 @@ public class RepositoryAndModelTests
     }
 
     [TestMethod]
+    public void Repository_EnsureFolderPath_WhenNestedPathProvided_RegistersNormalizedAncestors()
+    {
+        BookmarkWorkspaceState workspace = new BookmarkWorkspaceState();
+
+        BookmarkRepositoryService.EnsureFolderPath(workspace, @" Team\\Backlog/Sprint1 ");
+
+        Assert.IsTrue(workspace.FolderPaths.Contains("Team"));
+        Assert.IsTrue(workspace.FolderPaths.Contains("Team/Backlog"));
+        Assert.IsTrue(workspace.FolderPaths.Contains("Team/Backlog/Sprint1"));
+    }
+
+    [TestMethod]
+    public void Repository_RenameFolder_WhenRenamingNestedFolder_UpdatesDescendantsAndBookmarks()
+    {
+        BookmarkWorkspaceState workspace = new BookmarkWorkspaceState();
+        workspace.FolderPaths.Add(string.Empty);
+        workspace.FolderPaths.Add("Team");
+        workspace.FolderPaths.Add("Team/Backlog");
+        workspace.FolderPaths.Add("Team/Backlog/Sprint1");
+        workspace.FolderPaths.Add("Other");
+        workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "1", Group = "Team/Backlog" });
+        workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "2", Group = "Team/Backlog/Sprint1" });
+        workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "3", Group = "Other" });
+
+        bool renamed = BookmarkRepositoryService.RenameFolder(workspace, "Team/Backlog", "Done");
+
+        Assert.IsTrue(renamed);
+        Assert.IsTrue(workspace.FolderPaths.Contains("Team/Done"));
+        Assert.IsTrue(workspace.FolderPaths.Contains("Team/Done/Sprint1"));
+        Assert.IsFalse(workspace.FolderPaths.Contains("Team/Backlog"));
+        Assert.IsFalse(workspace.FolderPaths.Contains("Team/Backlog/Sprint1"));
+        Assert.AreEqual("Team/Done", workspace.Bookmarks.Single(item => item.BookmarkId == "1").Group);
+        Assert.AreEqual("Team/Done/Sprint1", workspace.Bookmarks.Single(item => item.BookmarkId == "2").Group);
+        Assert.AreEqual("Other", workspace.Bookmarks.Single(item => item.BookmarkId == "3").Group);
+    }
+
+    [TestMethod]
+    public void Repository_RenameFolder_WhenTargetMatchesSourceCaseInsensitive_ReturnsFalseAndDoesNotChangeState()
+    {
+        BookmarkWorkspaceState workspace = new BookmarkWorkspaceState();
+        workspace.FolderPaths.Add(string.Empty);
+        workspace.FolderPaths.Add("Team");
+        workspace.FolderPaths.Add("Team/Backlog");
+        workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "1", Group = "Team/Backlog" });
+
+        bool renamed = BookmarkRepositoryService.RenameFolder(workspace, "Team/Backlog", "BACKLOG");
+
+        Assert.IsFalse(renamed);
+        Assert.IsTrue(workspace.FolderPaths.Contains("Team/Backlog"));
+        Assert.AreEqual("Team/Backlog", workspace.Bookmarks.Single(item => item.BookmarkId == "1").Group);
+    }
+
+    [TestMethod]
+    [DataRow(null)]
+    [DataRow("")]
+    [DataRow("   ")]
+    public void Repository_DeleteFolderRecursive_WhenFolderPathMissing_ReturnsFalseAndPreservesState(string folderPath)
+    {
+        BookmarkWorkspaceState workspace = new BookmarkWorkspaceState();
+        workspace.FolderPaths.Add(string.Empty);
+        workspace.FolderPaths.Add("A");
+        workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "1", Group = "A" });
+
+        bool changed = BookmarkRepositoryService.DeleteFolderRecursive(workspace, folderPath);
+
+        Assert.IsFalse(changed);
+        Assert.AreEqual(1, workspace.Bookmarks.Count);
+        Assert.IsTrue(workspace.FolderPaths.Contains("A"));
+    }
+
+    [TestMethod]
+    public void Repository_MoveBookmarkToFolder_WhenNestedFolderProvided_RegistersAncestors()
+    {
+        BookmarkWorkspaceState workspace = new BookmarkWorkspaceState();
+        workspace.FolderPaths.Add(string.Empty);
+        workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "1", Group = string.Empty });
+
+        BookmarkRepositoryService.MoveBookmarkToFolder(workspace, "1", "Feature/Area/Task");
+
+        Assert.AreEqual("Feature/Area/Task", workspace.Bookmarks.Single(item => item.BookmarkId == "1").Group);
+        Assert.IsTrue(workspace.FolderPaths.Contains("Feature"));
+        Assert.IsTrue(workspace.FolderPaths.Contains("Feature/Area"));
+        Assert.IsTrue(workspace.FolderPaths.Contains("Feature/Area/Task"));
+    }
+
+    [TestMethod]
     public void MetadataStore_GetStoragePath_WhenSolutionPathWhitespace_UsesTransientPath()
     {
         BookmarkMetadataStore store = new BookmarkMetadataStore();

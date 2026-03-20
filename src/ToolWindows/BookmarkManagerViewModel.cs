@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
+using System.Windows;
 
 namespace BookmarkStudio
 {
@@ -21,6 +22,8 @@ namespace BookmarkStudio
         public event PropertyChangedEventHandler? PropertyChanged;
 
         public ObservableCollection<BookmarkNodeViewModel> RootNodes { get; } = new ObservableCollection<BookmarkNodeViewModel>();
+
+        public ObservableCollection<BookmarkGridRowViewModel> BookmarkRows { get; } = new ObservableCollection<BookmarkGridRowViewModel>();
 
         public IReadOnlyList<int> SlotOptions { get; } = Enumerable.Range(1, 9).ToArray();
 
@@ -308,6 +311,7 @@ namespace BookmarkStudio
         {
             _bookmarks.Clear();
             RootNodes.Clear();
+            BookmarkRows.Clear();
             _folderPaths.Clear();
             _folderPaths.Add(string.Empty);
             SelectedNode = null;
@@ -408,7 +412,10 @@ namespace BookmarkStudio
                 sourceBookmarks = sourceBookmarks.Where(bookmark => MatchesSearch(bookmark, search));
             }
 
-            foreach (ManagedBookmark bookmark in sourceBookmarks)
+            List<ManagedBookmark> visibleBookmarks = sourceBookmarks.ToList();
+            RebuildBookmarkRows(root, visibleBookmarks);
+
+            foreach (ManagedBookmark bookmark in visibleBookmarks)
             {
                 FolderBuilderNode folder = EnsureFolderBuilderNode(root, bookmark.FolderPath);
                 folder.Bookmarks.Add(bookmark);
@@ -426,6 +433,32 @@ namespace BookmarkStudio
             }
 
             RestoreSelection(selectedBookmarkId, selectedFolderPath);
+        }
+
+        private void RebuildBookmarkRows(FolderBuilderNode root, IReadOnlyCollection<ManagedBookmark> bookmarks)
+        {
+            BookmarkRows.Clear();
+
+            HashSet<string> foldersWithBookmarks = new HashSet<string>(
+                bookmarks.Select(bookmark => BookmarkIdentity.NormalizeFolderPath(bookmark.FolderPath)),
+                StringComparer.OrdinalIgnoreCase);
+
+            foreach (string folderPath in _folderPaths
+                .Select(BookmarkIdentity.NormalizeFolderPath)
+                .Where(path => !string.IsNullOrWhiteSpace(path) && !foldersWithBookmarks.Contains(path))
+                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase))
+            {
+                EnsureFolderBuilderNode(root, folderPath);
+                BookmarkRows.Add(BookmarkGridRowViewModel.CreateFolderPlaceholder(folderPath));
+            }
+
+            foreach (ManagedBookmark bookmark in bookmarks
+                .OrderBy(item => item.FileName, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(item => item.LineNumber)
+                .ThenBy(item => item.Label, StringComparer.OrdinalIgnoreCase))
+            {
+                BookmarkRows.Add(new BookmarkGridRowViewModel(bookmark));
+            }
         }
 
         private static bool MatchesSearch(ManagedBookmark bookmark, string search)
@@ -630,5 +663,63 @@ namespace BookmarkStudio
         public override string DisplayText => string.IsNullOrWhiteSpace(Bookmark.Label)
             ? Bookmark.FileName
             : Bookmark.Label;
+    }
+
+    public sealed class BookmarkGridRowViewModel
+    {
+        private readonly ManagedBookmark? _bookmark;
+        private readonly string _folderPath;
+
+        public BookmarkGridRowViewModel(ManagedBookmark bookmark)
+        {
+            _bookmark = bookmark ?? throw new ArgumentNullException(nameof(bookmark));
+            _folderPath = bookmark.FolderPath;
+        }
+
+        private BookmarkGridRowViewModel(string folderPath)
+        {
+            _folderPath = BookmarkIdentity.NormalizeFolderPath(folderPath);
+        }
+
+        public static BookmarkGridRowViewModel CreateFolderPlaceholder(string folderPath)
+            => new BookmarkGridRowViewModel(folderPath);
+
+        public bool IsFolderPlaceholder => _bookmark is null;
+
+        public ManagedBookmark? Bookmark => _bookmark;
+
+        public string? BookmarkId => Bookmark?.BookmarkId;
+
+        public string Name => IsFolderPlaceholder
+            ? string.Empty
+            : string.IsNullOrWhiteSpace(Bookmark!.Label)
+            ? Bookmark.FileName
+            : Bookmark.Label;
+
+        public string File => Bookmark?.RepositoryRelativePath ?? string.Empty;
+
+        public string LineText => Bookmark?.LineText ?? string.Empty;
+
+        public int? Line => Bookmark?.LineNumber;
+
+        public int? Slot => Bookmark?.SlotNumber;
+
+        public BookmarkColor Color => Bookmark?.Color ?? BookmarkColor.None;
+
+        public string DocumentPath => Bookmark?.DocumentPath ?? string.Empty;
+
+        public string FolderPath => _folderPath;
+
+        public string FolderDisplayName => string.IsNullOrWhiteSpace(FolderPath)
+            ? "Root"
+            : FolderPath;
+
+        public int FolderDepth => string.IsNullOrWhiteSpace(FolderPath)
+            ? 0
+            : FolderPath.Split('/').Length;
+
+        public Thickness ColorIndentMargin => new Thickness(4 + (FolderDepth * 12), 0, 0, 0);
+
+        public Thickness NameIndentMargin => new Thickness(FolderDepth * 12, 0, 0, 0);
     }
 }

@@ -208,6 +208,14 @@ namespace BookmarkStudio
             }, cancellationToken);
         }
 
+        public Task<IReadOnlyList<ManagedBookmark>> ClearAllAsync(CancellationToken cancellationToken)
+            => _session.UpdateWorkspaceAsync(workspace =>
+            {
+                workspace.Bookmarks.Clear();
+                workspace.FolderPaths.Clear();
+                workspace.FolderPaths.Add(string.Empty);
+            }, cancellationToken);
+
         public async Task<IReadOnlyList<ManagedBookmark>> MoveBookmarkToFolderAsync(string? bookmarkId, string? folderPath, CancellationToken cancellationToken)
         {
             ManagedBookmark targetBookmark = await GetRequiredBookmarkAsync(bookmarkId, cancellationToken);

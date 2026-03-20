@@ -78,6 +78,15 @@
           <LocCanonicalName>.BookmarkStudio.DeleteBookmark</LocCanonicalName>
         </Strings>
       </Button>
+      <Button guid="BookmarkStudio" id="ClearAllBookmarksCommand" priority="0x0220" type="Button">
+        <Parent guid="BookmarkStudio" id="BookmarkManagerToolbarGroup" />
+        <Icon guid="ImageCatalogGuid" id="Cancel" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Clear All Bookmarks</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.ClearAllBookmarks</LocCanonicalName>
+        </Strings>
+      </Button>
 
       <Button guid="BookmarkStudio" id="GoToSlot1Command" priority="0x0500" type="Button">
         <CommandFlag>CommandWellOnly</CommandFlag>
@@ -167,6 +176,7 @@
       <IDSymbol name="AddFolderCommand" value="0x0103" />
       <IDSymbol name="ExportBookmarksCommand" value="0x0404" />
       <IDSymbol name="DeleteBookmarkCommand" value="0x0407" />
+      <IDSymbol name="ClearAllBookmarksCommand" value="0x0408" />
       <IDSymbol name="GoToSlot1Command" value="0x0500" />
       <IDSymbol name="GoToSlot2Command" value="0x0501" />
       <IDSymbol name="GoToSlot3Command" value="0x0502" />

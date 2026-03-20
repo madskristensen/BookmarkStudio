@@ -1,4 +1,4 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
+using System.IO;
 
 namespace BookmarkStudio.Test;
 
@@ -42,6 +42,22 @@ public class BookmarkIdentityTests
     }
 
     [TestMethod]
+    public void NormalizeFolderPath_WhenValueIsRootAlias_ReturnsEmptyString()
+    {
+        string result = BookmarkIdentity.NormalizeFolderPath("Root");
+
+        Assert.AreEqual(string.Empty, result);
+    }
+
+    [TestMethod]
+    public void NormalizeFolderPath_WhenValueStartsWithRootAlias_StripsAlias()
+    {
+        string result = BookmarkIdentity.NormalizeFolderPath("Root/Team/Sub");
+
+        Assert.AreEqual("Team/Sub", result);
+    }
+
+    [TestMethod]
     public void CreateExactMatchKey_WhenCalled_UsesNormalizedPathAndLineNumber()
     {
         string result = BookmarkIdentity.CreateExactMatchKey(".\\src\\..\\src", 12);
@@ -64,5 +80,19 @@ public class BookmarkIdentityTests
         string result = BookmarkIdentity.GetRepositoryRelativePath(filePath);
 
         Assert.AreEqual("src/file.cs", result);
+    }
+
+    [TestMethod]
+    public void GetRepositoryRelativePath_WhenPathIsOutsideRepository_ReturnsFileName()
+    {
+        string testRoot = Path.Combine(Path.GetTempPath(), "BookmarkStudio.Tests", Guid.NewGuid().ToString("N"));
+        string filePath = Path.Combine(testRoot, "outside", "file.cs");
+
+        Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
+        File.WriteAllText(filePath, "// test");
+
+        string result = BookmarkIdentity.GetRepositoryRelativePath(filePath);
+
+        Assert.AreEqual("file.cs", result);
     }
 }
