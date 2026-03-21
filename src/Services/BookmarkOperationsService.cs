@@ -8,13 +8,6 @@ using Microsoft.VisualStudio.Shell.Interop;
 
 namespace BookmarkStudio
 {
-    internal enum BookmarkExportFormat
-    {
-        PlainText,
-        Markdown,
-        Csv,
-    }
-
     internal sealed class BookmarkOperationsService
     {
         private static readonly Lazy<BookmarkOperationsService> _instance = new Lazy<BookmarkOperationsService>(() => new BookmarkOperationsService());
@@ -469,19 +462,7 @@ namespace BookmarkStudio
                 ?? throw new InvalidOperationException(string.Concat("No bookmark is assigned to slot ", slotNumber.ToString(System.Globalization.CultureInfo.InvariantCulture), "."));
 
             await NavigateToBookmarkAsync(bookmark, cancellationToken);
-            await TouchLastVisitedAsync(bookmark.BookmarkId, cancellationToken);
             return bookmark;
-        }
-
-        public async Task<string> ExportAsync(BookmarkExportFormat format, CancellationToken cancellationToken)
-        {
-            IReadOnlyList<ManagedBookmark> bookmarks = await _session.RefreshAsync(cancellationToken);
-            return format switch
-            {
-                BookmarkExportFormat.Markdown => BuildMarkdown(bookmarks),
-                BookmarkExportFormat.Csv => BuildCsv(bookmarks),
-                _ => BuildPlainText(bookmarks),
-            };
         }
 
         public async Task<string> GetBookmarkLocationAsync(string? bookmarkId, CancellationToken cancellationToken)
@@ -494,7 +475,6 @@ namespace BookmarkStudio
         {
             ManagedBookmark bookmark = await GetRequiredBookmarkAsync(bookmarkId, cancellationToken);
             await NavigateToBookmarkAsync(bookmark, cancellationToken);
-            await TouchLastVisitedAsync(bookmark.BookmarkId, cancellationToken);
             return bookmark;
         }
 
@@ -582,7 +562,6 @@ namespace BookmarkStudio
             }
 
             await NavigateToBookmarkAsync(bookmark, cancellationToken);
-            await TouchLastVisitedAsync(bookmark.BookmarkId, cancellationToken);
             return bookmark;
         }
 
@@ -615,7 +594,6 @@ namespace BookmarkStudio
             }
 
             await NavigateToBookmarkAsync(bookmark, cancellationToken);
-            await TouchLastVisitedAsync(bookmark.BookmarkId, cancellationToken);
             return bookmark;
         }
 
@@ -704,92 +682,6 @@ namespace BookmarkStudio
             }
 
             return 0;
-        }
-
-        private async Task TouchLastVisitedAsync(string bookmarkId, CancellationToken cancellationToken)
-        {
-            await _session.UpdateBookmarksAsync(metadata =>
-            {
-                BookmarkMetadata targetMetadata = BookmarkRepositoryService.GetRequiredBookmark(metadata, bookmarkId);
-                targetMetadata.LastVisitedUtc = DateTime.UtcNow;
-            }, cancellationToken);
-        }
-
-        private static string BuildPlainText(IEnumerable<ManagedBookmark> bookmarks)
-        {
-            StringBuilder builder = new StringBuilder();
-
-            foreach (ManagedBookmark bookmark in bookmarks)
-            {
-                string slot = bookmark.SlotNumber?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "-";
-                string color = bookmark.Color == BookmarkColor.None ? "-" : bookmark.Color.ToString();
-                builder.Append(slot)
-                    .Append(" | ")
-                    .Append(color)
-                    .Append(" | ")
-                    .Append(string.IsNullOrWhiteSpace(bookmark.Label) ? "(no label)" : bookmark.Label)
-                    .Append(" | ")
-                    .Append(bookmark.Location)
-                    .Append(" | ")
-                    .AppendLine(bookmark.LineText);
-            }
-
-            return builder.ToString();
-        }
-
-        private static string BuildMarkdown(IEnumerable<ManagedBookmark> bookmarks)
-        {
-            StringBuilder builder = new StringBuilder();
-            builder.AppendLine("| Slot | Color | Label | File | Line | Preview |");
-            builder.AppendLine("| --- | --- | --- | --- | --- | --- |");
-
-            foreach (ManagedBookmark bookmark in bookmarks)
-            {
-                builder.Append('|')
-                    .Append(' ')
-                    .Append(bookmark.SlotNumber?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? "-")
-                    .Append(" | ")
-                    .Append(bookmark.Color == BookmarkColor.None ? "-" : bookmark.Color.ToString())
-                    .Append(" | ")
-                    .Append(EscapeMarkdown(bookmark.Label))
-                    .Append(" | ")
-                    .Append(EscapeMarkdown(bookmark.FileName))
-                    .Append(" | ")
-                    .Append(bookmark.LineNumber.ToString(System.Globalization.CultureInfo.InvariantCulture))
-                    .Append(" | ")
-                    .Append(EscapeMarkdown(bookmark.LineText))
-                    .AppendLine(" |");
-            }
-
-            return builder.ToString();
-        }
-
-        private static string BuildCsv(IEnumerable<ManagedBookmark> bookmarks)
-        {
-            StringBuilder builder = new StringBuilder();
-            builder.AppendLine("Slot,Color,Label,Document,Line,Preview");
-
-            foreach (ManagedBookmark bookmark in bookmarks)
-            {
-                builder.Append(EscapeCsv(bookmark.SlotNumber?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty)).Append(',')
-                    .Append(EscapeCsv(bookmark.Color == BookmarkColor.None ? string.Empty : bookmark.Color.ToString())).Append(',')
-                    .Append(EscapeCsv(bookmark.Label)).Append(',')
-                    .Append(EscapeCsv(bookmark.DocumentPath)).Append(',')
-                    .Append(EscapeCsv(bookmark.LineNumber.ToString(System.Globalization.CultureInfo.InvariantCulture))).Append(',')
-                    .Append(EscapeCsv(bookmark.LineText))
-                    .AppendLine();
-            }
-
-            return builder.ToString();
-        }
-
-        private static string EscapeMarkdown(string value)
-            => (value ?? string.Empty).Replace("|", "\\|").Replace("\r", string.Empty).Replace("\n", " ");
-
-        private static string EscapeCsv(string value)
-        {
-            string normalized = (value ?? string.Empty).Replace("\r", string.Empty).Replace("\n", " ");
-            return string.Concat("\"", normalized.Replace("\"", "\"\""), "\"");
         }
 
         private static string ValidateFolderName(string? folderName)

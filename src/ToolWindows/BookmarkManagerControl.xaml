@@ -183,7 +183,7 @@
         <!-- Folder Data Template -->
         <HierarchicalDataTemplate DataType="{x:Type local:FolderNodeViewModel}"
                                   ItemsSource="{Binding Children}">
-            <Border Padding="0,2">
+            <Border Padding="0,2" HorizontalAlignment="Stretch" Background="Transparent">
                 <Border.ContextMenu>
                     <ContextMenu Style="{StaticResource ThemedContextMenuStyle}">
                         <MenuItem Header="Add Folder" Click="AddFolderMenuItem_Click"
@@ -197,13 +197,17 @@
                                   Click="ClearBookmarksMenuItem_Click"
                                   Style="{StaticResource ThemedMenuItemStyle}"
                                   InputGestureText="Del"
-                                  Visibility="{Binding IsRoot, Converter={StaticResource BoolToVisibilityConverter}}" />
+                                  Visibility="{Binding IsRoot, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <MenuItem.Icon>
+                                <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.ClearBookmark}" />
+                            </MenuItem.Icon>
+                        </MenuItem>
                         <MenuItem Header="Open Backing File" 
                                   Click="OpenBackingFileMenuItem_Click"
                                   Style="{StaticResource ThemedMenuItemStyle}"
                                   Visibility="{Binding IsRoot, Converter={StaticResource BoolToVisibilityConverter}}">
                             <MenuItem.Icon>
-                                <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.TextFile}" />
+                                <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.JSONScript}" />
                             </MenuItem.Icon>
                         </MenuItem>
                         <MenuItem Header="Rename Folder" Click="RenameFolderMenuItem_Click" InputGestureText="F2"
@@ -246,7 +250,7 @@
 
         <!-- Bookmark Data Template -->
         <DataTemplate DataType="{x:Type local:BookmarkItemNodeViewModel}">
-            <Border Padding="0,2">
+            <Border Padding="0,2" HorizontalAlignment="Stretch" Background="Transparent">
                 <Border.ContextMenu>
                     <ContextMenu Style="{StaticResource ThemedContextMenuStyle}">
                         <MenuItem Header="Navigate" Click="NavigateMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" InputGestureText="Enter" />
@@ -403,6 +407,7 @@
                     <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
                     <Setter Property="FocusVisualStyle" Value="{x:Null}" />
                     <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                     <Setter Property="Foreground"
                             Value="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowTextBrushKey}}" />
                     <Setter Property="Template">
@@ -428,7 +433,8 @@
                                                Fill="Transparent" />
 
                                     <!-- Header row with expander and content -->
-                                    <Grid Margin="{Binding RelativeSource={RelativeSource TemplatedParent},
+                                    <Grid HorizontalAlignment="Stretch"
+                                          Margin="{Binding RelativeSource={RelativeSource TemplatedParent},
                                                           Converter={StaticResource IndentConverter}}">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" MinWidth="19" />

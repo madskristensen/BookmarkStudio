@@ -61,7 +61,6 @@
     <Compile Include="Commands\OpenBookmarkManagerCommand.cs" />
     <Compile Include="Commands\AddBookmarkCommand.cs" />
     <Compile Include="Commands\RefreshBookmarkManagerCommand.cs" />
-    <Compile Include="Commands\ExportBookmarksCommand.cs" />
     <Compile Include="Commands\BookmarkCommandBase.cs" />
     <Compile Include="Commands\BookmarkBuiltInCommandInterceptor.cs" />
     <Compile Include="Commands\BookmarkCommandActions.cs" />

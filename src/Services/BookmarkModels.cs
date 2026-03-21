@@ -190,13 +190,9 @@ namespace BookmarkStudio
 
         public DateTime CreatedUtc { get; set; }
 
-        public DateTime? LastVisitedUtc { get; set; }
-
-        public DateTime LastSeenUtc { get; set; }
-
         public string ExactMatchKey => BookmarkIdentity.CreateExactMatchKey(DocumentPath, LineNumber);
 
-        public void UpdateFromSnapshot(BookmarkSnapshot snapshot, DateTime seenUtc)
+        public void UpdateFromSnapshot(BookmarkSnapshot snapshot)
         {
             if (snapshot is null)
             {
@@ -206,12 +202,6 @@ namespace BookmarkStudio
             DocumentPath = snapshot.DocumentPath;
             LineNumber = snapshot.LineNumber;
             LineText = snapshot.LineText;
-            LastSeenUtc = seenUtc;
-
-            if (CreatedUtc == default)
-            {
-                CreatedUtc = seenUtc;
-            }
         }
 
         public ManagedBookmark ToManagedBookmark()
@@ -227,8 +217,6 @@ namespace BookmarkStudio
                 Group = Group,
                 Color = Color,
                 StorageLocation = StorageLocation,
-                CreatedUtc = CreatedUtc,
-                LastVisitedUtc = LastVisitedUtc,
             };
         }
     }
@@ -258,10 +246,6 @@ namespace BookmarkStudio
         public BookmarkColor Color { get; set; }
 
         public BookmarkStorageLocation StorageLocation { get; set; }
-
-        public DateTime CreatedUtc { get; set; }
-
-        public DateTime? LastVisitedUtc { get; set; }
 
         public string FileName => Path.GetFileName(DocumentPath);
 

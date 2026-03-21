@@ -42,9 +42,6 @@ public class BookmarkMetadataStoreTests
                 Label = "Important entry point",
                 Group = "Core/Startup",
                 Color = BookmarkColor.Green,
-                CreatedUtc = new DateTime(2024, 1, 15, 10, 30, 0, DateTimeKind.Utc),
-                LastVisitedUtc = new DateTime(2024, 1, 16, 14, 0, 0, DateTimeKind.Utc),
-                LastSeenUtc = new DateTime(2024, 1, 16, 14, 0, 0, DateTimeKind.Utc),
             };
 
             await store.SaveAsync(solutionPath, new[] { original }, CancellationToken.None);

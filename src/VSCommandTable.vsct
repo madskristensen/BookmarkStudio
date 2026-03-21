@@ -101,14 +101,6 @@
         </Strings>
       </Button>
 
-      <Button guid="BookmarkStudio" id="ExportBookmarksCommand" priority="0x0404" type="Button">
-        <CommandFlag>CommandWellOnly</CommandFlag>
-        <Strings>
-          <ButtonText>Export Bookmarks</ButtonText>
-          <LocCanonicalName>.BookmarkStudio.ExportBookmarks</LocCanonicalName>
-        </Strings>
-      </Button>
-
       <Button guid="BookmarkStudio" id="GoToSlot1Command" priority="0x0500" type="Button">
         <CommandFlag>CommandWellOnly</CommandFlag>
         <Strings>

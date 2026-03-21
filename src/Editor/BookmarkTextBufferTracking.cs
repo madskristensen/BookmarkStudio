@@ -222,7 +222,6 @@ namespace BookmarkStudio
 
             ITextSnapshot snapshot = _textBuffer.CurrentSnapshot;
             bool changed = false;
-            DateTime seenUtc = DateTime.UtcNow;
 
             Dictionary<string, ITrackingPoint> trackingPoints;
             lock (_trackingPointsLock)
@@ -271,7 +270,7 @@ namespace BookmarkStudio
                     LineText = newLineText,
                 };
 
-                bookmark.UpdateFromSnapshot(translatedBookmark, seenUtc);
+                bookmark.UpdateFromSnapshot(translatedBookmark);
                 changed = true;
             }
 

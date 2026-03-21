@@ -544,8 +544,6 @@ namespace BookmarkStudio
                     : folderPath,
                 Color = GetColorProperty(element, "color"),
                 CreatedUtc = GetDateTimeProperty(element, "createdUtc"),
-                LastVisitedUtc = GetNullableDateTimeProperty(element, "lastVisitedUtc"),
-                LastSeenUtc = GetDateTimeProperty(element, "lastSeenUtc"),
             };
         }
 
@@ -603,21 +601,6 @@ namespace BookmarkStudio
                 if (bookmark.Color != BookmarkColor.None)
                 {
                     writer.WriteString("color", bookmark.Color.ToString().ToLowerInvariant());
-                }
-
-                if (bookmark.CreatedUtc != default)
-                {
-                    writer.WriteString("createdUtc", bookmark.CreatedUtc.ToString(DateTimeFormat, CultureInfo.InvariantCulture));
-                }
-
-                if (bookmark.LastVisitedUtc.HasValue)
-                {
-                    writer.WriteString("lastVisitedUtc", bookmark.LastVisitedUtc.Value.ToString(DateTimeFormat, CultureInfo.InvariantCulture));
-                }
-
-                if (bookmark.LastSeenUtc != default)
-                {
-                    writer.WriteString("lastSeenUtc", bookmark.LastSeenUtc.ToString(DateTimeFormat, CultureInfo.InvariantCulture));
                 }
 
                 writer.WriteEndObject();
@@ -794,8 +777,6 @@ namespace BookmarkStudio
 
         private static BookmarkMetadata Normalize(BookmarkMetadata metadata)
         {
-            DateTime now = DateTime.UtcNow;
-
             if (string.IsNullOrWhiteSpace(metadata.BookmarkId))
             {
                 metadata.BookmarkId = Guid.NewGuid().ToString("N");
@@ -805,16 +786,6 @@ namespace BookmarkStudio
             metadata.LineText = metadata.LineText ?? string.Empty;
             metadata.Label = metadata.Label ?? string.Empty;
             metadata.Group = BookmarkIdentity.NormalizeFolderPath(metadata.Group);
-
-            if (metadata.CreatedUtc == default)
-            {
-                metadata.CreatedUtc = metadata.LastSeenUtc == default ? now : metadata.LastSeenUtc;
-            }
-
-            if (metadata.LastSeenUtc == default)
-            {
-                metadata.LastSeenUtc = metadata.CreatedUtc == default ? now : metadata.CreatedUtc;
-            }
 
             return metadata;
         }

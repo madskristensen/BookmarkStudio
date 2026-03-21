@@ -110,17 +110,15 @@ namespace BookmarkStudio
 
         public static BookmarkMetadata CreateBookmarkMetadata(IEnumerable<BookmarkMetadata> existingBookmarks, BookmarkSnapshot snapshot, string? label)
         {
-            DateTime now = DateTime.UtcNow;
             BookmarkMetadata bookmark = new BookmarkMetadata
             {
                 BookmarkId = Guid.NewGuid().ToString("N"),
-                CreatedUtc = now,
                 SlotNumber = FindNextAvailableSlot(existingBookmarks),
                 Label = string.IsNullOrWhiteSpace(label) ? FindNextDefaultLabel(existingBookmarks) : label,
                 Color = BookmarkColor.Blue,
             };
 
-            bookmark.UpdateFromSnapshot(snapshot, now);
+            bookmark.UpdateFromSnapshot(snapshot);
             return bookmark;
         }
 

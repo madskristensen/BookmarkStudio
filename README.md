@@ -26,13 +26,12 @@ or get the latest CI build from [Open VSIX Gallery][vsixgallery].
 - **Built-in command interception** - Existing VS bookmark shortcuts work with Bookmark Studio
 - **Fast navigation** - Go to next/previous bookmark and jump from the manager
 - **Search and filtering** - Filter bookmarks by name, file, preview text, location, slot, or color
-- **Editor glyphs** - Colored glyphs in the margin with contextual actions
-- **Export options** - Export as plain text, Markdown, or CSV
+- **Editor glyphs** - Colored glyphs in the margin with contextual actions and drag-and-drop functionality
 - **Persistent metadata** - Saves labels, colors, slots, folders, and history per solution
 
 ## Why Bookmark Studio?
 
-Visual Studio bookmarks are useful, but they can be hard to manage across larger solutions. Bookmark Studio adds a dedicated workflow for organizing, navigating, and exporting bookmarks with richer metadata, folder organization, and color support.
+Visual Studio bookmarks are useful, but they can be hard to manage across larger solutions. Bookmark Studio adds a dedicated workflow for organizing and navigating bookmarks with richer metadata, folder organization, and color support.
 
 ## Features
 
@@ -52,7 +51,8 @@ Open **View > Bookmark Manager** to manage bookmarks in a dedicated tree view.
 Group related bookmarks into folders for better organization:
 
 - Create folders from the toolbar or context menu
-- Drag and drop bookmarks between folders
+- Drag and drop bookmarks between folders in the Bookmark Manager
+- Drag bookmark glyphs directly from the editor margin into folders
 - Rename or delete folders from the context menu
 - Folders persist with your bookmark data
 
@@ -146,7 +146,6 @@ Bookmark Studio provides commands for:
 - Go to next Bookmark Studio bookmark
 - Go to previous Bookmark Studio bookmark
 - Go to bookmark slot 1 through 9
-- Export bookmarks
 - Delete selected bookmark (from manager toolbar)
 
 ## Storage

@@ -50,9 +50,8 @@ public class RepositoryAndModelTests
     }
 
     [TestMethod]
-    public void UpdateFromSnapshot_WhenCreatedUtcMissing_InitializesAndCopiesSnapshot()
+    public void UpdateFromSnapshot_WhenCalled_CopiesSnapshotFields()
     {
-        DateTime seenUtc = new DateTime(2025, 01, 02, 03, 04, 05, DateTimeKind.Utc);
         BookmarkSnapshot snapshot = new BookmarkSnapshot
         {
             DocumentPath = @"C:\repo\file.cs",
@@ -62,20 +61,16 @@ public class RepositoryAndModelTests
 
         BookmarkMetadata metadata = new BookmarkMetadata();
 
-        metadata.UpdateFromSnapshot(snapshot, seenUtc);
+        metadata.UpdateFromSnapshot(snapshot);
 
         Assert.AreEqual(snapshot.DocumentPath, metadata.DocumentPath);
         Assert.AreEqual(snapshot.LineNumber, metadata.LineNumber);
         Assert.AreEqual(snapshot.LineText, metadata.LineText);
-        Assert.AreEqual(seenUtc, metadata.CreatedUtc);
-        Assert.AreEqual(seenUtc, metadata.LastSeenUtc);
     }
 
     [TestMethod]
     public void ToManagedBookmark_WhenCalled_MapsFieldsAndTrimsLineText()
     {
-        DateTime createdUtc = new DateTime(2024, 10, 10, 8, 30, 0, DateTimeKind.Utc);
-        DateTime visitedUtc = new DateTime(2024, 10, 11, 8, 30, 0, DateTimeKind.Utc);
         BookmarkMetadata metadata = new BookmarkMetadata
         {
             BookmarkId = "id-1",
@@ -86,8 +81,6 @@ public class RepositoryAndModelTests
             Label = "label",
             Group = "group/sub",
             Color = BookmarkColor.Teal,
-            CreatedUtc = createdUtc,
-            LastVisitedUtc = visitedUtc,
         };
 
         ManagedBookmark managed = metadata.ToManagedBookmark();
@@ -100,8 +93,6 @@ public class RepositoryAndModelTests
         Assert.AreEqual("label", managed.Label);
         Assert.AreEqual("group/sub", managed.Group);
         Assert.AreEqual(BookmarkColor.Teal, managed.Color);
-        Assert.AreEqual(createdUtc, managed.CreatedUtc);
-        Assert.AreEqual(visitedUtc, managed.LastVisitedUtc);
     }
 
     [TestMethod]
@@ -125,8 +116,6 @@ public class RepositoryAndModelTests
             Label = "label",
             Group = "FolderA/Sub",
             Color = BookmarkColor.Green,
-            CreatedUtc = new DateTime(2025, 02, 03, 04, 05, 06, DateTimeKind.Utc),
-            LastSeenUtc = new DateTime(2025, 02, 03, 04, 05, 06, DateTimeKind.Utc),
         });
 
         await store.SaveWorkspaceAsync(solutionPath, workspace, CancellationToken.None);
@@ -165,13 +154,12 @@ public class RepositoryAndModelTests
         BookmarkMetadataStore store = new BookmarkMetadataStore();
         BookmarkRepositoryService repository = new BookmarkRepositoryService(store);
         string solutionPath = CreateTestSolutionPath();
-        DateTime now = new DateTime(2025, 03, 04, 12, 00, 00, DateTimeKind.Utc);
 
         await store.SaveAsync(solutionPath, new[]
         {
-            new BookmarkMetadata { BookmarkId = "a", DocumentPath = @"C:\repo\a.cs", LineNumber = 1, SlotNumber = 1, LastSeenUtc = now },
-            new BookmarkMetadata { BookmarkId = "b", DocumentPath = @"C:\repo\b.cs", LineNumber = 2, SlotNumber = 2, LastSeenUtc = now },
-            new BookmarkMetadata { BookmarkId = "c", DocumentPath = @"C:\repo\c.cs", LineNumber = 3, SlotNumber = 4, LastSeenUtc = now },
+            new BookmarkMetadata { BookmarkId = "a", DocumentPath = @"C:\repo\a.cs", LineNumber = 1, SlotNumber = 1 },
+            new BookmarkMetadata { BookmarkId = "b", DocumentPath = @"C:\repo\b.cs", LineNumber = 2, SlotNumber = 2 },
+            new BookmarkMetadata { BookmarkId = "c", DocumentPath = @"C:\repo\c.cs", LineNumber = 3, SlotNumber = 4 },
         }, CancellationToken.None);
 
         BookmarkSnapshot snapshot = new BookmarkSnapshot
