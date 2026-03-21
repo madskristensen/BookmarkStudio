@@ -456,6 +456,21 @@ namespace BookmarkStudio
             }, cancellationToken);
         }
 
+        public Task<IReadOnlyList<ManagedBookmark>> MoveFolderBetweenStorageAsync(
+            string sourceFolderPath,
+            BookmarkStorageLocation sourceLocation,
+            string targetFolderPath,
+            BookmarkStorageLocation targetLocation,
+            CancellationToken cancellationToken)
+        {
+            return _session.MoveFolderBetweenStorageAsync(
+                sourceFolderPath,
+                sourceLocation,
+                targetFolderPath,
+                targetLocation,
+                cancellationToken);
+        }
+
         public async Task<ManagedBookmark> GoToSlotAsync(int slotNumber, CancellationToken cancellationToken)
         {
             if (slotNumber < 1 || slotNumber > 9)

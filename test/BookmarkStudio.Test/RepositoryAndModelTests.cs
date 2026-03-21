@@ -475,6 +475,53 @@ public class RepositoryAndModelTests
         Assert.AreEqual("Bookmark3", result);
     }
 
+    [TestMethod]
+    public void BookmarkSnapshot_ExactMatchKey_ReturnsNormalizedKeyFromPathAndLine()
+    {
+        BookmarkSnapshot snapshot = new BookmarkSnapshot
+        {
+            DocumentPath = @"C:\Repo\src\file.cs",
+            LineNumber = 42,
+        };
+
+        string key = snapshot.ExactMatchKey;
+
+        StringAssert.EndsWith(key, "|42");
+        StringAssert.Contains(key, "REPO");
+        StringAssert.Contains(key, "SRC");
+    }
+
+    [TestMethod]
+    public void BookmarkSnapshot_ExactMatchKey_WhenPathCasingDiffers_ProducesSameKey()
+    {
+        BookmarkSnapshot snapshot1 = new BookmarkSnapshot { DocumentPath = @"C:\repo\file.cs", LineNumber = 10 };
+        BookmarkSnapshot snapshot2 = new BookmarkSnapshot { DocumentPath = @"C:\REPO\FILE.CS", LineNumber = 10 };
+
+        Assert.AreEqual(snapshot1.ExactMatchKey, snapshot2.ExactMatchKey);
+    }
+
+    [TestMethod]
+    public void BookmarkMetadata_FolderPath_WhenSet_NormalizesValue()
+    {
+        BookmarkMetadata metadata = new BookmarkMetadata();
+
+        metadata.FolderPath = @"Root\Team\\Backlog/Sprint1 ";
+
+        Assert.AreEqual("Team/Backlog/Sprint1", metadata.Group);
+        Assert.AreEqual("Team/Backlog/Sprint1", metadata.FolderPath);
+    }
+
+    [TestMethod]
+    public void BookmarkMetadata_FolderPath_WhenSetToNull_NormalizesToEmptyString()
+    {
+        BookmarkMetadata metadata = new BookmarkMetadata { Group = "ExistingGroup" };
+
+        metadata.FolderPath = null;
+
+        Assert.AreEqual(string.Empty, metadata.Group);
+        Assert.AreEqual(string.Empty, metadata.FolderPath);
+    }
+
     private static string CreateTestSolutionPath()
     {
         string testRoot = Path.Combine(Path.GetTempPath(), "BookmarkStudio.Tests", Guid.NewGuid().ToString("N"));

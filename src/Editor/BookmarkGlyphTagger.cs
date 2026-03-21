@@ -138,7 +138,7 @@ namespace BookmarkStudio
         }
 
         private bool MatchesDocumentPath(ManagedBookmark bookmark)
-            => string.Equals(BookmarkIdentity.NormalizeDocumentPath(bookmark.DocumentPath), _normalizedDocumentPath, StringComparison.Ordinal);
+            => string.Equals(bookmark.NormalizedDocumentPath, _normalizedDocumentPath, StringComparison.Ordinal);
 
         private void RefreshCachedBookmarks()
         {

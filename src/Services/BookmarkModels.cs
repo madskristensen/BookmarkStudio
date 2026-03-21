@@ -20,6 +20,7 @@ namespace BookmarkStudio
 
     internal static class BookmarkIdentity
     {
+        private const int MaxRepositoryRootCacheSize = 100;
         private static readonly object RepositoryRootCacheGate = new object();
         private static readonly Dictionary<string, string?> RepositoryRootCache = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
@@ -142,6 +143,17 @@ namespace BookmarkStudio
 
             lock (RepositoryRootCacheGate)
             {
+                // Evict oldest entries if cache is full
+                if (RepositoryRootCache.Count >= MaxRepositoryRootCacheSize)
+                {
+                    // Remove approximately half of the entries to avoid frequent evictions
+                    int entriesToRemove = RepositoryRootCache.Count / 2;
+                    foreach (string key in RepositoryRootCache.Keys.Take(entriesToRemove).ToList())
+                    {
+                        RepositoryRootCache.Remove(key);
+                    }
+                }
+
                 RepositoryRootCache[normalizedDirectoryPath] = foundRoot;
             }
 
@@ -210,6 +222,7 @@ namespace BookmarkStudio
             {
                 BookmarkId = BookmarkId,
                 DocumentPath = DocumentPath,
+                NormalizedDocumentPath = BookmarkIdentity.NormalizeDocumentPath(DocumentPath),
                 LineNumber = LineNumber,
                 LineText = (LineText ?? string.Empty).Trim(),
                 SlotNumber = SlotNumber,
@@ -226,6 +239,8 @@ namespace BookmarkStudio
         public string BookmarkId { get; set; } = string.Empty;
 
         public string DocumentPath { get; set; } = string.Empty;
+
+        public string NormalizedDocumentPath { get; set; } = string.Empty;
 
         public int LineNumber { get; set; }
 
@@ -268,6 +283,9 @@ namespace BookmarkStudio
 
     internal sealed class DualBookmarkWorkspaceState
     {
+        private IReadOnlyList<BookmarkMetadata>? _cachedAllBookmarks;
+        private IReadOnlyList<string>? _cachedAllFolderPaths;
+
         public DualBookmarkWorkspaceState(BookmarkWorkspaceState personalState, BookmarkWorkspaceState solutionState)
         {
             PersonalState = personalState ?? new BookmarkWorkspaceState();
@@ -282,10 +300,15 @@ namespace BookmarkStudio
         {
             get
             {
-                List<BookmarkMetadata> all = new List<BookmarkMetadata>();
-                all.AddRange(PersonalState.Bookmarks);
-                all.AddRange(SolutionState.Bookmarks);
-                return all;
+                if (_cachedAllBookmarks is null)
+                {
+                    List<BookmarkMetadata> all = new List<BookmarkMetadata>();
+                    all.AddRange(PersonalState.Bookmarks);
+                    all.AddRange(SolutionState.Bookmarks);
+                    _cachedAllBookmarks = all;
+                }
+
+                return _cachedAllBookmarks;
             }
         }
 
@@ -293,18 +316,23 @@ namespace BookmarkStudio
         {
             get
             {
-                HashSet<string> all = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                foreach (string path in PersonalState.FolderPaths)
+                if (_cachedAllFolderPaths is null)
                 {
-                    all.Add(path);
+                    HashSet<string> all = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    foreach (string path in PersonalState.FolderPaths)
+                    {
+                        all.Add(path);
+                    }
+
+                    foreach (string path in SolutionState.FolderPaths)
+                    {
+                        all.Add(path);
+                    }
+
+                    _cachedAllFolderPaths = all.ToArray();
                 }
 
-                foreach (string path in SolutionState.FolderPaths)
-                {
-                    all.Add(path);
-                }
-
-                return all.ToArray();
+                return _cachedAllFolderPaths;
             }
         }
     }

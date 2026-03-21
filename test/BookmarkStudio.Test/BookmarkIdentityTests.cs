@@ -244,4 +244,23 @@ public class BookmarkIdentityTests
             Directory.Delete(testRoot, recursive: true);
         }
     }
+
+    [TestMethod]
+    public void GetRepositoryRelativePath_WhenPathContainsInvalidCharacters_ReturnsOriginalPath()
+    {
+        // Path.GetFullPath throws ArgumentException for paths with invalid characters
+        string invalidPath = "C:\\repo\\file<invalid>.cs";
+
+        string result = BookmarkIdentity.GetRepositoryRelativePath(invalidPath);
+
+        Assert.AreEqual(invalidPath, result);
+    }
+
+    [TestMethod]
+    public void GetRepositoryRelativePath_WhenWhitespaceOnly_ReturnsEmptyString()
+    {
+        string result = BookmarkIdentity.GetRepositoryRelativePath("   ");
+
+        Assert.AreEqual(string.Empty, result);
+    }
 }

@@ -380,6 +380,114 @@ namespace BookmarkStudio
             await SaveWorkspaceToLocationAsync(solutionPath, targetLocation, targetState, cancellationToken);
         }
 
+        /// <summary>
+        /// Moves a folder and all its contents (bookmarks and subfolders) from one storage location to another.
+        /// </summary>
+        public async Task MoveFolderBetweenLocationsAsync(
+            string solutionPath,
+            string sourceFolderPath,
+            BookmarkStorageLocation sourceLocation,
+            string targetFolderPath,
+            BookmarkStorageLocation targetLocation,
+            CancellationToken cancellationToken)
+        {
+            string normalizedSource = BookmarkIdentity.NormalizeFolderPath(sourceFolderPath);
+            string normalizedTarget = BookmarkIdentity.NormalizeFolderPath(targetFolderPath);
+
+            if (string.IsNullOrWhiteSpace(normalizedSource))
+            {
+                throw new ArgumentException("Cannot move the root folder.", nameof(sourceFolderPath));
+            }
+
+            DualBookmarkWorkspaceState dualState = await LoadDualWorkspaceAsync(solutionPath, cancellationToken);
+
+            BookmarkWorkspaceState sourceState = sourceLocation == BookmarkStorageLocation.Solution
+                ? dualState.SolutionState
+                : dualState.PersonalState;
+
+            BookmarkWorkspaceState targetState = targetLocation == BookmarkStorageLocation.Solution
+                ? dualState.SolutionState
+                : dualState.PersonalState;
+
+            string sourcePrefix = normalizedSource + "/";
+
+            // Find all bookmarks in the source folder and its subfolders
+            List<BookmarkMetadata> bookmarksToMove = sourceState.Bookmarks
+                .Where(b =>
+                {
+                    string group = BookmarkIdentity.NormalizeFolderPath(b.Group);
+                    return string.Equals(group, normalizedSource, StringComparison.OrdinalIgnoreCase)
+                        || group.StartsWith(sourcePrefix, StringComparison.OrdinalIgnoreCase);
+                })
+                .ToList();
+
+            // Find all folder paths in the source folder
+            List<string> foldersToMove = sourceState.FolderPaths
+                .Where(path =>
+                    string.Equals(path, normalizedSource, StringComparison.OrdinalIgnoreCase)
+                    || path.StartsWith(sourcePrefix, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            // Remove bookmarks from source
+            foreach (BookmarkMetadata bookmark in bookmarksToMove)
+            {
+                sourceState.Bookmarks.Remove(bookmark);
+            }
+
+            // Remove folders from source
+            foreach (string folder in foldersToMove)
+            {
+                sourceState.FolderPaths.Remove(folder);
+            }
+
+            // Ensure root folder exists in source
+            sourceState.FolderPaths.Add(string.Empty);
+
+            // Calculate path transformation: replace source path with target path
+            foreach (BookmarkMetadata bookmark in bookmarksToMove)
+            {
+                string oldGroup = BookmarkIdentity.NormalizeFolderPath(bookmark.Group);
+                string newGroup;
+
+                if (string.Equals(oldGroup, normalizedSource, StringComparison.OrdinalIgnoreCase))
+                {
+                    newGroup = normalizedTarget;
+                }
+                else
+                {
+                    // Subfolder: replace prefix
+                    newGroup = normalizedTarget + oldGroup.Substring(normalizedSource.Length);
+                }
+
+                bookmark.Group = newGroup;
+                bookmark.StorageLocation = targetLocation;
+                targetState.Bookmarks.Add(bookmark);
+            }
+
+            // Add transformed folder paths to target
+            foreach (string folder in foldersToMove)
+            {
+                string newFolder;
+                if (string.Equals(folder, normalizedSource, StringComparison.OrdinalIgnoreCase))
+                {
+                    newFolder = normalizedTarget;
+                }
+                else
+                {
+                    newFolder = normalizedTarget + folder.Substring(normalizedSource.Length);
+                }
+
+                RegisterFolderPath(targetState.FolderPaths, newFolder);
+            }
+
+            // Always ensure the target folder itself is registered
+            RegisterFolderPath(targetState.FolderPaths, normalizedTarget);
+
+            // Save both workspaces
+            await SaveWorkspaceToLocationAsync(solutionPath, sourceLocation, sourceState, cancellationToken);
+            await SaveWorkspaceToLocationAsync(solutionPath, targetLocation, targetState, cancellationToken);
+        }
+
         private static void CleanupLegacyFiles(string currentPath)
         {
             string? directory = Path.GetDirectoryName(currentPath);

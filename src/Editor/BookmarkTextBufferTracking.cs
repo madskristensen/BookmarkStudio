@@ -42,6 +42,7 @@ namespace BookmarkStudio
         private readonly SemaphoreSlim _updateGate = new(1, 1);
         private readonly ITextBuffer _textBuffer;
         private readonly object _trackingPointsLock = new object();
+        private readonly object _debounceCtsLock = new object();
         private Dictionary<string, ITrackingPoint> _trackingPoints = new Dictionary<string, ITrackingPoint>(StringComparer.Ordinal);
         private int _attachedViewCount;
         private int _isDisposed;
@@ -88,11 +89,15 @@ namespace BookmarkStudio
                 return;
             }
 
-            // Cancel any pending debounced update
-            _debounceCts?.Cancel();
-            _debounceCts?.Dispose();
-            _debounceCts = new CancellationTokenSource();
-            CancellationToken debounceToken = _debounceCts.Token;
+            // Cancel any pending debounced update and create new CTS under lock
+            CancellationToken debounceToken;
+            lock (_debounceCtsLock)
+            {
+                _debounceCts?.Cancel();
+                _debounceCts?.Dispose();
+                _debounceCts = new CancellationTokenSource();
+                debounceToken = _debounceCts.Token;
+            }
 
             // Check disposal again before scheduling async work to avoid queuing
             // unnecessary operations during solution close
@@ -154,8 +159,13 @@ namespace BookmarkStudio
                 return;
             }
 
-            _debounceCts?.Cancel();
-            _debounceCts?.Dispose();
+            lock (_debounceCtsLock)
+            {
+                _debounceCts?.Cancel();
+                _debounceCts?.Dispose();
+                _debounceCts = null;
+            }
+
             _textBuffer.ChangedLowPriority -= OnTextBufferChanged;
             _updateGate.Dispose();
         }

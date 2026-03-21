@@ -517,6 +517,52 @@ namespace BookmarkStudio
             }
         }
 
+        public async Task<IReadOnlyList<ManagedBookmark>> MoveFolderBetweenStorageAsync(
+            string sourceFolderPath,
+            BookmarkStorageLocation sourceLocation,
+            string targetFolderPath,
+            BookmarkStorageLocation targetLocation,
+            CancellationToken cancellationToken)
+        {
+            await _repositoryGate.WaitAsync(cancellationToken);
+            try
+            {
+                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                await _metadataStore.MoveFolderBetweenLocationsAsync(
+                    solutionPath,
+                    sourceFolderPath,
+                    sourceLocation,
+                    targetFolderPath,
+                    targetLocation,
+                    cancellationToken);
+
+                // Refresh dual state to update cache
+                DualBookmarkWorkspaceState dualState = await _metadataStore.LoadDualWorkspaceAsync(solutionPath, cancellationToken);
+
+                List<ManagedBookmark> allBookmarks = new List<ManagedBookmark>();
+                allBookmarks.AddRange(BookmarkRepositoryService.ToManagedBookmarks(dualState.PersonalState.Bookmarks));
+                allBookmarks.AddRange(BookmarkRepositoryService.ToManagedBookmarks(dualState.SolutionState.Bookmarks));
+
+                HashSet<string> allFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (string path in dualState.PersonalState.FolderPaths)
+                {
+                    allFolders.Add(path);
+                }
+
+                foreach (string path in dualState.SolutionState.FolderPaths)
+                {
+                    allFolders.Add(path);
+                }
+
+                SetCachedState(allBookmarks, allFolders);
+                return _cachedBookmarks;
+            }
+            finally
+            {
+                _repositoryGate.Release();
+            }
+        }
+
         private async Task<string> GetSolutionPathAsync(CancellationToken cancellationToken)
         {
             // Use cached path if available to avoid UI thread switch

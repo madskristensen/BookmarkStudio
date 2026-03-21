@@ -489,19 +489,15 @@ namespace BookmarkStudio
                 throw new ArgumentException("Cannot move the root folder.", nameof(sourceFolderPath));
             }
 
-            // Delete folder from source storage
-            IReadOnlyList<ManagedBookmark> deletedBookmarks = await _operations.DeleteFolderRecursiveAsync(normalizedSource, sourceStorage, cancellationToken);
-            ReloadDualBookmarks(deletedBookmarks);
+            // Move folder and all its contents (bookmarks and subfolders) to the target storage
+            IReadOnlyList<ManagedBookmark> bookmarks = await _operations.MoveFolderBetweenStorageAsync(
+                normalizedSource, sourceStorage,
+                normalizedTarget, targetStorage,
+                cancellationToken);
+            ReloadDualBookmarks(bookmarks);
+
+            // Update folder paths tracking
             RemoveFolderPathsForStorage(normalizedSource, sourceStorage);
-
-            // Create folder in target storage
-            string targetParentPath = GetParentFolderPath(normalizedTarget);
-            string targetFolderName = normalizedTarget.Contains("/")
-                ? normalizedTarget.Substring(normalizedTarget.LastIndexOf('/') + 1)
-                : normalizedTarget;
-
-            IReadOnlyList<ManagedBookmark> createdBookmarks = await _operations.CreateFolderAsync(targetParentPath, targetFolderName, targetStorage, cancellationToken);
-            ReloadDualBookmarks(createdBookmarks);
             AddFolderPathForStorage(normalizedTarget, targetStorage);
 
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
