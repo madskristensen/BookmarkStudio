@@ -260,4 +260,322 @@ public class BookmarkMetadataStoreTests
             Directory.Delete(tempDir, recursive: true);
         }
     }
+
+    [TestMethod]
+    public async Task MoveBookmarkBetweenLocationsAsync_WhenMovedToTargetFolder_UpdatesFolderAndStorage()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string solutionPath = Path.Combine(tempDir, "test.sln");
+        File.WriteAllText(solutionPath, string.Empty);
+
+        try
+        {
+            BookmarkMetadataStore store = new BookmarkMetadataStore();
+
+            // Create a bookmark in Solution storage at root folder
+            BookmarkWorkspaceState solutionState = new BookmarkWorkspaceState();
+            solutionState.Bookmarks.Add(new BookmarkMetadata
+            {
+                BookmarkId = "bookmark-1",
+                DocumentPath = Path.Combine(tempDir, "file.cs"),
+                LineNumber = 10,
+                Group = string.Empty,
+                StorageLocation = BookmarkStorageLocation.Solution
+            });
+            solutionState.FolderPaths.Add(string.Empty);
+            await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Solution, solutionState, CancellationToken.None);
+
+            // Create Personal storage with a target folder
+            BookmarkWorkspaceState personalState = new BookmarkWorkspaceState();
+            personalState.FolderPaths.Add(string.Empty);
+            personalState.FolderPaths.Add("TargetFolder");
+            await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Personal, personalState, CancellationToken.None);
+
+            // Move bookmark to Personal storage and TargetFolder
+            await store.MoveBookmarkBetweenLocationsAsync(
+                solutionPath,
+                "bookmark-1",
+                "TargetFolder",
+                BookmarkStorageLocation.Personal,
+                CancellationToken.None);
+
+            // Load and verify
+            DualBookmarkWorkspaceState dualState = await store.LoadDualWorkspaceAsync(solutionPath, CancellationToken.None);
+
+            Assert.IsEmpty(dualState.SolutionState.Bookmarks, "Bookmark should be removed from Solution storage");
+            Assert.HasCount(1, dualState.PersonalState.Bookmarks);
+
+            BookmarkMetadata movedBookmark = dualState.PersonalState.Bookmarks[0];
+            Assert.AreEqual("bookmark-1", movedBookmark.BookmarkId);
+            Assert.AreEqual("TargetFolder", movedBookmark.Group, "Bookmark should be in TargetFolder");
+            Assert.AreEqual(BookmarkStorageLocation.Personal, movedBookmark.StorageLocation);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task MoveBookmarkBetweenLocationsAsync_WhenMovedToNestedFolder_UpdatesFolderAndRegistersPath()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string solutionPath = Path.Combine(tempDir, "test.sln");
+        File.WriteAllText(solutionPath, string.Empty);
+
+        try
+        {
+            BookmarkMetadataStore store = new BookmarkMetadataStore();
+
+            // Create a bookmark in Solution storage
+            BookmarkWorkspaceState solutionState = new BookmarkWorkspaceState();
+            solutionState.Bookmarks.Add(new BookmarkMetadata
+            {
+                BookmarkId = "bookmark-1",
+                DocumentPath = Path.Combine(tempDir, "file.cs"),
+                LineNumber = 10,
+                Group = "OriginalFolder",
+                StorageLocation = BookmarkStorageLocation.Solution
+            });
+            solutionState.FolderPaths.Add(string.Empty);
+            solutionState.FolderPaths.Add("OriginalFolder");
+            await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Solution, solutionState, CancellationToken.None);
+
+            // Create empty Personal storage
+            BookmarkWorkspaceState personalState = new BookmarkWorkspaceState();
+            personalState.FolderPaths.Add(string.Empty);
+            await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Personal, personalState, CancellationToken.None);
+
+            // Move bookmark to Personal storage with a nested folder path
+            await store.MoveBookmarkBetweenLocationsAsync(
+                solutionPath,
+                "bookmark-1",
+                "Parent/Child/Nested",
+                BookmarkStorageLocation.Personal,
+                CancellationToken.None);
+
+            // Load and verify
+            DualBookmarkWorkspaceState dualState = await store.LoadDualWorkspaceAsync(solutionPath, CancellationToken.None);
+
+            Assert.IsEmpty(dualState.SolutionState.Bookmarks);
+            Assert.HasCount(1, dualState.PersonalState.Bookmarks);
+
+            BookmarkMetadata movedBookmark = dualState.PersonalState.Bookmarks[0];
+            Assert.AreEqual("Parent/Child/Nested", movedBookmark.Group, "Bookmark should be in nested folder");
+            Assert.Contains("Parent/Child/Nested", dualState.PersonalState.FolderPaths, "Nested folder path should be registered");
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task MoveFolderBetweenLocationsAsync_WhenFolderHasBookmarks_MovesAllBookmarks()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string solutionPath = Path.Combine(tempDir, "test.sln");
+        File.WriteAllText(solutionPath, string.Empty);
+
+        try
+        {
+            BookmarkMetadataStore store = new BookmarkMetadataStore();
+
+            // Create Solution storage with a folder containing bookmarks
+            BookmarkWorkspaceState solutionState = new BookmarkWorkspaceState();
+            solutionState.Bookmarks.Add(new BookmarkMetadata
+            {
+                BookmarkId = "bookmark-1",
+                DocumentPath = Path.Combine(tempDir, "a.cs"),
+                LineNumber = 10,
+                Group = "SourceFolder",
+                StorageLocation = BookmarkStorageLocation.Solution
+            });
+            solutionState.Bookmarks.Add(new BookmarkMetadata
+            {
+                BookmarkId = "bookmark-2",
+                DocumentPath = Path.Combine(tempDir, "b.cs"),
+                LineNumber = 20,
+                Group = "SourceFolder",
+                StorageLocation = BookmarkStorageLocation.Solution
+            });
+            solutionState.FolderPaths.Add(string.Empty);
+            solutionState.FolderPaths.Add("SourceFolder");
+            await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Solution, solutionState, CancellationToken.None);
+
+            // Create empty Personal storage
+            BookmarkWorkspaceState personalState = new BookmarkWorkspaceState();
+            personalState.FolderPaths.Add(string.Empty);
+            await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Personal, personalState, CancellationToken.None);
+
+            // Move folder from Solution to Personal
+            await store.MoveFolderBetweenLocationsAsync(
+                solutionPath,
+                "SourceFolder",
+                BookmarkStorageLocation.Solution,
+                "SourceFolder",
+                BookmarkStorageLocation.Personal,
+                CancellationToken.None);
+
+            // Load and verify
+            DualBookmarkWorkspaceState dualState = await store.LoadDualWorkspaceAsync(solutionPath, CancellationToken.None);
+
+            Assert.IsEmpty(dualState.SolutionState.Bookmarks, "All bookmarks should be removed from Solution");
+            Assert.DoesNotContain("SourceFolder", dualState.SolutionState.FolderPaths, "Folder should be removed from Solution");
+
+            Assert.HasCount(2, dualState.PersonalState.Bookmarks, "All bookmarks should be in Personal");
+            Assert.Contains("SourceFolder", dualState.PersonalState.FolderPaths, "Folder should be in Personal");
+
+            foreach (BookmarkMetadata bookmark in dualState.PersonalState.Bookmarks)
+            {
+                Assert.AreEqual("SourceFolder", bookmark.Group);
+                Assert.AreEqual(BookmarkStorageLocation.Personal, bookmark.StorageLocation);
+            }
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task MoveFolderBetweenLocationsAsync_WhenFolderHasSubfolders_MovesEntireHierarchy()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string solutionPath = Path.Combine(tempDir, "test.sln");
+        File.WriteAllText(solutionPath, string.Empty);
+
+        try
+        {
+            BookmarkMetadataStore store = new BookmarkMetadataStore();
+
+            // Create Solution storage with nested folder structure
+            BookmarkWorkspaceState solutionState = new BookmarkWorkspaceState();
+            solutionState.Bookmarks.Add(new BookmarkMetadata
+            {
+                BookmarkId = "root-bookmark",
+                DocumentPath = Path.Combine(tempDir, "a.cs"),
+                LineNumber = 10,
+                Group = "Parent",
+                StorageLocation = BookmarkStorageLocation.Solution
+            });
+            solutionState.Bookmarks.Add(new BookmarkMetadata
+            {
+                BookmarkId = "child-bookmark",
+                DocumentPath = Path.Combine(tempDir, "b.cs"),
+                LineNumber = 20,
+                Group = "Parent/Child",
+                StorageLocation = BookmarkStorageLocation.Solution
+            });
+            solutionState.Bookmarks.Add(new BookmarkMetadata
+            {
+                BookmarkId = "grandchild-bookmark",
+                DocumentPath = Path.Combine(tempDir, "c.cs"),
+                LineNumber = 30,
+                Group = "Parent/Child/Grandchild",
+                StorageLocation = BookmarkStorageLocation.Solution
+            });
+            solutionState.FolderPaths.Add(string.Empty);
+            solutionState.FolderPaths.Add("Parent");
+            solutionState.FolderPaths.Add("Parent/Child");
+            solutionState.FolderPaths.Add("Parent/Child/Grandchild");
+            await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Solution, solutionState, CancellationToken.None);
+
+            // Create empty Personal storage
+            BookmarkWorkspaceState personalState = new BookmarkWorkspaceState();
+            personalState.FolderPaths.Add(string.Empty);
+            await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Personal, personalState, CancellationToken.None);
+
+            // Move Parent folder from Solution to Personal
+            await store.MoveFolderBetweenLocationsAsync(
+                solutionPath,
+                "Parent",
+                BookmarkStorageLocation.Solution,
+                "Parent",
+                BookmarkStorageLocation.Personal,
+                CancellationToken.None);
+
+            // Load and verify
+            DualBookmarkWorkspaceState dualState = await store.LoadDualWorkspaceAsync(solutionPath, CancellationToken.None);
+
+            Assert.IsEmpty(dualState.SolutionState.Bookmarks, "All bookmarks should be removed from Solution");
+            Assert.HasCount(3, dualState.PersonalState.Bookmarks, "All 3 bookmarks should be in Personal");
+
+            Assert.AreEqual("Parent", dualState.PersonalState.Bookmarks.Single(b => b.BookmarkId == "root-bookmark").Group);
+            Assert.AreEqual("Parent/Child", dualState.PersonalState.Bookmarks.Single(b => b.BookmarkId == "child-bookmark").Group);
+            Assert.AreEqual("Parent/Child/Grandchild", dualState.PersonalState.Bookmarks.Single(b => b.BookmarkId == "grandchild-bookmark").Group);
+
+            Assert.Contains("Parent", dualState.PersonalState.FolderPaths);
+            Assert.Contains("Parent/Child", dualState.PersonalState.FolderPaths);
+            Assert.Contains("Parent/Child/Grandchild", dualState.PersonalState.FolderPaths);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task MoveFolderBetweenLocationsAsync_WhenMovingToNewPath_TransformsFolderPaths()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string solutionPath = Path.Combine(tempDir, "test.sln");
+        File.WriteAllText(solutionPath, string.Empty);
+
+        try
+        {
+            BookmarkMetadataStore store = new BookmarkMetadataStore();
+
+            // Create Solution storage with folder and bookmark
+            BookmarkWorkspaceState solutionState = new BookmarkWorkspaceState();
+            solutionState.Bookmarks.Add(new BookmarkMetadata
+            {
+                BookmarkId = "bookmark-1",
+                DocumentPath = Path.Combine(tempDir, "a.cs"),
+                LineNumber = 10,
+                Group = "OldFolder/Nested",
+                StorageLocation = BookmarkStorageLocation.Solution
+            });
+            solutionState.FolderPaths.Add(string.Empty);
+            solutionState.FolderPaths.Add("OldFolder");
+            solutionState.FolderPaths.Add("OldFolder/Nested");
+            await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Solution, solutionState, CancellationToken.None);
+
+            // Create Personal storage with target parent folder
+            BookmarkWorkspaceState personalState = new BookmarkWorkspaceState();
+            personalState.FolderPaths.Add(string.Empty);
+            personalState.FolderPaths.Add("TargetParent");
+            await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Personal, personalState, CancellationToken.None);
+
+            // Move OldFolder to TargetParent/NewFolder in Personal
+            await store.MoveFolderBetweenLocationsAsync(
+                solutionPath,
+                "OldFolder",
+                BookmarkStorageLocation.Solution,
+                "TargetParent/NewFolder",
+                BookmarkStorageLocation.Personal,
+                CancellationToken.None);
+
+            // Load and verify
+            DualBookmarkWorkspaceState dualState = await store.LoadDualWorkspaceAsync(solutionPath, CancellationToken.None);
+
+            Assert.IsEmpty(dualState.SolutionState.Bookmarks);
+            Assert.HasCount(1, dualState.PersonalState.Bookmarks);
+
+            BookmarkMetadata movedBookmark = dualState.PersonalState.Bookmarks[0];
+            Assert.AreEqual("TargetParent/NewFolder/Nested", movedBookmark.Group, "Nested path should be transformed");
+
+            Assert.Contains("TargetParent/NewFolder", dualState.PersonalState.FolderPaths);
+            Assert.Contains("TargetParent/NewFolder/Nested", dualState.PersonalState.FolderPaths);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
 }

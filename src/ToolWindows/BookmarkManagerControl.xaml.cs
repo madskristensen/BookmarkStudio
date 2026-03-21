@@ -312,10 +312,10 @@ namespace BookmarkStudio
             // Check if moving between storage locations
             if (targetStorage.HasValue && _dragSourceStorage.HasValue && targetStorage.Value != _dragSourceStorage.Value)
             {
-                // Move bookmark to different storage location
+                // Move bookmark to different storage location and target folder
                 await RunAsync(async cancellationToken =>
                 {
-                    await BookmarkOperationsService.Current.MoveBookmarkToStorageAsync(bookmarkId!, targetStorage.Value, cancellationToken);
+                    await BookmarkOperationsService.Current.MoveBookmarkToStorageAsync(bookmarkId!, targetFolderPath, targetStorage.Value, cancellationToken);
                     await _viewModel.RefreshAsync(cancellationToken);
                 });
             }

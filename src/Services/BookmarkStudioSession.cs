@@ -517,6 +517,20 @@ namespace BookmarkStudio
             }
         }
 
+        public async Task MoveBookmarkToStorageAsync(string bookmarkId, string targetFolderPath, BookmarkStorageLocation targetLocation, CancellationToken cancellationToken)
+        {
+            await _repositoryGate.WaitAsync(cancellationToken);
+            try
+            {
+                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                await _metadataStore.MoveBookmarkBetweenLocationsAsync(solutionPath, bookmarkId, targetFolderPath, targetLocation, cancellationToken);
+            }
+            finally
+            {
+                _repositoryGate.Release();
+            }
+        }
+
         public async Task<IReadOnlyList<ManagedBookmark>> MoveFolderBetweenStorageAsync(
             string sourceFolderPath,
             BookmarkStorageLocation sourceLocation,

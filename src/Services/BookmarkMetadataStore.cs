@@ -381,6 +381,48 @@ namespace BookmarkStudio
         }
 
         /// <summary>
+        /// Moves a bookmark from one storage location to another, and also changes its folder.
+        /// </summary>
+        public async Task MoveBookmarkBetweenLocationsAsync(
+            string solutionPath,
+            string bookmarkId,
+            string targetFolderPath,
+            BookmarkStorageLocation targetLocation,
+            CancellationToken cancellationToken)
+        {
+            string normalizedTargetFolder = BookmarkIdentity.NormalizeFolderPath(targetFolderPath);
+
+            DualBookmarkWorkspaceState dualState = await LoadDualWorkspaceAsync(solutionPath, cancellationToken);
+
+            BookmarkWorkspaceState sourceState = targetLocation == BookmarkStorageLocation.Solution
+                ? dualState.PersonalState
+                : dualState.SolutionState;
+
+            BookmarkWorkspaceState targetState = targetLocation == BookmarkStorageLocation.Solution
+                ? dualState.SolutionState
+                : dualState.PersonalState;
+
+            BookmarkMetadata? bookmark = sourceState.Bookmarks.FirstOrDefault(b => string.Equals(b.BookmarkId, bookmarkId, StringComparison.Ordinal));
+            if (bookmark is null)
+            {
+                return;
+            }
+
+            sourceState.Bookmarks.Remove(bookmark);
+            bookmark.StorageLocation = targetLocation;
+            bookmark.Group = normalizedTargetFolder;
+            targetState.Bookmarks.Add(bookmark);
+            RegisterFolderPath(targetState.FolderPaths, normalizedTargetFolder);
+
+            BookmarkStorageLocation sourceLocation = targetLocation == BookmarkStorageLocation.Solution
+                ? BookmarkStorageLocation.Personal
+                : BookmarkStorageLocation.Solution;
+
+            await SaveWorkspaceToLocationAsync(solutionPath, sourceLocation, sourceState, cancellationToken);
+            await SaveWorkspaceToLocationAsync(solutionPath, targetLocation, targetState, cancellationToken);
+        }
+
+        /// <summary>
         /// Moves a folder and all its contents (bookmarks and subfolders) from one storage location to another.
         /// </summary>
         public async Task MoveFolderBetweenLocationsAsync(

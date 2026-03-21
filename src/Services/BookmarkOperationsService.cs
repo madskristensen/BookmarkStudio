@@ -39,6 +39,9 @@ namespace BookmarkStudio
         public Task MoveBookmarkToStorageAsync(string bookmarkId, BookmarkStorageLocation targetLocation, CancellationToken cancellationToken)
             => _session.MoveBookmarkToStorageAsync(bookmarkId, targetLocation, cancellationToken);
 
+        public Task MoveBookmarkToStorageAsync(string bookmarkId, string targetFolderPath, BookmarkStorageLocation targetLocation, CancellationToken cancellationToken)
+            => _session.MoveBookmarkToStorageAsync(bookmarkId, targetFolderPath, targetLocation, cancellationToken);
+
         public Task<ManagedBookmark> GetBookmarkAsync(string? bookmarkId, CancellationToken cancellationToken)
             => GetRequiredBookmarkAsync(bookmarkId, cancellationToken);
 
