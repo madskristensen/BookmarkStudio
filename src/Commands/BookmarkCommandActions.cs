@@ -42,5 +42,23 @@ namespace BookmarkStudio
             ManagedBookmark bookmark = await BookmarkOperationsService.Current.GoToPreviousBookmarkAsync(cancellationToken);
             await BookmarkManagerToolWindow.RefreshIfVisibleAsync(bookmark.BookmarkId, cancellationToken);
         }
+
+        public static async Task GoToNextBookmarkInDocumentAsync(CancellationToken cancellationToken)
+        {
+            ManagedBookmark bookmark = await BookmarkOperationsService.Current.GoToNextBookmarkInDocumentAsync(cancellationToken);
+            await BookmarkManagerToolWindow.RefreshIfVisibleAsync(bookmark.BookmarkId, cancellationToken);
+        }
+
+        public static async Task GoToPreviousBookmarkInDocumentAsync(CancellationToken cancellationToken)
+        {
+            ManagedBookmark bookmark = await BookmarkOperationsService.Current.GoToPreviousBookmarkInDocumentAsync(cancellationToken);
+            await BookmarkManagerToolWindow.RefreshIfVisibleAsync(bookmark.BookmarkId, cancellationToken);
+        }
+
+        public static async Task ClearBookmarksInDocumentAsync(CancellationToken cancellationToken)
+        {
+            await BookmarkOperationsService.Current.ClearBookmarksInDocumentAsync(cancellationToken);
+            await BookmarkManagerToolWindow.RefreshIfVisibleAsync(cancellationToken);
+        }
     }
 }

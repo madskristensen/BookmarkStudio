@@ -146,9 +146,31 @@ namespace BookmarkStudio
 
             RefreshCachedBookmarks();
 
-            ITextSnapshot snapshot = _buffer.CurrentSnapshot;
-            SnapshotSpan fullSpan = new SnapshotSpan(snapshot, 0, snapshot.Length);
-            TagsChanged?.Invoke(this, new SnapshotSpanEventArgs(fullSpan));
+            // Capture disposal state before scheduling async work to avoid queuing
+            // unnecessary UI thread operations during solution close
+            if (Volatile.Read(ref _isDisposed) == 1)
+            {
+                return;
+            }
+
+            ThreadHelper.JoinableTaskFactory.RunAsync(async delegate
+            {
+                if (Volatile.Read(ref _isDisposed) == 1)
+                {
+                    return;
+                }
+
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+                if (Volatile.Read(ref _isDisposed) == 1)
+                {
+                    return;
+                }
+
+                ITextSnapshot snapshot = _buffer.CurrentSnapshot;
+                SnapshotSpan fullSpan = new SnapshotSpan(snapshot, 0, snapshot.Length);
+                TagsChanged?.Invoke(this, new SnapshotSpanEventArgs(fullSpan));
+            }).FireAndForget();
         }
     }
 }

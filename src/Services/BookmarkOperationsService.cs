@@ -135,6 +135,12 @@ namespace BookmarkStudio
         public Task<ManagedBookmark> GoToPreviousBookmarkAsync(CancellationToken cancellationToken)
             => NavigateRelativeAsync(-1, cancellationToken);
 
+        public Task<ManagedBookmark> GoToNextBookmarkInDocumentAsync(CancellationToken cancellationToken)
+            => NavigateRelativeInDocumentAsync(1, cancellationToken);
+
+        public Task<ManagedBookmark> GoToPreviousBookmarkInDocumentAsync(CancellationToken cancellationToken)
+            => NavigateRelativeInDocumentAsync(-1, cancellationToken);
+
         public async Task<IReadOnlyList<ManagedBookmark>> AssignSlotAsync(int slotNumber, string? bookmarkId, CancellationToken cancellationToken)
         {
             if (slotNumber < 1 || slotNumber > 9)
@@ -295,6 +301,27 @@ namespace BookmarkStudio
                 workspace.FolderPaths.Add(string.Empty);
             }, cancellationToken);
 
+        public async Task<IReadOnlyList<ManagedBookmark>> ClearBookmarksInDocumentAsync(CancellationToken cancellationToken)
+        {
+            ActiveBookmarkLocation? activeLocation = await GetActiveLocationAsync(cancellationToken);
+            if (activeLocation is null)
+            {
+                throw new InvalidOperationException("Open a text document to clear bookmarks within it.");
+            }
+
+            return await _session.UpdateWorkspaceAsync(workspace =>
+            {
+                List<BookmarkMetadata> toRemove = workspace.Bookmarks
+                    .Where(item => string.Equals(BookmarkIdentity.NormalizeDocumentPath(item.DocumentPath), activeLocation.NormalizedDocumentPath, StringComparison.Ordinal))
+                    .ToList();
+
+                foreach (BookmarkMetadata bookmark in toRemove)
+                {
+                    workspace.Bookmarks.Remove(bookmark);
+                }
+            }, cancellationToken);
+        }
+
         public async Task<IReadOnlyList<ManagedBookmark>> MoveBookmarkToFolderAsync(string? bookmarkId, string? folderPath, CancellationToken cancellationToken)
         {
             ManagedBookmark targetBookmark = await GetRequiredBookmarkAsync(bookmarkId, cancellationToken);
@@ -427,6 +454,39 @@ namespace BookmarkStudio
             else
             {
                 bookmark = bookmarks.LastOrDefault(item => CompareBookmark(item, activeLocation) < 0) ?? bookmarks[bookmarks.Count - 1];
+            }
+
+            await NavigateToBookmarkAsync(bookmark, cancellationToken);
+            await TouchLastVisitedAsync(bookmark.BookmarkId, cancellationToken);
+            return bookmark;
+        }
+
+        private async Task<ManagedBookmark> NavigateRelativeInDocumentAsync(int direction, CancellationToken cancellationToken)
+        {
+            ActiveBookmarkLocation? activeLocation = await GetActiveLocationAsync(cancellationToken);
+            if (activeLocation is null)
+            {
+                throw new InvalidOperationException("Open a text document to navigate bookmarks within it.");
+            }
+
+            IReadOnlyList<ManagedBookmark> bookmarks = (await _session.RefreshAsync(cancellationToken))
+                .Where(item => string.Equals(BookmarkIdentity.NormalizeDocumentPath(item.DocumentPath), activeLocation.NormalizedDocumentPath, StringComparison.Ordinal))
+                .OrderBy(item => item.LineNumber)
+                .ToArray();
+
+            if (bookmarks.Count == 0)
+            {
+                throw new InvalidOperationException("No BookmarkStudio bookmarks exist in the current document.");
+            }
+
+            ManagedBookmark bookmark;
+            if (direction >= 0)
+            {
+                bookmark = bookmarks.FirstOrDefault(item => item.LineNumber > activeLocation.LineNumber) ?? bookmarks[0];
+            }
+            else
+            {
+                bookmark = bookmarks.LastOrDefault(item => item.LineNumber < activeLocation.LineNumber) ?? bookmarks[bookmarks.Count - 1];
             }
 
             await NavigateToBookmarkAsync(bookmark, cancellationToken);

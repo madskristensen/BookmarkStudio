@@ -99,6 +99,19 @@ Default keybindings:
 
 Bookmark Studio intercepts Visual Studio built-in bookmark commands so existing workflows continue to work while using Bookmark Studio metadata and UI.
 
+The following built-in commands are intercepted:
+
+| Command | Default Shortcut | Description |
+|---------|------------------|-------------|
+| Toggle Bookmark | Ctrl+K, Ctrl+K | Toggle a bookmark at the current line |
+| Next Bookmark | Ctrl+K, Ctrl+N | Navigate to the next bookmark in the solution |
+| Previous Bookmark | Ctrl+K, Ctrl+P | Navigate to the previous bookmark in the solution |
+| Next Bookmark in Document | Ctrl+Shift+K, Ctrl+Shift+N | Navigate to the next bookmark in the current document |
+| Previous Bookmark in Document | Ctrl+Shift+K, Ctrl+Shift+P | Navigate to the previous bookmark in the current document |
+| Clear Bookmarks in Document | Ctrl+Shift+K, Ctrl+Shift+L | Remove all bookmarks in the current document |
+
+This means you can continue using your familiar keyboard shortcuts while benefiting from Bookmark Studio's enhanced features like colors, labels, folders, and slots.
+
 ### Tracking and Refresh
 
 Bookmark Studio keeps bookmarks accurate as files change:

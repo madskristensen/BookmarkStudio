@@ -20,6 +20,9 @@ namespace BookmarkStudio
             _registrations.Add(await VS.Commands.InterceptAsync(VSConstants.VSStd2KCmdID.TOGGLETEMPBOOKMARK, () => Execute(cancellationToken => BookmarkCommandActions.ToggleBookmarkAsync(cancellationToken))));
             _registrations.Add(await VS.Commands.InterceptAsync(VSConstants.VSStd2KCmdID.GOTONEXTBOOKMARK, () => Execute(cancellationToken => BookmarkCommandActions.GoToNextBookmarkAsync(cancellationToken))));
             _registrations.Add(await VS.Commands.InterceptAsync(VSConstants.VSStd2KCmdID.GOTOPREVBOOKMARK, () => Execute(cancellationToken => BookmarkCommandActions.GoToPreviousBookmarkAsync(cancellationToken))));
+            _registrations.Add(await VS.Commands.InterceptAsync(VSConstants.VSStd2KCmdID.ECMD_GOTONEXTBOOKMARKINDOC, () => Execute(cancellationToken => BookmarkCommandActions.GoToNextBookmarkInDocumentAsync(cancellationToken))));
+            _registrations.Add(await VS.Commands.InterceptAsync(VSConstants.VSStd2KCmdID.ECMD_GOTOPREVBOOKMARKINDOC, () => Execute(cancellationToken => BookmarkCommandActions.GoToPreviousBookmarkInDocumentAsync(cancellationToken))));
+            _registrations.Add(await VS.Commands.InterceptAsync(VSConstants.VSStd2KCmdID.ECMD_DELETEALLBOOKMARKSINDOC, () => Execute(cancellationToken => BookmarkCommandActions.ClearBookmarksInDocumentAsync(cancellationToken))));
         }
 
         private static CommandProgression Execute(Func<CancellationToken, Task> action)

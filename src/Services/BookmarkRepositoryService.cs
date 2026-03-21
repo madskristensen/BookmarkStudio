@@ -257,7 +257,7 @@ namespace BookmarkStudio
         /// <summary>
         /// Returns the lowest available slot number (1-9), or null if all slots are occupied.
         /// </summary>
-        private static int? FindNextAvailableSlot(IEnumerable<BookmarkMetadata> bookmarks)
+        internal static int? FindNextAvailableSlot(IEnumerable<BookmarkMetadata> bookmarks)
         {
             HashSet<int> usedSlots = new HashSet<int>(bookmarks.Where(b => b.SlotNumber.HasValue).Select(b => b.SlotNumber.GetValueOrDefault()));
 
