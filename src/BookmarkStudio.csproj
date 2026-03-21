@@ -50,8 +50,11 @@
     <Compile Include="Commands\FilterByColorCommands.cs" />
     <Compile Include="Commands\GoToSlotCommands.cs" />
     <Compile Include="Commands\TogglePromptForNameCommand.cs" />
+    <Compile Include="Editor\BookmarkGlyphMouseProcessor.cs" />
+    <Compile Include="Editor\BookmarkGlyphMouseProcessorProvider.cs" />
     <Compile Include="Editor\BookmarkOverviewMarkFormatDefinitions.cs" />
     <Compile Include="Editor\BookmarkOverviewTagger.cs" />
+    <Compile Include="Helpers\ThemedContextMenuHelper.cs" />
     <Compile Include="Options\General.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Commands\OpenBookmarkManagerCommand.cs" />

@@ -67,7 +67,10 @@ namespace BookmarkStudio
                 IsDefault = true,
                 Margin = new Thickness(0, 0, 8, 0),
                 MinWidth = 75,
-                MinHeight = 23,
+                Height = 23,
+                Padding = new Thickness(8, 2, 8, 2),
+                VerticalAlignment = VerticalAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center,
             };
             okButton.SetResourceReference(StyleProperty, VsResourceKeys.ThemedDialogButtonStyleKey);
             okButton.Click += OkButton_Click;
@@ -78,7 +81,10 @@ namespace BookmarkStudio
                 Content = "Cancel",
                 IsCancel = true,
                 MinWidth = 75,
-                MinHeight = 23,
+                Height = 23,
+                Padding = new Thickness(8, 2, 8, 2),
+                VerticalAlignment = VerticalAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center,
             };
             cancelButton.SetResourceReference(StyleProperty, VsResourceKeys.ThemedDialogButtonStyleKey);
             buttons.Children.Add(cancelButton);

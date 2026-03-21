@@ -154,17 +154,7 @@ namespace BookmarkStudio
                 }
                 else
                 {
-                    DateTime now = DateTime.UtcNow;
-                    BookmarkMetadata createdBookmark = new BookmarkMetadata
-                    {
-                        BookmarkId = Guid.NewGuid().ToString("N"),
-                        CreatedUtc = now,
-                        SlotNumber = BookmarkRepositoryService.FindNextAvailableSlot(workspace.Bookmarks),
-                        Label = string.IsNullOrWhiteSpace(label) ? BookmarkRepositoryService.FindNextDefaultLabel(workspace.Bookmarks) : label,
-                        Color = BookmarkColor.Orange,
-                    };
-
-                    createdBookmark.UpdateFromSnapshot(snapshot, now);
+                    BookmarkMetadata createdBookmark = BookmarkRepositoryService.CreateBookmarkMetadata(workspace.Bookmarks, snapshot, label);
                     workspace.Bookmarks.Add(createdBookmark);
                     result = createdBookmark.ToManagedBookmark();
                 }

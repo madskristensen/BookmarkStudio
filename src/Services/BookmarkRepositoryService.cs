@@ -95,17 +95,7 @@ namespace BookmarkStudio
                         return null;
                     }
 
-                    DateTime now = DateTime.UtcNow;
-                    BookmarkMetadata createdBookmark = new BookmarkMetadata
-                    {
-                        BookmarkId = Guid.NewGuid().ToString("N"),
-                        CreatedUtc = now,
-                        SlotNumber = FindNextAvailableSlot(bookmarks),
-                        Label = string.IsNullOrWhiteSpace(label) ? FindNextDefaultLabel(bookmarks) : label!,
-                        Color = BookmarkColor.Orange,
-                    };
-
-                    createdBookmark.UpdateFromSnapshot(snapshot, now);
+                    BookmarkMetadata createdBookmark = CreateBookmarkMetadata(bookmarks, snapshot, label);
                     bookmarks.Add(createdBookmark);
                     await SaveAsync(solutionPath, bookmarks, cancellationToken);
                     return createdBookmark.ToManagedBookmark();
@@ -117,6 +107,22 @@ namespace BookmarkStudio
 
         public static BookmarkMetadata FindBySnapshot(IEnumerable<BookmarkMetadata> bookmarks, BookmarkSnapshot snapshot)
             => bookmarks.FirstOrDefault(item => string.Equals(item.ExactMatchKey, snapshot.ExactMatchKey, StringComparison.Ordinal));
+
+        public static BookmarkMetadata CreateBookmarkMetadata(IEnumerable<BookmarkMetadata> existingBookmarks, BookmarkSnapshot snapshot, string? label)
+        {
+            DateTime now = DateTime.UtcNow;
+            BookmarkMetadata bookmark = new BookmarkMetadata
+            {
+                BookmarkId = Guid.NewGuid().ToString("N"),
+                CreatedUtc = now,
+                SlotNumber = FindNextAvailableSlot(existingBookmarks),
+                Label = string.IsNullOrWhiteSpace(label) ? FindNextDefaultLabel(existingBookmarks) : label,
+                Color = BookmarkColor.Blue,
+            };
+
+            bookmark.UpdateFromSnapshot(snapshot, now);
+            return bookmark;
+        }
 
         public static void EnsureFolderPath(BookmarkWorkspaceState state, string? folderPath)
         {

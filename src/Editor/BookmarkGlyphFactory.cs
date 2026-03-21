@@ -90,6 +90,7 @@ namespace BookmarkStudio
             AddColorMenuItem(menu, "Teal", BookmarkColor.Teal, bookmarkId);
             menu.Items.Add(new Separator());
             AddRenameMenuItem(menu, bookmarkId);
+            ThemedContextMenuHelper.ApplyVsTheme(menu);
             return menu;
         }
 
