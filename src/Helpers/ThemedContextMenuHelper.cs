@@ -5,6 +5,7 @@ using System.Windows.Data;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using Microsoft.VisualStudio.PlatformUI;
+using Microsoft.VisualStudio.Shell;
 
 namespace BookmarkStudio
 {
@@ -59,8 +60,8 @@ namespace BookmarkStudio
 
             ControlTemplate template = new ControlTemplate(typeof(ContextMenu));
             FrameworkElementFactory border = new FrameworkElementFactory(typeof(Border));
-            border.SetResourceReference(Border.BackgroundProperty, EnvironmentColors.CommandBarMenuBackgroundGradientBrushKey);
-            border.SetResourceReference(Border.BorderBrushProperty, EnvironmentColors.CommandBarMenuBorderBrushKey);
+            border.SetResourceReference(Border.BackgroundProperty, VsBrushes.CommandBarMenuBackgroundGradientBeginKey);
+            border.SetResourceReference(Border.BorderBrushProperty, VsBrushes.CommandBarMenuBorderKey);
             border.SetBinding(Border.BorderThicknessProperty, new Binding("BorderThickness") { RelativeSource = new RelativeSource(RelativeSourceMode.TemplatedParent) });
             border.SetBinding(Border.PaddingProperty, new Binding("Padding") { RelativeSource = new RelativeSource(RelativeSourceMode.TemplatedParent) });
             border.SetValue(Border.SnapsToDevicePixelsProperty, true);
@@ -117,7 +118,7 @@ namespace BookmarkStudio
             // Icon gutter background
             FrameworkElementFactory iconGutter = new FrameworkElementFactory(typeof(Border));
             iconGutter.SetValue(Grid.ColumnProperty, 0);
-            iconGutter.SetResourceReference(Border.BackgroundProperty, EnvironmentColors.CommandBarMenuIconBackgroundBrushKey);
+            iconGutter.SetResourceReference(Border.BackgroundProperty, VsBrushes.CommandBarMenuIconBackgroundKey);
 
             // Icon
             FrameworkElementFactory icon = new FrameworkElementFactory(typeof(ContentPresenter));
@@ -143,7 +144,7 @@ namespace BookmarkStudio
             arrow.SetValue(Grid.ColumnProperty, 2);
             arrow.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Center);
             arrow.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
-            arrow.SetResourceReference(Shape.FillProperty, EnvironmentColors.CommandBarMenuSubmenuGlyphBrushKey);
+            arrow.SetResourceReference(Shape.FillProperty, VsBrushes.CommandBarMenuSubmenuGlyphKey);
             arrow.SetValue(Path.DataProperty, Geometry.Parse("M0,0 L4,3.5 L0,7 z"));
             arrow.SetValue(UIElement.VisibilityProperty, Visibility.Collapsed);
 
@@ -157,8 +158,8 @@ namespace BookmarkStudio
             popup.SetBinding(Popup.IsOpenProperty, new Binding("IsSubmenuOpen") { RelativeSource = new RelativeSource(RelativeSourceMode.TemplatedParent) });
 
             FrameworkElementFactory popupBorder = new FrameworkElementFactory(typeof(Border));
-            popupBorder.SetResourceReference(Border.BackgroundProperty, EnvironmentColors.CommandBarMenuBackgroundGradientBrushKey);
-            popupBorder.SetResourceReference(Border.BorderBrushProperty, EnvironmentColors.CommandBarMenuBorderBrushKey);
+            popupBorder.SetResourceReference(Border.BackgroundProperty, VsBrushes.CommandBarMenuBackgroundGradientBeginKey);
+            popupBorder.SetResourceReference(Border.BorderBrushProperty, VsBrushes.CommandBarMenuBorderKey);
             popupBorder.SetValue(Border.BorderThicknessProperty, new Thickness(1));
             popupBorder.SetValue(Border.PaddingProperty, new Thickness(2));
             popupBorder.SetValue(Grid.IsSharedSizeScopeProperty, true);
@@ -223,13 +224,13 @@ namespace BookmarkStudio
 
             FrameworkElementFactory gutterBorder = new FrameworkElementFactory(typeof(Border));
             gutterBorder.SetValue(Grid.ColumnProperty, 0);
-            gutterBorder.SetResourceReference(Border.BackgroundProperty, EnvironmentColors.CommandBarMenuIconBackgroundBrushKey);
+            gutterBorder.SetResourceReference(Border.BackgroundProperty, VsBrushes.CommandBarMenuIconBackgroundKey);
 
             FrameworkElementFactory line = new FrameworkElementFactory(typeof(Rectangle));
             line.SetValue(Grid.ColumnProperty, 1);
             line.SetValue(FrameworkElement.HeightProperty, 1.0);
             line.SetValue(FrameworkElement.MarginProperty, new Thickness(2, 0, 2, 0));
-            line.SetResourceReference(Shape.FillProperty, EnvironmentColors.CommandBarMenuSeparatorBrushKey);
+            line.SetResourceReference(Shape.FillProperty, VsBrushes.CommandBarMenuSeparatorKey);
 
             grid.AppendChild(gutterBorder);
             grid.AppendChild(line);

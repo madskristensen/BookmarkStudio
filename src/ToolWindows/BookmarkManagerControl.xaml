@@ -8,6 +8,7 @@
              xmlns:imaging="clr-namespace:Microsoft.VisualStudio.Imaging;assembly=Microsoft.VisualStudio.Imaging"
              xmlns:imageCatalog="clr-namespace:Microsoft.VisualStudio.Imaging;assembly=Microsoft.VisualStudio.ImageCatalog"
              xmlns:platformui="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
+             xmlns:shell="clr-namespace:Microsoft.VisualStudio.Shell;assembly=Microsoft.VisualStudio.Shell.15.0"
              xmlns:toolkit="clr-namespace:Community.VisualStudio.Toolkit;assembly=Community.VisualStudio.Toolkit"
              mc:Ignorable="d"
              d:DesignHeight="480"
@@ -22,7 +23,7 @@
 
         <!-- Themed Context Menu Styles -->
         <Style x:Key="ThemedContextMenuStyle" TargetType="{x:Type ContextMenu}">
-            <Setter Property="Background" Value="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarMenuBackgroundGradientBrushKey}}" />
+            <Setter Property="Background" Value="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarMenuBackgroundGradientBeginBrushKey}}" />
             <Setter Property="Foreground" Value="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarTextActiveBrushKey}}" />
             <Setter Property="BorderBrush" Value="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarMenuBorderBrushKey}}" />
             <Setter Property="BorderThickness" Value="1" />
@@ -97,7 +98,7 @@
                                        IsOpen="{Binding IsSubmenuOpen, RelativeSource={RelativeSource TemplatedParent}}"
                                        Focusable="False"
                                        PopupAnimation="Fade">
-                                    <Border Background="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarMenuBackgroundGradientBrushKey}}"
+                                    <Border Background="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarMenuBackgroundGradientBeginBrushKey}}"
                                             BorderBrush="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarMenuBorderBrushKey}}"
                                             BorderThickness="1"
                                             Padding="2"
@@ -440,8 +441,9 @@
         </Grid.RowDefinitions>
 
         <Border Grid.Row="0"
+                Background="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarGradientBeginBrushKey}}"
                 BorderThickness="0,0,0,1"
-                BorderBrush="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarSelectedBrushKey}}"
+                BorderBrush="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowBorderBrushKey}}"
                 Padding="6,4">
             <Grid>
                 <Grid.ColumnDefinitions>
