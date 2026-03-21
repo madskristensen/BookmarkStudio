@@ -35,7 +35,7 @@ namespace BookmarkStudio
 
             BookmarkOverviewTagger tagger = buffer.Properties.GetOrCreateSingletonProperty(
                 typeof(BookmarkOverviewTagger),
-                () => new BookmarkOverviewTagger(buffer, document.FilePath));
+                () => new BookmarkOverviewTagger(buffer, document.FilePath, document));
 
             tagger.AttachToView(textView);
             return tagger as ITagger<T> ?? null!;
@@ -48,19 +48,32 @@ namespace BookmarkStudio
     internal sealed class BookmarkOverviewTagger : ITagger<OverviewMarkTag>, IDisposable
     {
         private readonly ITextBuffer _buffer;
-        private readonly string _documentPath;
-        private readonly string _normalizedDocumentPath;
+        private readonly ITextDocument? _textDocument;
+        private string _documentPath;
+        private string _normalizedDocumentPath;
         private int _attachedViewCount;
         private int _isDisposed;
         private volatile IReadOnlyList<ManagedBookmark> _cachedDocumentBookmarks = Array.Empty<ManagedBookmark>();
 
         public BookmarkOverviewTagger(ITextBuffer buffer, string documentPath)
+            : this(buffer, documentPath, null)
+        {
+        }
+
+        public BookmarkOverviewTagger(ITextBuffer buffer, string documentPath, ITextDocument? textDocument)
         {
             _buffer = buffer ?? throw new ArgumentNullException(nameof(buffer));
             _documentPath = documentPath ?? string.Empty;
             _normalizedDocumentPath = BookmarkIdentity.NormalizeDocumentPath(_documentPath);
+            _textDocument = textDocument;
+
             RefreshCachedBookmarks();
             BookmarkStudioSession.Current.BookmarksChanged += OnBookmarksChanged;
+
+            if (_textDocument is not null)
+            {
+                _textDocument.FileActionOccurred += OnFileActionOccurred;
+            }
         }
 
         public event EventHandler<SnapshotSpanEventArgs>? TagsChanged;
@@ -124,6 +137,11 @@ namespace BookmarkStudio
             }
 
             BookmarkStudioSession.Current.BookmarksChanged -= OnBookmarksChanged;
+
+            if (_textDocument is not null)
+            {
+                _textDocument.FileActionOccurred -= OnFileActionOccurred;
+            }
         }
 
         private bool MatchesDocumentPath(ManagedBookmark bookmark)
@@ -134,6 +152,43 @@ namespace BookmarkStudio
             _cachedDocumentBookmarks = BookmarkStudioSession.Current.CachedBookmarks
                 .Where(MatchesDocumentPath)
                 .ToArray();
+        }
+
+        private void OnFileActionOccurred(object sender, TextDocumentFileActionEventArgs e)
+        {
+            if (Volatile.Read(ref _isDisposed) == 1)
+            {
+                return;
+            }
+
+            // Handle file rename - update our cached document path
+            if (e.FileActionType == FileActionTypes.DocumentRenamed && !string.IsNullOrEmpty(e.FilePath))
+            {
+                _documentPath = e.FilePath;
+                _normalizedDocumentPath = BookmarkIdentity.NormalizeDocumentPath(_documentPath);
+
+                // Refresh bookmarks with the new path and notify of tag changes
+                RefreshCachedBookmarks();
+
+                ThreadHelper.JoinableTaskFactory.RunAsync(async delegate
+                {
+                    if (Volatile.Read(ref _isDisposed) == 1)
+                    {
+                        return;
+                    }
+
+                    await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+                    if (Volatile.Read(ref _isDisposed) == 1)
+                    {
+                        return;
+                    }
+
+                    ITextSnapshot snapshot = _buffer.CurrentSnapshot;
+                    SnapshotSpan span = new SnapshotSpan(snapshot, 0, snapshot.Length);
+                    TagsChanged?.Invoke(this, new SnapshotSpanEventArgs(span));
+                }).FireAndForget();
+            }
         }
 
         private void OnBookmarksChanged(object sender, EventArgs e)

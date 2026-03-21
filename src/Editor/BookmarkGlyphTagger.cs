@@ -12,22 +12,35 @@ namespace BookmarkStudio
     internal sealed class BookmarkGlyphTagger : ITagger<BookmarkGlyphTag>, IDisposable
     {
         private readonly ITextBuffer _buffer;
-        private readonly string _documentPath;
-        private readonly string _normalizedDocumentPath;
+        private readonly ITextDocument? _textDocument;
         private readonly object _trackingPointsLock = new object();
+        private string _documentPath;
+        private string _normalizedDocumentPath;
         private int _attachedViewCount;
         private int _isDisposed;
         private volatile IReadOnlyList<ManagedBookmark> _cachedDocumentBookmarks = Array.Empty<ManagedBookmark>();
         private Dictionary<string, ITrackingPoint> _trackingPoints = new Dictionary<string, ITrackingPoint>(StringComparer.Ordinal);
 
         public BookmarkGlyphTagger(ITextBuffer buffer, string documentPath)
+            : this(buffer, documentPath, null)
+        {
+        }
+
+        public BookmarkGlyphTagger(ITextBuffer buffer, string documentPath, ITextDocument? textDocument)
         {
             _buffer = buffer ?? throw new ArgumentNullException(nameof(buffer));
             _documentPath = documentPath ?? string.Empty;
             _normalizedDocumentPath = BookmarkIdentity.NormalizeDocumentPath(_documentPath);
+            _textDocument = textDocument;
+
             RefreshCachedBookmarks();
             BookmarkStudioSession.Current.BookmarksChanged += OnBookmarksChanged;
             _buffer.Changed += OnBufferChanged;
+
+            if (_textDocument is not null)
+            {
+                _textDocument.FileActionOccurred += OnFileActionOccurred;
+            }
         }
 
         public event EventHandler<SnapshotSpanEventArgs>? TagsChanged;
@@ -117,6 +130,11 @@ namespace BookmarkStudio
 
             BookmarkStudioSession.Current.BookmarksChanged -= OnBookmarksChanged;
             _buffer.Changed -= OnBufferChanged;
+
+            if (_textDocument is not null)
+            {
+                _textDocument.FileActionOccurred -= OnFileActionOccurred;
+            }
         }
 
         private bool MatchesDocumentPath(ManagedBookmark bookmark)
@@ -181,6 +199,43 @@ namespace BookmarkStudio
             lock (_trackingPointsLock)
             {
                 _trackingPoints = newTrackingPoints;
+            }
+        }
+
+        private void OnFileActionOccurred(object sender, TextDocumentFileActionEventArgs e)
+        {
+            if (Volatile.Read(ref _isDisposed) == 1)
+            {
+                return;
+            }
+
+            // Handle file rename - update our cached document path
+            if (e.FileActionType == FileActionTypes.DocumentRenamed && !string.IsNullOrEmpty(e.FilePath))
+            {
+                _documentPath = e.FilePath;
+                _normalizedDocumentPath = BookmarkIdentity.NormalizeDocumentPath(_documentPath);
+
+                // Refresh bookmarks with the new path and notify of tag changes
+                RefreshCachedBookmarks();
+
+                ThreadHelper.JoinableTaskFactory.RunAsync(async delegate
+                {
+                    if (Volatile.Read(ref _isDisposed) == 1)
+                    {
+                        return;
+                    }
+
+                    await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+                    if (Volatile.Read(ref _isDisposed) == 1)
+                    {
+                        return;
+                    }
+
+                    ITextSnapshot snapshot = _buffer.CurrentSnapshot;
+                    SnapshotSpan span = new SnapshotSpan(snapshot, 0, snapshot.Length);
+                    TagsChanged?.Invoke(this, new SnapshotSpanEventArgs(span));
+                }).FireAndForget();
             }
         }
 

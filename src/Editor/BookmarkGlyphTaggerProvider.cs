@@ -28,7 +28,7 @@ namespace BookmarkStudio
                 return null!;
             }
 
-            BookmarkGlyphTagger tagger = buffer.Properties.GetOrCreateSingletonProperty(() => new BookmarkGlyphTagger(buffer, document.FilePath));
+            BookmarkGlyphTagger tagger = buffer.Properties.GetOrCreateSingletonProperty(() => new BookmarkGlyphTagger(buffer, document.FilePath, document));
             tagger.AttachToView(textView);
             return tagger as ITagger<T> ?? null!;
         }
