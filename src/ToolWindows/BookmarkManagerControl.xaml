@@ -440,6 +440,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
+        <!-- Column Headers -->
         <Border Grid.Row="0"
                 Background="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarGradientBeginBrushKey}}"
                 BorderThickness="0,0,0,1"
@@ -478,6 +479,8 @@
                   Foreground="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowTextBrushKey}}"
                   ScrollViewer.HorizontalScrollBarVisibility="Auto"
                   ScrollViewer.VerticalScrollBarVisibility="Auto"
-                  ItemContainerStyle="{StaticResource BookmarkTreeViewItemStyle}" />
+                  ItemContainerStyle="{StaticResource BookmarkTreeViewItemStyle}"
+                  AutomationProperties.Name="Bookmark list"
+                  AutomationProperties.HelpText="List of bookmarks organized by folder. Press Enter to navigate, Delete to remove, F2 to rename." />
     </Grid>
 </UserControl>

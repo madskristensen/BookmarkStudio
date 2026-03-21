@@ -64,10 +64,39 @@ namespace BookmarkStudio
 
         private async void BookmarkManagerControl_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.F2 && _viewModel.SelectedNode is not null)
+            if (_viewModel.SelectedNode is null)
             {
-                e.Handled = true;
-                await RenameSelectedAsync();
+                return;
+            }
+
+            switch (e.Key)
+            {
+                case Key.F2:
+                    e.Handled = true;
+                    await RenameSelectedAsync();
+                    break;
+
+                case Key.Delete:
+                    e.Handled = true;
+                    await RunAsync(cancellationToken => _viewModel.DeleteSelectedAsync(cancellationToken));
+                    break;
+
+                case Key.Enter:
+                    if (_viewModel.SelectedNode is BookmarkItemNodeViewModel)
+                    {
+                        e.Handled = true;
+                        await RunAsync(cancellationToken => _viewModel.NavigateSelectedAsync(cancellationToken));
+                    }
+                    break;
+
+                case Key.C:
+                    if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control
+                        && _viewModel.SelectedNode is BookmarkItemNodeViewModel)
+                    {
+                        e.Handled = true;
+                        await CopyLocationAsync();
+                    }
+                    break;
             }
         }
 
