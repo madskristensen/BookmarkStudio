@@ -45,6 +45,9 @@ namespace BookmarkStudio
         internal Task RefreshAsync(CancellationToken cancellationToken)
             => _viewModel.RefreshAsync(cancellationToken);
 
+        internal Task RefreshWithoutCleanupAsync(CancellationToken cancellationToken)
+            => _viewModel.RefreshWithoutCleanupAsync(cancellationToken);
+
         internal void SelectBookmark(string? bookmarkId)
             => _viewModel.SelectBookmark(bookmarkId);
 

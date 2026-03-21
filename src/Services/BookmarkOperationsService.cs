@@ -18,8 +18,14 @@ namespace BookmarkStudio
         public Task<IReadOnlyList<ManagedBookmark>> RefreshAsync(CancellationToken cancellationToken)
             => _session.RefreshAsync(cancellationToken);
 
+        public Task<(IReadOnlyList<ManagedBookmark> Bookmarks, int StaleCount)> RefreshAndCleanupAsync(CancellationToken cancellationToken)
+            => _session.RefreshAndCleanupAsync(cancellationToken);
+
         public Task<DualBookmarkWorkspaceState> RefreshDualAsync(CancellationToken cancellationToken)
             => _session.RefreshDualAsync(cancellationToken);
+
+        public Task<(DualBookmarkWorkspaceState State, int StaleCount)> RefreshDualAndCleanupAsync(CancellationToken cancellationToken)
+            => _session.RefreshDualAndCleanupAsync(cancellationToken);
 
         public Task<BookmarkStorageInfo> GetStorageInfoAsync(CancellationToken cancellationToken)
             => _session.GetStorageInfoAsync(cancellationToken);
@@ -461,7 +467,7 @@ namespace BookmarkStudio
             ManagedBookmark bookmark = bookmarks.FirstOrDefault(item => item.SlotNumber == slotNumber)
                 ?? throw new InvalidOperationException(string.Concat("No bookmark is assigned to slot ", slotNumber.ToString(System.Globalization.CultureInfo.InvariantCulture), "."));
 
-            await NavigateToBookmarkAsync(bookmark, cancellationToken);
+            await NavigateToBookmarkCoreAsync(bookmark, cancellationToken);
             return bookmark;
         }
 
@@ -474,7 +480,7 @@ namespace BookmarkStudio
         public async Task<ManagedBookmark> NavigateToBookmarkAsync(string? bookmarkId, CancellationToken cancellationToken)
         {
             ManagedBookmark bookmark = await GetRequiredBookmarkAsync(bookmarkId, cancellationToken);
-            await NavigateToBookmarkAsync(bookmark, cancellationToken);
+            await NavigateToBookmarkCoreAsync(bookmark, cancellationToken);
             return bookmark;
         }
 
@@ -511,9 +517,26 @@ namespace BookmarkStudio
                 item.LineNumber == lineNumber);
         }
 
-        private static async Task NavigateToBookmarkAsync(ManagedBookmark bookmark, CancellationToken cancellationToken)
+        private async Task NavigateToBookmarkCoreAsync(ManagedBookmark bookmark, CancellationToken cancellationToken)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+
+            // Check if file exists before attempting navigation
+            if (!System.IO.File.Exists(bookmark.DocumentPath))
+            {
+                System.Windows.MessageBoxResult result = System.Windows.MessageBox.Show(
+                    $"The file '{bookmark.FileName}' no longer exists.\n\nDo you want to remove this bookmark?",
+                    "File Not Found",
+                    System.Windows.MessageBoxButton.YesNo,
+                    System.Windows.MessageBoxImage.Question);
+
+                if (result == System.Windows.MessageBoxResult.Yes)
+                {
+                    await RemoveBookmarkAsync(bookmark.BookmarkId, cancellationToken);
+                }
+
+                throw new InvalidOperationException($"The file '{bookmark.FileName}' no longer exists.");
+            }
 
             DTE2? dte = await VS.GetServiceAsync<DTE, DTE2>();
             if (dte is null)
@@ -561,7 +584,7 @@ namespace BookmarkStudio
                 bookmark = bookmarks.LastOrDefault(item => CompareBookmark(item, activeLocation) < 0) ?? bookmarks[bookmarks.Count - 1];
             }
 
-            await NavigateToBookmarkAsync(bookmark, cancellationToken);
+            await NavigateToBookmarkCoreAsync(bookmark, cancellationToken);
             return bookmark;
         }
 
@@ -593,7 +616,7 @@ namespace BookmarkStudio
                 bookmark = bookmarks.LastOrDefault(item => item.LineNumber < activeLocation.LineNumber) ?? bookmarks[bookmarks.Count - 1];
             }
 
-            await NavigateToBookmarkAsync(bookmark, cancellationToken);
+            await NavigateToBookmarkCoreAsync(bookmark, cancellationToken);
             return bookmark;
         }
 

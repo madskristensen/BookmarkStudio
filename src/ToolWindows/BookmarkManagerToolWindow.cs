@@ -21,22 +21,10 @@ namespace BookmarkStudio
 
         public override async Task<FrameworkElement> CreateAsync(int toolWindowId, CancellationToken cancellationToken)
         {
-            // Load data on background thread (CreateAsync is called off UI thread by VS)
-            ToolWindowInitData initData = await LoadInitDataAsync(cancellationToken);
-
-            // Create control on UI thread
+            // Create control on UI thread - it will load data itself via InitializeAsync
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
-            _currentControl = new BookmarkManagerControl(initData);
+            _currentControl = new BookmarkManagerControl();
             return _currentControl;
-        }
-
-        private static async Task<ToolWindowInitData> LoadInitDataAsync(CancellationToken cancellationToken)
-        {
-            BookmarkOperationsService operations = BookmarkOperationsService.Current;
-            IReadOnlyList<ManagedBookmark> bookmarks = await operations.RefreshAsync(cancellationToken);
-            IReadOnlyList<string> folderPaths = await operations.GetFolderPathsAsync(cancellationToken);
-            IEnumerable<string> expandedFolders = await operations.GetExpandedFoldersAsync(cancellationToken);
-            return new ToolWindowInitData(bookmarks, folderPaths, expandedFolders);
         }
 
         internal static string? GetSelectedBookmarkId()
@@ -77,7 +65,9 @@ namespace BookmarkStudio
                 return;
             }
 
-            await _currentControl.RefreshAsync(cancellationToken);
+            // Don't perform cleanup on automatic refresh (solution open, etc.)
+            // Cleanup only happens on explicit user refresh action
+            await _currentControl.RefreshWithoutCleanupAsync(cancellationToken);
             _currentControl.SelectBookmark(bookmarkId);
         }
 

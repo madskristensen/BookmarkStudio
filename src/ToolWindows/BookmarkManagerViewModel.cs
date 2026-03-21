@@ -163,7 +163,7 @@ namespace BookmarkStudio
         }
 
         public Task InitializeAsync(CancellationToken cancellationToken)
-            => RefreshAsync(cancellationToken);
+            => RefreshAsync(performCleanup: false, cancellationToken);
 
         public void InitializeWithData(
             IReadOnlyList<ManagedBookmark> bookmarks,
@@ -175,9 +175,26 @@ namespace BookmarkStudio
             SetStatus(string.Concat(_bookmarks.Count.ToString(System.Globalization.CultureInfo.InvariantCulture), " bookmarks loaded."));
         }
 
-        public async Task RefreshAsync(CancellationToken cancellationToken)
+        public Task RefreshAsync(CancellationToken cancellationToken)
+            => RefreshAsync(performCleanup: true, cancellationToken);
+
+        public Task RefreshWithoutCleanupAsync(CancellationToken cancellationToken)
+            => RefreshAsync(performCleanup: false, cancellationToken);
+
+        private async Task RefreshAsync(bool performCleanup, CancellationToken cancellationToken)
         {
-            DualBookmarkWorkspaceState dualState = await _operations.RefreshDualAsync(cancellationToken);
+            int staleCount = 0;
+            DualBookmarkWorkspaceState dualState;
+
+            if (performCleanup)
+            {
+                (dualState, staleCount) = await _operations.RefreshDualAndCleanupAsync(cancellationToken);
+            }
+            else
+            {
+                dualState = await _operations.RefreshDualAsync(cancellationToken);
+            }
+
             string? selectedBookmarkId = SelectedBookmark?.BookmarkId;
             string? selectedFolderPath = SelectedNode is FolderNodeViewModel folderNode ? folderNode.FolderPath : null;
 
@@ -187,7 +204,10 @@ namespace BookmarkStudio
             RestoreSelection(selectedBookmarkId, selectedFolderPath);
 
             int totalBookmarks = _personalBookmarks.Count + _solutionBookmarks.Count;
-            SetStatus(string.Concat(totalBookmarks.ToString(System.Globalization.CultureInfo.InvariantCulture), " bookmarks loaded."));
+            string statusMessage = staleCount > 0
+                ? string.Concat(totalBookmarks.ToString(System.Globalization.CultureInfo.InvariantCulture), " bookmarks loaded. Removed ", staleCount.ToString(System.Globalization.CultureInfo.InvariantCulture), " stale bookmark(s).")
+                : string.Concat(totalBookmarks.ToString(System.Globalization.CultureInfo.InvariantCulture), " bookmarks loaded.");
+            SetStatus(statusMessage);
         }
 
         public async Task SaveSelectionAsync(CancellationToken cancellationToken)
