@@ -225,4 +225,103 @@ public class BookmarkManagerViewModelTests
         Assert.AreEqual(new Thickness(-38, 0, 0, 0), node.NonNameColumnMargin);
         Assert.AreEqual(new Thickness(-38, 0, 4, 0), node.NonNameRightAlignedMargin);
     }
+
+    [TestMethod]
+    public void FilterColor_WhenSet_FiltersBookmarksByColor()
+    {
+        BookmarkManagerViewModel viewModel = new BookmarkManagerViewModel();
+        viewModel.LoadForTests(new[]
+        {
+            new ManagedBookmark { BookmarkId = "id-1", DocumentPath = @"C:\repo\a.cs", LineNumber = 1, Color = BookmarkColor.Blue, Group = string.Empty },
+            new ManagedBookmark { BookmarkId = "id-2", DocumentPath = @"C:\repo\b.cs", LineNumber = 2, Color = BookmarkColor.Green, Group = string.Empty },
+            new ManagedBookmark { BookmarkId = "id-3", DocumentPath = @"C:\repo\c.cs", LineNumber = 3, Color = BookmarkColor.Blue, Group = string.Empty },
+        }, new[] { string.Empty });
+
+        viewModel.FilterColor = BookmarkColor.Blue;
+        int visibleCount = CountVisibleBookmarks(viewModel.RootNodes);
+
+        Assert.AreEqual(2, visibleCount);
+    }
+
+    [TestMethod]
+    public void FilterColor_WhenCleared_ShowsAllBookmarks()
+    {
+        BookmarkManagerViewModel viewModel = new BookmarkManagerViewModel();
+        viewModel.LoadForTests(new[]
+        {
+            new ManagedBookmark { BookmarkId = "id-1", DocumentPath = @"C:\repo\a.cs", LineNumber = 1, Color = BookmarkColor.Blue, Group = string.Empty },
+            new ManagedBookmark { BookmarkId = "id-2", DocumentPath = @"C:\repo\b.cs", LineNumber = 2, Color = BookmarkColor.Green, Group = string.Empty },
+        }, new[] { string.Empty });
+        viewModel.FilterColor = BookmarkColor.Blue;
+
+        viewModel.FilterColor = null;
+        int visibleCount = CountVisibleBookmarks(viewModel.RootNodes);
+
+        Assert.AreEqual(2, visibleCount);
+    }
+
+    [TestMethod]
+    public void GetSlotAssignments_WhenBookmarksHaveSlots_ReturnsDictionary()
+    {
+        BookmarkManagerViewModel viewModel = new BookmarkManagerViewModel();
+        viewModel.LoadForTests(new[]
+        {
+            new ManagedBookmark { BookmarkId = "id-1", DocumentPath = @"C:\repo\a.cs", LineNumber = 1, SlotNumber = 1, Label = "First", Group = string.Empty },
+            new ManagedBookmark { BookmarkId = "id-2", DocumentPath = @"C:\repo\b.cs", LineNumber = 2, SlotNumber = 3, Label = "Third", Group = string.Empty },
+            new ManagedBookmark { BookmarkId = "id-3", DocumentPath = @"C:\repo\c.cs", LineNumber = 3, SlotNumber = null, Label = "NoSlot", Group = string.Empty },
+        }, new[] { string.Empty });
+
+        Dictionary<int, string> assignments = viewModel.GetSlotAssignments();
+
+        Assert.HasCount(2, assignments);
+        Assert.AreEqual("First", assignments[1]);
+        Assert.AreEqual("Third", assignments[3]);
+    }
+
+    [TestMethod]
+    public void GetSlotAssignments_WhenLabelIsEmpty_UsesFileName()
+    {
+        BookmarkManagerViewModel viewModel = new BookmarkManagerViewModel();
+        viewModel.LoadForTests(new[]
+        {
+            new ManagedBookmark { BookmarkId = "id-1", DocumentPath = @"C:\repo\MyFile.cs", LineNumber = 1, SlotNumber = 5, Label = "", Group = string.Empty },
+        }, new[] { string.Empty });
+
+        Dictionary<int, string> assignments = viewModel.GetSlotAssignments();
+
+        Assert.HasCount(1, assignments);
+        Assert.AreEqual("MyFile.cs", assignments[5]);
+    }
+
+    [TestMethod]
+    public void GetSlotAssignments_WhenNoSlotsAssigned_ReturnsEmptyDictionary()
+    {
+        BookmarkManagerViewModel viewModel = new BookmarkManagerViewModel();
+        viewModel.LoadForTests(new[]
+        {
+            new ManagedBookmark { BookmarkId = "id-1", DocumentPath = @"C:\repo\a.cs", LineNumber = 1, SlotNumber = null, Group = string.Empty },
+        }, new[] { string.Empty });
+
+        Dictionary<int, string> assignments = viewModel.GetSlotAssignments();
+
+        Assert.IsEmpty(assignments);
+    }
+
+    private static int CountVisibleBookmarks(IEnumerable<BookmarkNodeViewModel> nodes)
+    {
+        int count = 0;
+        foreach (BookmarkNodeViewModel node in nodes)
+        {
+            if (node is BookmarkItemNodeViewModel)
+            {
+                count++;
+            }
+            else if (node is FolderNodeViewModel folder)
+            {
+                count += CountVisibleBookmarks(folder.Children);
+            }
+        }
+
+        return count;
+    }
 }

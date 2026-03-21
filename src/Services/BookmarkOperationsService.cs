@@ -206,6 +206,22 @@ namespace BookmarkStudio
             }, cancellationToken);
         }
 
+        public async Task<IReadOnlyList<ManagedBookmark>> MoveBookmarkToLineAsync(string? bookmarkId, int newLineNumber, string? newLineText, CancellationToken cancellationToken)
+        {
+            if (newLineNumber < 1)
+            {
+                throw new ArgumentOutOfRangeException(nameof(newLineNumber), "Line number must be at least 1.");
+            }
+
+            ManagedBookmark targetBookmark = await GetRequiredBookmarkAsync(bookmarkId, cancellationToken);
+            return await _session.UpdateBookmarksAsync(metadata =>
+            {
+                BookmarkMetadata targetMetadata = BookmarkRepositoryService.GetRequiredBookmark(metadata, targetBookmark.BookmarkId);
+                targetMetadata.LineNumber = newLineNumber;
+                targetMetadata.LineText = newLineText ?? string.Empty;
+            }, cancellationToken);
+        }
+
         public async Task<IReadOnlyList<string>> GetFolderPathsAsync(CancellationToken cancellationToken)
         {
             BookmarkWorkspaceState workspace = await _session.LoadWorkspaceAsync(cancellationToken);

@@ -277,6 +277,10 @@
     </CommandPlacement>
   </CommandPlacements>
 
+  <UsedCommands>
+    <UsedCommand guid="VSStd2KCmdID" id="ToggleBookmark" />
+  </UsedCommands>
+
   <Symbols>
     <GuidSymbol name="BookmarkStudio" value="{78198409-af4c-486d-9caf-7ee074cf1041}">
       <IDSymbol name="BookmarkManagerToolbar" value="0x1000" />

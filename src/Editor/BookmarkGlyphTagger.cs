@@ -14,9 +14,11 @@ namespace BookmarkStudio
         private readonly ITextBuffer _buffer;
         private readonly string _documentPath;
         private readonly string _normalizedDocumentPath;
+        private readonly object _trackingPointsLock = new object();
         private int _attachedViewCount;
         private int _isDisposed;
         private volatile IReadOnlyList<ManagedBookmark> _cachedDocumentBookmarks = Array.Empty<ManagedBookmark>();
+        private Dictionary<string, ITrackingPoint> _trackingPoints = new Dictionary<string, ITrackingPoint>(StringComparer.Ordinal);
 
         public BookmarkGlyphTagger(ITextBuffer buffer, string documentPath)
         {
@@ -25,6 +27,7 @@ namespace BookmarkStudio
             _normalizedDocumentPath = BookmarkIdentity.NormalizeDocumentPath(_documentPath);
             RefreshCachedBookmarks();
             BookmarkStudioSession.Current.BookmarksChanged += OnBookmarksChanged;
+            _buffer.Changed += OnBufferChanged;
         }
 
         public event EventHandler<SnapshotSpanEventArgs>? TagsChanged;
@@ -63,9 +66,29 @@ namespace BookmarkStudio
 
             // Use cached bookmarks for this document instead of filtering all bookmarks
             IReadOnlyList<ManagedBookmark> documentBookmarks = _cachedDocumentBookmarks;
+            Dictionary<string, ITrackingPoint> trackingPoints;
+
+            lock (_trackingPointsLock)
+            {
+                trackingPoints = _trackingPoints;
+            }
+
             foreach (ManagedBookmark bookmark in documentBookmarks)
             {
-                int lineIndex = bookmark.LineNumber - 1;
+                int lineIndex;
+
+                // Use tracking point if available for real-time position updates
+                if (trackingPoints.TryGetValue(bookmark.BookmarkId, out ITrackingPoint trackingPoint))
+                {
+                    SnapshotPoint currentPoint = trackingPoint.GetPoint(snapshot);
+                    lineIndex = currentPoint.GetContainingLine().LineNumber;
+                }
+                else
+                {
+                    // Fall back to cached line number (1-based to 0-based)
+                    lineIndex = bookmark.LineNumber - 1;
+                }
+
                 if (lineIndex < startLine || lineIndex > endLine || lineIndex < 0 || lineIndex >= snapshot.LineCount)
                 {
                     continue;
@@ -93,6 +116,7 @@ namespace BookmarkStudio
             }
 
             BookmarkStudioSession.Current.BookmarksChanged -= OnBookmarksChanged;
+            _buffer.Changed -= OnBufferChanged;
         }
 
         private bool MatchesDocumentPath(ManagedBookmark bookmark)
@@ -100,9 +124,70 @@ namespace BookmarkStudio
 
         private void RefreshCachedBookmarks()
         {
-            _cachedDocumentBookmarks = BookmarkStudioSession.Current.CachedBookmarks
+            IReadOnlyList<ManagedBookmark> bookmarks = BookmarkStudioSession.Current.CachedBookmarks
                 .Where(MatchesDocumentPath)
                 .ToArray();
+
+            _cachedDocumentBookmarks = bookmarks;
+
+            // Create or update tracking points for each bookmark
+            RebuildTrackingPoints(bookmarks);
+        }
+
+        private void RebuildTrackingPoints(IReadOnlyList<ManagedBookmark> bookmarks)
+        {
+            ITextSnapshot snapshot = _buffer.CurrentSnapshot;
+            var newTrackingPoints = new Dictionary<string, ITrackingPoint>(StringComparer.Ordinal);
+
+            Dictionary<string, ITrackingPoint> existingTrackingPoints;
+            lock (_trackingPointsLock)
+            {
+                existingTrackingPoints = _trackingPoints;
+            }
+
+            foreach (ManagedBookmark bookmark in bookmarks)
+            {
+                // Preserve existing tracking point if we have one - this keeps real-time
+                // tracked positions instead of resetting to persisted line numbers
+                if (existingTrackingPoints.TryGetValue(bookmark.BookmarkId, out ITrackingPoint existingPoint))
+                {
+                    newTrackingPoints[bookmark.BookmarkId] = existingPoint;
+                    continue;
+                }
+
+                // Create new tracking point for new bookmarks
+                int lineIndex = bookmark.LineNumber - 1;
+                if (lineIndex < 0 || lineIndex >= snapshot.LineCount)
+                {
+                    continue;
+                }
+
+                ITextSnapshotLine line = snapshot.GetLineFromLineNumber(lineIndex);
+
+                // Create tracking point at the start of the line
+                // Use Positive tracking so insertions before this point push it forward
+                ITrackingPoint trackingPoint = snapshot.CreateTrackingPoint(line.Start.Position, PointTrackingMode.Positive);
+                newTrackingPoints[bookmark.BookmarkId] = trackingPoint;
+            }
+
+            lock (_trackingPointsLock)
+            {
+                _trackingPoints = newTrackingPoints;
+            }
+        }
+
+        private void OnBufferChanged(object sender, TextContentChangedEventArgs e)
+        {
+            if (Volatile.Read(ref _isDisposed) == 1)
+            {
+                return;
+            }
+
+            // When buffer changes, the tracking points automatically track to new positions.
+            // We just need to notify that tags may have changed so GetTags is called again.
+            ITextSnapshot snapshot = e.After;
+            SnapshotSpan fullSpan = new SnapshotSpan(snapshot, 0, snapshot.Length);
+            TagsChanged?.Invoke(this, new SnapshotSpanEventArgs(fullSpan));
         }
 
         private void OnBookmarksChanged(object sender, EventArgs e)

@@ -1,6 +1,7 @@
 using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
@@ -16,6 +17,7 @@ namespace BookmarkStudio
             string tooltip = BuildTooltip(bookmarkTag);
             Brush background = GetGlyphBrush(bookmarkTag);
             ContextMenu? contextMenu = null;
+            string? bookmarkId = bookmarkTag?.BookmarkId;
 
             if (bookmarkTag is not null && !string.IsNullOrEmpty(bookmarkTag.BookmarkId))
             {
@@ -32,6 +34,8 @@ namespace BookmarkStudio
                     Margin = new Thickness(0, 0, 0, 0),
                     ToolTip = tooltip,
                     ContextMenu = contextMenu,
+                    Tag = bookmarkId,
+                    Cursor = Cursors.Hand,
                 };
 
                 container.Children.Add(new Border
@@ -70,6 +74,8 @@ namespace BookmarkStudio
                 ToolTip = tooltip,
                 Margin = new Thickness(0, 0, 0, 0),
                 ContextMenu = contextMenu,
+                Tag = bookmarkId,
+                Cursor = Cursors.Hand,
             };
 
             return glyph;

@@ -367,6 +367,126 @@ public class RepositoryAndModelTests
         Assert.Contains("EmptyFolder", loaded.FolderPaths, "EmptyFolder should be preserved");
     }
 
+    [TestMethod]
+    public void Repository_MoveFolder_WhenMovingToNewParent_UpdatesPathsAndBookmarks()
+    {
+        BookmarkWorkspaceState workspace = new BookmarkWorkspaceState();
+        workspace.FolderPaths.Add(string.Empty);
+        workspace.FolderPaths.Add("Source");
+        workspace.FolderPaths.Add("Source/Child");
+        workspace.FolderPaths.Add("Target");
+        workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "1", Group = "Source" });
+        workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "2", Group = "Source/Child" });
+        workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "3", Group = "Target" });
+
+        BookmarkRepositoryService.MoveFolder(workspace, "Source", "Target/Source");
+
+        Assert.DoesNotContain("Source", workspace.FolderPaths);
+        Assert.DoesNotContain("Source/Child", workspace.FolderPaths);
+        Assert.Contains("Target/Source", workspace.FolderPaths);
+        Assert.Contains("Target/Source/Child", workspace.FolderPaths);
+        Assert.AreEqual("Target/Source", workspace.Bookmarks.Single(b => b.BookmarkId == "1").Group);
+        Assert.AreEqual("Target/Source/Child", workspace.Bookmarks.Single(b => b.BookmarkId == "2").Group);
+        Assert.AreEqual("Target", workspace.Bookmarks.Single(b => b.BookmarkId == "3").Group);
+    }
+
+    [TestMethod]
+    public void Repository_MoveFolder_WhenSourceEqualsTarget_DoesNothing()
+    {
+        BookmarkWorkspaceState workspace = new BookmarkWorkspaceState();
+        workspace.FolderPaths.Add(string.Empty);
+        workspace.FolderPaths.Add("Folder");
+        workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "1", Group = "Folder" });
+
+        BookmarkRepositoryService.MoveFolder(workspace, "Folder", "Folder");
+
+        Assert.Contains("Folder", workspace.FolderPaths);
+        Assert.AreEqual("Folder", workspace.Bookmarks.Single(b => b.BookmarkId == "1").Group);
+    }
+
+    [TestMethod]
+    public void Repository_MoveFolder_WhenSourceIsEmpty_ThrowsArgumentException()
+    {
+        BookmarkWorkspaceState workspace = new BookmarkWorkspaceState();
+        workspace.FolderPaths.Add(string.Empty);
+
+        Assert.ThrowsExactly<ArgumentException>(() =>
+            BookmarkRepositoryService.MoveFolder(workspace, "", "Target"));
+    }
+
+    [TestMethod]
+    public void FindNextAvailableSlot_WhenAllSlotsUsed_ReturnsNull()
+    {
+        BookmarkMetadata[] bookmarks = Enumerable.Range(1, 9)
+            .Select(slot => new BookmarkMetadata { BookmarkId = slot.ToString(), SlotNumber = slot })
+            .ToArray();
+
+        int? result = BookmarkRepositoryService.FindNextAvailableSlot(bookmarks);
+
+        Assert.IsNull(result);
+    }
+
+    [TestMethod]
+    public void FindNextAvailableSlot_WhenNoBookmarks_ReturnsOne()
+    {
+        int? result = BookmarkRepositoryService.FindNextAvailableSlot(Array.Empty<BookmarkMetadata>());
+
+        Assert.AreEqual(1, result);
+    }
+
+    [TestMethod]
+    public void FindNextAvailableSlot_WhenGapExists_ReturnsLowestAvailable()
+    {
+        BookmarkMetadata[] bookmarks =
+        {
+            new BookmarkMetadata { BookmarkId = "a", SlotNumber = 1 },
+            new BookmarkMetadata { BookmarkId = "b", SlotNumber = 2 },
+            new BookmarkMetadata { BookmarkId = "c", SlotNumber = 4 },
+            new BookmarkMetadata { BookmarkId = "d", SlotNumber = 7 },
+        };
+
+        int? result = BookmarkRepositoryService.FindNextAvailableSlot(bookmarks);
+
+        Assert.AreEqual(3, result);
+    }
+
+    [TestMethod]
+    public void FindNextDefaultLabel_WhenNoBookmarks_ReturnsBookmark1()
+    {
+        string result = BookmarkRepositoryService.FindNextDefaultLabel(Array.Empty<BookmarkMetadata>());
+
+        Assert.AreEqual("Bookmark1", result);
+    }
+
+    [TestMethod]
+    public void FindNextDefaultLabel_WhenGapInNumbering_FillsGap()
+    {
+        BookmarkMetadata[] bookmarks =
+        {
+            new BookmarkMetadata { BookmarkId = "a", Label = "Bookmark1" },
+            new BookmarkMetadata { BookmarkId = "b", Label = "Bookmark3" },
+            new BookmarkMetadata { BookmarkId = "c", Label = "Custom Label" },
+        };
+
+        string result = BookmarkRepositoryService.FindNextDefaultLabel(bookmarks);
+
+        Assert.AreEqual("Bookmark2", result);
+    }
+
+    [TestMethod]
+    public void FindNextDefaultLabel_WhenAllSequential_ReturnsNextInSequence()
+    {
+        BookmarkMetadata[] bookmarks =
+        {
+            new BookmarkMetadata { BookmarkId = "a", Label = "Bookmark1" },
+            new BookmarkMetadata { BookmarkId = "b", Label = "Bookmark2" },
+        };
+
+        string result = BookmarkRepositoryService.FindNextDefaultLabel(bookmarks);
+
+        Assert.AreEqual("Bookmark3", result);
+    }
+
     private static string CreateTestSolutionPath()
     {
         string testRoot = Path.Combine(Path.GetTempPath(), "BookmarkStudio.Tests", Guid.NewGuid().ToString("N"));

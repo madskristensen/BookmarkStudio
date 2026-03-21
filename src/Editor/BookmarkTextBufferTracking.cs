@@ -41,6 +41,8 @@ namespace BookmarkStudio
         private readonly string _normalizedDocumentPath;
         private readonly SemaphoreSlim _updateGate = new(1, 1);
         private readonly ITextBuffer _textBuffer;
+        private readonly object _trackingPointsLock = new object();
+        private Dictionary<string, ITrackingPoint> _trackingPoints = new Dictionary<string, ITrackingPoint>(StringComparer.Ordinal);
         private int _attachedViewCount;
         private int _isDisposed;
         private CancellationTokenSource? _debounceCts;
@@ -50,6 +52,7 @@ namespace BookmarkStudio
             _textBuffer = textBuffer ?? throw new ArgumentNullException(nameof(textBuffer));
             _documentPath = documentPath ?? string.Empty;
             _normalizedDocumentPath = BookmarkIdentity.NormalizeDocumentPath(_documentPath);
+            InitializeTrackingPoints();
             _textBuffer.ChangedLowPriority += OnTextBufferChanged;
         }
 
@@ -84,9 +87,6 @@ namespace BookmarkStudio
             {
                 return;
             }
-
-            ITextSnapshot before = e.Before;
-            ITextSnapshot after = e.After;
 
             // Cancel any pending debounced update
             _debounceCts?.Cancel();
@@ -128,7 +128,7 @@ namespace BookmarkStudio
                     }
 
                     IReadOnlyList<ManagedBookmark> bookmarks = await BookmarkStudioSession.Current.TryUpdateBookmarksAsync(
-                        metadata => UpdateBookmarks(metadata, before, after),
+                        metadata => UpdateBookmarksFromTrackingPoints(metadata),
                         debounceToken);
 
                     if (bookmarks.Any(bookmark => MatchesDocumentPath(bookmark.DocumentPath)))
@@ -160,7 +160,59 @@ namespace BookmarkStudio
             _updateGate.Dispose();
         }
 
-        private bool UpdateBookmarks(List<BookmarkMetadata> metadata, ITextSnapshot beforeSnapshot, ITextSnapshot afterSnapshot)
+        private void InitializeTrackingPoints()
+        {
+            ITextSnapshot snapshot = _textBuffer.CurrentSnapshot;
+            IReadOnlyList<ManagedBookmark> bookmarks = BookmarkStudioSession.Current.CachedBookmarks;
+            var newTrackingPoints = new Dictionary<string, ITrackingPoint>(StringComparer.Ordinal);
+
+            foreach (ManagedBookmark bookmark in bookmarks)
+            {
+                if (!MatchesDocumentPath(bookmark.DocumentPath))
+                {
+                    continue;
+                }
+
+                int lineIndex = bookmark.LineNumber - 1;
+                if (lineIndex < 0 || lineIndex >= snapshot.LineCount)
+                {
+                    continue;
+                }
+
+                ITextSnapshotLine line = snapshot.GetLineFromLineNumber(lineIndex);
+                ITrackingPoint trackingPoint = snapshot.CreateTrackingPoint(line.Start.Position, PointTrackingMode.Positive);
+                newTrackingPoints[bookmark.BookmarkId] = trackingPoint;
+            }
+
+            lock (_trackingPointsLock)
+            {
+                _trackingPoints = newTrackingPoints;
+            }
+        }
+
+        /// <summary>
+        /// Gets the current tracked line number for a bookmark, or null if not tracked.
+        /// This provides real-time position information for the glyph tagger.
+        /// </summary>
+        public int? GetTrackedLineNumber(string bookmarkId)
+        {
+            Dictionary<string, ITrackingPoint> trackingPoints;
+            lock (_trackingPointsLock)
+            {
+                trackingPoints = _trackingPoints;
+            }
+
+            if (!trackingPoints.TryGetValue(bookmarkId, out ITrackingPoint trackingPoint))
+            {
+                return null;
+            }
+
+            ITextSnapshot snapshot = _textBuffer.CurrentSnapshot;
+            SnapshotPoint point = trackingPoint.GetPoint(snapshot);
+            return point.GetContainingLine().LineNumber + 1;
+        }
+
+        private bool UpdateBookmarksFromTrackingPoints(List<BookmarkMetadata> metadata)
         {
             var documentBookmarks = metadata.Where(bookmark => MatchesDocumentPath(bookmark.DocumentPath)).ToList();
             if (documentBookmarks.Count == 0)
@@ -168,40 +220,71 @@ namespace BookmarkStudio
                 return false;
             }
 
+            ITextSnapshot snapshot = _textBuffer.CurrentSnapshot;
             bool changed = false;
             DateTime seenUtc = DateTime.UtcNow;
 
+            Dictionary<string, ITrackingPoint> trackingPoints;
+            lock (_trackingPointsLock)
+            {
+                trackingPoints = _trackingPoints;
+            }
+
+            var newTrackingPoints = new Dictionary<string, ITrackingPoint>(trackingPoints, StringComparer.Ordinal);
+
             foreach (BookmarkMetadata bookmark in documentBookmarks)
             {
-                BookmarkSnapshot translatedBookmark = TranslateBookmark(bookmark, beforeSnapshot, afterSnapshot);
-                if (bookmark.LineNumber == translatedBookmark.LineNumber
-                    && string.Equals(bookmark.LineText, translatedBookmark.LineText, StringComparison.Ordinal)
-                    && string.Equals(bookmark.DocumentPath, translatedBookmark.DocumentPath, StringComparison.Ordinal))
+                int newLineNumber;
+                string newLineText;
+
+                if (trackingPoints.TryGetValue(bookmark.BookmarkId, out ITrackingPoint trackingPoint))
+                {
+                    // Use tracking point for accurate position
+                    SnapshotPoint currentPoint = trackingPoint.GetPoint(snapshot);
+                    ITextSnapshotLine line = currentPoint.GetContainingLine();
+                    newLineNumber = line.LineNumber + 1;
+                    newLineText = line.GetText();
+                }
+                else
+                {
+                    // No tracking point - create one from current bookmark position
+                    int lineIndex = Clamp(bookmark.LineNumber - 1, 0, Math.Max(snapshot.LineCount - 1, 0));
+                    ITextSnapshotLine line = snapshot.GetLineFromLineNumber(lineIndex);
+                    newLineNumber = line.LineNumber + 1;
+                    newLineText = line.GetText();
+
+                    // Create tracking point for future edits
+                    ITrackingPoint newTrackingPoint = snapshot.CreateTrackingPoint(line.Start.Position, PointTrackingMode.Positive);
+                    newTrackingPoints[bookmark.BookmarkId] = newTrackingPoint;
+                }
+
+                if (bookmark.LineNumber == newLineNumber
+                    && string.Equals(bookmark.LineText, newLineText, StringComparison.Ordinal))
                 {
                     continue;
                 }
+
+                var translatedBookmark = new BookmarkSnapshot
+                {
+                    DocumentPath = _documentPath,
+                    LineNumber = newLineNumber,
+                    LineText = newLineText,
+                };
 
                 bookmark.UpdateFromSnapshot(translatedBookmark, seenUtc);
                 changed = true;
             }
 
-            return changed;
-        }
-
-        private BookmarkSnapshot TranslateBookmark(BookmarkMetadata bookmark, ITextSnapshot beforeSnapshot, ITextSnapshot afterSnapshot)
-        {
-            int beforeLineNumber = Clamp(bookmark.LineNumber - 1, 0, Math.Max(beforeSnapshot.LineCount - 1, 0));
-            ITextSnapshotLine beforeLine = beforeSnapshot.GetLineFromLineNumber(beforeLineNumber);
-            var beforePoint = new SnapshotPoint(beforeSnapshot, beforeLine.Start.Position);
-            SnapshotPoint afterPoint = beforePoint.TranslateTo(afterSnapshot, PointTrackingMode.Positive);
-            ITextSnapshotLine afterLine = afterPoint.GetContainingLine();
-
-            return new BookmarkSnapshot
+            // Update tracking points if any were added
+            if (newTrackingPoints.Count != trackingPoints.Count)
             {
-                DocumentPath = _documentPath,
-                LineNumber = afterLine.LineNumber + 1,
-                LineText = afterLine.GetText(),
-            };
+                lock (_trackingPointsLock)
+                {
+                    _trackingPoints = newTrackingPoints;
+                }
+            }
+
+            return changed;
         }
 
         private bool MatchesDocumentPath(string documentPath)
