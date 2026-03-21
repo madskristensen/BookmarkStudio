@@ -1,6 +1,9 @@
 using System;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
+using System.Windows.Media;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.PlatformUI;
 
@@ -8,6 +11,10 @@ namespace BookmarkStudio
 {
     internal sealed class TextPromptWindow : VsUIDialogWindow
     {
+        private const int _dwmwaUseImmersiveDarkMode = 20;
+        private const int _dwmwaCaptionColor = 35;
+        private const int _dwmwaTextColor = 36;
+
         private readonly TextBox _inputTextBox;
         private readonly bool _selectTextOnLoad;
 
@@ -27,6 +34,7 @@ namespace BookmarkStudio
             SetResourceReference(BackgroundProperty, EnvironmentColors.ToolWindowBackgroundBrushKey);
             SetResourceReference(ForegroundProperty, EnvironmentColors.ToolWindowTextBrushKey);
             Loaded += TextPromptWindow_Loaded;
+            SourceInitialized += OnSourceInitialized;
 
             Grid grid = new Grid
             {
@@ -121,5 +129,59 @@ namespace BookmarkStudio
 
             _inputTextBox.CaretIndex = _inputTextBox.Text?.Length ?? 0;
         }
+
+        [DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int attributeValue, int attributeSize);
+
+        private void OnSourceInitialized(object sender, EventArgs e)
+        {
+            try
+            {
+                ApplyTitleBarTheme();
+            }
+            catch (Exception ex)
+            {
+                _ = ex.LogAsync();
+            }
+        }
+
+        private void ApplyTitleBarTheme()
+        {
+            IntPtr handle = new WindowInteropHelper(this).Handle;
+            if (handle == IntPtr.Zero)
+            {
+                return;
+            }
+
+            if (TryGetResourceColor(EnvironmentColors.ToolWindowBackgroundBrushKey, out Color captionColor))
+            {
+                int captionColorRef = ToColorRef(captionColor);
+                _ = DwmSetWindowAttribute(handle, _dwmwaCaptionColor, ref captionColorRef, sizeof(int));
+            }
+
+            if (TryGetResourceColor(EnvironmentColors.ToolWindowTextBrushKey, out Color textColor))
+            {
+                int textColorRef = ToColorRef(textColor);
+                _ = DwmSetWindowAttribute(handle, _dwmwaTextColor, ref textColorRef, sizeof(int));
+            }
+
+            int darkMode = 1;
+            _ = DwmSetWindowAttribute(handle, _dwmwaUseImmersiveDarkMode, ref darkMode, sizeof(int));
+        }
+
+        private bool TryGetResourceColor(object key, out Color color)
+        {
+            if (TryFindResource(key) is SolidColorBrush brush)
+            {
+                color = brush.Color;
+                return true;
+            }
+
+            color = default;
+            return false;
+        }
+
+        private static int ToColorRef(Color color)
+            => color.R | (color.G << 8) | (color.B << 16);
     }
 }

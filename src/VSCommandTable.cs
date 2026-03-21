@@ -15,6 +15,12 @@ namespace BookmarkStudio
     {
         public const string BookmarkStudioString = "78198409-af4c-486d-9caf-7ee074cf1041";
         public static Guid BookmarkStudio = new Guid(BookmarkStudioString);
+
+        public const string guidEditorCommandsString = "160961b3-909d-4b28-9353-a1bef587b4a6";
+        public static Guid guidEditorCommands = new Guid(guidEditorCommandsString);
+
+        public const string VSStd2KCmdIDString = "1496a755-94de-11d0-8c3f-00c04fc2aae2";
+        public static Guid VSStd2KCmdID = new Guid(VSStd2KCmdIDString);
     }
 
     /// <summary>
@@ -45,18 +51,21 @@ namespace BookmarkStudio
         public const int GoToSlot7Command = 0x0506;
         public const int GoToSlot8Command = 0x0507;
         public const int GoToSlot9Command = 0x0508;
-                public const int TogglePromptForNameCommand = 0x0600;
-                        public const int BookmarkManagerToolbarFilterGroup = 0x1005;
-                        public const int FilterByColorMenu = 0x1020;
-                        public const int FilterByColorMenuGroup = 0x1021;
-                        public const int FilterByColorAllCommand = 0x0700;
-                        public const int FilterByColorBlueCommand = 0x0701;
-                        public const int FilterByColorRedCommand = 0x0702;
-                        public const int FilterByColorOrangeCommand = 0x0703;
-                        public const int FilterByColorYellowCommand = 0x0704;
-                        public const int FilterByColorGreenCommand = 0x0705;
-                        public const int FilterByColorPurpleCommand = 0x0706;
-                        public const int FilterByColorPinkCommand = 0x0707;
-                        public const int FilterByColorTealCommand = 0x0708;
-                    }
+        public const int TogglePromptForNameCommand = 0x0600;
+        public const int BookmarkManagerToolbarFilterGroup = 0x1005;
+        public const int FilterByColorMenu = 0x1020;
+        public const int FilterByColorMenuGroup = 0x1021;
+        public const int MarginContextMenuBookmarkGroup = 0x1022;
+        public const int FilterByColorAllCommand = 0x0700;
+        public const int FilterByColorBlueCommand = 0x0701;
+        public const int FilterByColorRedCommand = 0x0702;
+        public const int FilterByColorOrangeCommand = 0x0703;
+        public const int FilterByColorYellowCommand = 0x0704;
+        public const int FilterByColorGreenCommand = 0x0705;
+        public const int FilterByColorPurpleCommand = 0x0706;
+        public const int FilterByColorPinkCommand = 0x0707;
+        public const int FilterByColorTealCommand = 0x0708;
+        public const int LeftMarginContextMenu = 0x0066;
+        public const int ToggleBookmark = 0x004C;
+    }
 }

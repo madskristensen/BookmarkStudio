@@ -54,6 +54,7 @@
     <Compile Include="Editor\BookmarkGlyphMouseProcessorProvider.cs" />
     <Compile Include="Editor\BookmarkOverviewMarkFormatDefinitions.cs" />
     <Compile Include="Editor\BookmarkOverviewTagger.cs" />
+    <Compile Include="Helpers\BookmarkContextMenuHelper.cs" />
     <Compile Include="Helpers\ThemedContextMenuHelper.cs" />
     <Compile Include="Options\General.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

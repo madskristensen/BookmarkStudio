@@ -29,6 +29,9 @@
       <Group guid="BookmarkStudio" id="FilterByColorMenuGroup" priority="0x0000">
         <Parent guid="BookmarkStudio" id="FilterByColorMenu"/>
       </Group>
+      <Group guid="BookmarkStudio" id="MarginContextMenuBookmarkGroup" priority="0x0100">
+        <Parent guid="guidEditorCommands" id="LeftMarginContextMenu"/>
+      </Group>
     </Groups>
 
     <Menus>
@@ -39,20 +42,21 @@
           <CommandName>Bookmark Manager Toolbar</CommandName>
         </Strings>
       </Menu>
-      <Menu guid="BookmarkStudio" id="SettingsMenu" priority="0x0100" type="Menu">
+      <Menu guid="BookmarkStudio" id="SettingsMenu" priority="0x0100" type="MenuControllerLatched">
         <Parent guid="BookmarkStudio" id="BookmarkManagerToolbarSettingsGroup"/>
         <Icon guid="ImageCatalogGuid" id="Settings" />
         <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>TextChanges</CommandFlag>
         <Strings>
           <ButtonText>Settings</ButtonText>
         </Strings>
       </Menu>
-      <Menu guid="BookmarkStudio" id="FilterByColorMenu" priority="0x0100" type="Menu">
+      <Menu guid="BookmarkStudio" id="FilterByColorMenu" priority="0x0100" type="MenuControllerLatched">
         <Parent guid="BookmarkStudio" id="BookmarkManagerToolbarFilterGroup"/>
-        <Icon guid="ImageCatalogGuid" id="Filter" />
-        <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>TextChanges</CommandFlag>
+        <CommandFlag>NotInTBList</CommandFlag>
         <Strings>
-          <ButtonText>Filter by Color</ButtonText>
+          <CommandName>Filter by Color</CommandName>
         </Strings>
       </Menu>
     </Menus>
@@ -94,25 +98,6 @@
         <Strings>
           <ButtonText>Add Folder</ButtonText>
           <LocCanonicalName>.BookmarkStudio.AddFolder</LocCanonicalName>
-        </Strings>
-      </Button>
-
-      <Button guid="BookmarkStudio" id="DeleteBookmarkCommand" priority="0x0100" type="Button">
-        <Parent guid="BookmarkStudio" id="BookmarkManagerToolbarDeleteGroup" />
-        <Icon guid="ImageCatalogGuid" id="Cancel" />
-        <CommandFlag>IconIsMoniker</CommandFlag>
-        <Strings>
-          <ButtonText>Delete Bookmark</ButtonText>
-          <LocCanonicalName>.BookmarkStudio.DeleteBookmark</LocCanonicalName>
-        </Strings>
-      </Button>
-      <Button guid="BookmarkStudio" id="ClearAllBookmarksCommand" priority="0x0110" type="Button">
-        <Parent guid="BookmarkStudio" id="BookmarkManagerToolbarDeleteGroup" />
-        <Icon guid="ImageCatalogGuid" id="ClearBookmark" />
-        <CommandFlag>IconIsMoniker</CommandFlag>
-        <Strings>
-          <ButtonText>Clear All Bookmarks</ButtonText>
-          <LocCanonicalName>.BookmarkStudio.ClearAllBookmarks</LocCanonicalName>
         </Strings>
       </Button>
 
@@ -198,6 +183,8 @@
 
       <Button guid="BookmarkStudio" id="FilterByColorAllCommand" priority="0x0100" type="Button">
         <Parent guid="BookmarkStudio" id="FilterByColorMenuGroup"/>
+        <Icon guid="ImageCatalogGuid" id="Filter"/>
+        <CommandFlag>IconIsMoniker</CommandFlag>
         <Strings>
           <ButtonText>All Colors</ButtonText>
           <LocCanonicalName>.BookmarkStudio.FilterByColorAll</LocCanonicalName>
@@ -284,6 +271,12 @@
     <KeyBinding guid="BookmarkStudio" id="GoToSlot9Command" editor="GUID_TextEditorFactory" key1="9" mod1="Alt Shift" />
   </KeyBindings>
 
+  <CommandPlacements>
+    <CommandPlacement guid="VSStd2KCmdID" id="ToggleBookmark">
+      <Parent guid="BookmarkStudio" id="MarginContextMenuBookmarkGroup"/>
+    </CommandPlacement>
+  </CommandPlacements>
+
   <Symbols>
     <GuidSymbol name="BookmarkStudio" value="{78198409-af4c-486d-9caf-7ee074cf1041}">
       <IDSymbol name="BookmarkManagerToolbar" value="0x1000" />
@@ -298,8 +291,6 @@
       <IDSymbol name="RefreshBookmarkManagerCommand" value="0x0101" />
       <IDSymbol name="AddFolderCommand" value="0x0103" />
       <IDSymbol name="ExportBookmarksCommand" value="0x0404" />
-      <IDSymbol name="DeleteBookmarkCommand" value="0x0407" />
-      <IDSymbol name="ClearAllBookmarksCommand" value="0x0408" />
       <IDSymbol name="GoToSlot1Command" value="0x0500" />
       <IDSymbol name="GoToSlot2Command" value="0x0501" />
       <IDSymbol name="GoToSlot3Command" value="0x0502" />
@@ -309,19 +300,30 @@
       <IDSymbol name="GoToSlot7Command" value="0x0506" />
       <IDSymbol name="GoToSlot8Command" value="0x0507" />
       <IDSymbol name="GoToSlot9Command" value="0x0508" />
-            <IDSymbol name="TogglePromptForNameCommand" value="0x0600" />
-                  <IDSymbol name="BookmarkManagerToolbarFilterGroup" value="0x1005" />
-                  <IDSymbol name="FilterByColorMenu" value="0x1020" />
-                  <IDSymbol name="FilterByColorMenuGroup" value="0x1021" />
-                  <IDSymbol name="FilterByColorAllCommand" value="0x0700" />
-                  <IDSymbol name="FilterByColorBlueCommand" value="0x0701" />
-                  <IDSymbol name="FilterByColorRedCommand" value="0x0702" />
-                  <IDSymbol name="FilterByColorOrangeCommand" value="0x0703" />
-                  <IDSymbol name="FilterByColorYellowCommand" value="0x0704" />
-                  <IDSymbol name="FilterByColorGreenCommand" value="0x0705" />
-                  <IDSymbol name="FilterByColorPurpleCommand" value="0x0706" />
-                  <IDSymbol name="FilterByColorPinkCommand" value="0x0707" />
-                  <IDSymbol name="FilterByColorTealCommand" value="0x0708" />
-                      </GuidSymbol>
+      <IDSymbol name="TogglePromptForNameCommand" value="0x0600" />
+      <IDSymbol name="BookmarkManagerToolbarFilterGroup" value="0x1005" />
+      <IDSymbol name="FilterByColorMenu" value="0x1020" />
+      <IDSymbol name="FilterByColorMenuGroup" value="0x1021" />
+      <IDSymbol name="MarginContextMenuBookmarkGroup" value="0x1022" />
+      <IDSymbol name="FilterByColorAllCommand" value="0x0700" />
+      <IDSymbol name="FilterByColorBlueCommand" value="0x0701" />
+      <IDSymbol name="FilterByColorRedCommand" value="0x0702" />
+      <IDSymbol name="FilterByColorOrangeCommand" value="0x0703" />
+      <IDSymbol name="FilterByColorYellowCommand" value="0x0704" />
+      <IDSymbol name="FilterByColorGreenCommand" value="0x0705" />
+      <IDSymbol name="FilterByColorPurpleCommand" value="0x0706" />
+      <IDSymbol name="FilterByColorPinkCommand" value="0x0707" />
+      <IDSymbol name="FilterByColorTealCommand" value="0x0708" />
+    </GuidSymbol>
+
+    <!-- Editor margin context menu -->
+    <GuidSymbol name="guidEditorCommands" value="{160961B3-909D-4B28-9353-A1BEF587B4A6}">
+      <IDSymbol name="LeftMarginContextMenu" value="0x0066"/>
+    </GuidSymbol>
+
+    <!-- Editor margin context menu -->
+    <GuidSymbol name="VSStd2KCmdID" value="{1496A755-94DE-11D0-8C3F-00C04FC2AAE2}">
+      <IDSymbol name="ToggleBookmark" value="0x4c"/>
+    </GuidSymbol>
   </Symbols>
 </CommandTable>

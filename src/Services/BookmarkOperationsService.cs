@@ -232,7 +232,7 @@ namespace BookmarkStudio
             }, cancellationToken);
         }
 
-        public async Task<IReadOnlyList<ManagedBookmark>> CreateFolderAsync(string? parentFolderPath, string? folderName, CancellationToken cancellationToken)
+        public async Task<IReadOnlyList<ManagedBookmark>> CreateFolderAsync(string? parentFolderPath, string? folderName, BookmarkStorageLocation storageLocation, CancellationToken cancellationToken)
         {
             string normalizedFolderName = ValidateFolderName(folderName);
             string parentPath = BookmarkIdentity.NormalizeFolderPath(parentFolderPath);
@@ -240,7 +240,7 @@ namespace BookmarkStudio
                 ? normalizedFolderName
                 : string.Concat(parentPath, "/", normalizedFolderName);
 
-            return await _session.UpdateWorkspaceAsync(workspace =>
+            return await _session.UpdateWorkspaceAtLocationAsync(storageLocation, workspace =>
             {
                 if (workspace.FolderPaths.Contains(targetPath, StringComparer.OrdinalIgnoreCase))
                 {
@@ -251,7 +251,7 @@ namespace BookmarkStudio
             }, cancellationToken);
         }
 
-        public async Task<IReadOnlyList<ManagedBookmark>> RenameFolderAsync(string? sourceFolderPath, string? targetFolderName, CancellationToken cancellationToken)
+        public async Task<IReadOnlyList<ManagedBookmark>> RenameFolderAsync(string? sourceFolderPath, string? targetFolderName, BookmarkStorageLocation storageLocation, CancellationToken cancellationToken)
         {
             string sourcePath = BookmarkIdentity.NormalizeFolderPath(sourceFolderPath);
             if (string.IsNullOrWhiteSpace(sourcePath))
@@ -260,7 +260,7 @@ namespace BookmarkStudio
             }
 
             string normalizedFolderName = ValidateFolderName(targetFolderName);
-            return await _session.UpdateWorkspaceAsync(workspace =>
+            return await _session.UpdateWorkspaceAtLocationAsync(storageLocation, workspace =>
             {
                 string parentPath = GetParentFolderPath(sourcePath);
                 string targetPath = string.IsNullOrEmpty(parentPath)
@@ -316,6 +316,14 @@ namespace BookmarkStudio
 
         public Task<IReadOnlyList<ManagedBookmark>> ClearAllAsync(CancellationToken cancellationToken)
             => _session.UpdateWorkspaceAsync(workspace =>
+            {
+                workspace.Bookmarks.Clear();
+                workspace.FolderPaths.Clear();
+                workspace.FolderPaths.Add(string.Empty);
+            }, cancellationToken);
+
+        public Task<IReadOnlyList<ManagedBookmark>> ClearBookmarksByStorageLocationAsync(BookmarkStorageLocation storageLocation, CancellationToken cancellationToken)
+            => _session.UpdateWorkspaceAtLocationAsync(storageLocation, workspace =>
             {
                 workspace.Bookmarks.Clear();
                 workspace.FolderPaths.Clear();

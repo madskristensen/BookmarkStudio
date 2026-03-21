@@ -194,7 +194,7 @@ namespace BookmarkStudio
         {
             ManagedBookmark selectedBookmark = GetRequiredSelection();
             IReadOnlyList<ManagedBookmark> bookmarks = await _operations.RenameLabelAsync(selectedBookmark.BookmarkId, SelectedLabelText, cancellationToken);
-            ReloadBookmarks(bookmarks);
+            ReloadDualBookmarks(bookmarks);
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             RebuildTree();
             SelectBookmark(selectedBookmark.BookmarkId);
@@ -234,6 +234,24 @@ namespace BookmarkStudio
             SetStatus("Bookmark slot cleared.");
         }
 
+        public Dictionary<int, string> GetSlotAssignments()
+        {
+            Dictionary<int, string> assignments = new Dictionary<int, string>();
+
+            foreach (ManagedBookmark bookmark in _bookmarks)
+            {
+                if (bookmark.SlotNumber.HasValue && bookmark.SlotNumber.Value >= 1 && bookmark.SlotNumber.Value <= 9)
+                {
+                    string label = string.IsNullOrWhiteSpace(bookmark.Label) 
+                        ? bookmark.FileName 
+                        : bookmark.Label;
+                    assignments[bookmark.SlotNumber.Value] = label;
+                }
+            }
+
+            return assignments;
+        }
+
         public async Task SetSelectedColorAsync(BookmarkColor color, CancellationToken cancellationToken)
         {
             ManagedBookmark selectedBookmark = GetRequiredSelection();
@@ -269,6 +287,28 @@ namespace BookmarkStudio
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             RebuildTree();
             SetStatus("Bookmark removed.");
+        }
+
+        public async Task ClearBookmarksByStorageAsync(CancellationToken cancellationToken)
+        {
+            if (SelectedNode is not FolderNodeViewModel folderNode || !folderNode.IsRoot)
+            {
+                throw new InvalidOperationException("Select a root folder to clear bookmarks.");
+            }
+
+            if (!folderNode.StorageLocation.HasValue)
+            {
+                throw new InvalidOperationException("Cannot determine storage location for the selected folder.");
+            }
+
+            BookmarkStorageLocation storageLocation = folderNode.StorageLocation.Value;
+            IReadOnlyList<ManagedBookmark> bookmarks = await _operations.ClearBookmarksByStorageLocationAsync(storageLocation, cancellationToken);
+            ReloadDualBookmarks(bookmarks);
+            ClearFolderPathsForStorage(storageLocation);
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+            RebuildTree();
+            string storageName = storageLocation == BookmarkStorageLocation.Personal ? "User" : "Workspace";
+            SetStatus($"All bookmarks cleared from {storageName}.");
         }
 
         public async Task MoveToSolutionAsync(CancellationToken cancellationToken)
@@ -310,21 +350,33 @@ namespace BookmarkStudio
 
         public async Task CreateFolderAsync(string folderName, CancellationToken cancellationToken)
         {
-            string parentPath = SelectedNode switch
-            {
-                FolderNodeViewModel folderNode => folderNode.FolderPath,
-                BookmarkItemNodeViewModel bookmarkNode => bookmarkNode.Bookmark.FolderPath,
-                _ => string.Empty,
-            };
+            string parentPath;
+            BookmarkStorageLocation storageLocation;
 
-            IReadOnlyList<ManagedBookmark> bookmarks = await _operations.CreateFolderAsync(parentPath, folderName, cancellationToken);
-            ReloadBookmarks(bookmarks);
+            switch (SelectedNode)
+            {
+                case FolderNodeViewModel folderNode:
+                    parentPath = folderNode.FolderPath;
+                    storageLocation = folderNode.StorageLocation ?? BookmarkStorageLocation.Solution;
+                    break;
+                case BookmarkItemNodeViewModel bookmarkNode:
+                    parentPath = bookmarkNode.Bookmark.FolderPath;
+                    storageLocation = bookmarkNode.Bookmark.StorageLocation;
+                    break;
+                default:
+                    parentPath = string.Empty;
+                    storageLocation = BookmarkStorageLocation.Solution;
+                    break;
+            }
+
+            IReadOnlyList<ManagedBookmark> bookmarks = await _operations.CreateFolderAsync(parentPath, folderName, storageLocation, cancellationToken);
+            ReloadDualBookmarks(bookmarks);
 
             string createdPath = string.IsNullOrEmpty(parentPath)
                 ? BookmarkIdentity.NormalizeFolderPath(folderName)
                 : string.Concat(parentPath, "/", BookmarkIdentity.NormalizeFolderPath(folderName));
 
-            _folderPaths.Add(createdPath);
+            AddFolderPathForStorage(createdPath, storageLocation);
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             RebuildTree();
             SelectFolder(createdPath);
@@ -334,30 +386,18 @@ namespace BookmarkStudio
         public async Task RenameSelectedFolderAsync(string folderName, CancellationToken cancellationToken)
         {
             FolderNodeViewModel folderNode = GetRequiredSelectedFolder();
-            IReadOnlyList<ManagedBookmark> bookmarks = await _operations.RenameFolderAsync(folderNode.FolderPath, folderName, cancellationToken);
-            ReloadBookmarks(bookmarks);
+            BookmarkStorageLocation storageLocation = folderNode.StorageLocation ?? BookmarkStorageLocation.Solution;
+
+            IReadOnlyList<ManagedBookmark> bookmarks = await _operations.RenameFolderAsync(folderNode.FolderPath, folderName, storageLocation, cancellationToken);
+            ReloadDualBookmarks(bookmarks);
 
             string parentPath = GetParentFolderPath(folderNode.FolderPath);
             string renamedPath = string.IsNullOrEmpty(parentPath)
                 ? BookmarkIdentity.NormalizeFolderPath(folderName)
                 : string.Concat(parentPath, "/", BookmarkIdentity.NormalizeFolderPath(folderName));
 
-            string sourcePrefix = string.Concat(folderNode.FolderPath, "/");
-            List<string> affected = _folderPaths
-                .Where(path => string.Equals(path, folderNode.FolderPath, StringComparison.OrdinalIgnoreCase)
-                    || path.StartsWith(sourcePrefix, StringComparison.OrdinalIgnoreCase))
-                .ToList();
-
-            foreach (string path in affected)
-            {
-                _folderPaths.Remove(path);
-            }
-
-            foreach (string path in affected)
-            {
-                string suffix = path.Length == folderNode.FolderPath.Length ? string.Empty : path.Substring(folderNode.FolderPath.Length);
-                _folderPaths.Add(string.Concat(renamedPath, suffix));
-            }
+            // Update folder paths in both global and storage-specific collections
+            UpdateFolderPathsAfterMove(folderNode.FolderPath, renamedPath, storageLocation);
 
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             RebuildTree();
@@ -412,6 +452,42 @@ namespace BookmarkStudio
             RebuildTree();
             SelectFolder(normalizedTarget);
             SetStatus("Folder moved.");
+        }
+
+        public async Task MoveFolderAcrossStorageAsync(
+            string sourceFolderPath,
+            BookmarkStorageLocation sourceStorage,
+            string targetFolderPath,
+            BookmarkStorageLocation targetStorage,
+            CancellationToken cancellationToken)
+        {
+            string normalizedSource = BookmarkIdentity.NormalizeFolderPath(sourceFolderPath);
+            string normalizedTarget = BookmarkIdentity.NormalizeFolderPath(targetFolderPath);
+
+            if (string.IsNullOrWhiteSpace(normalizedSource))
+            {
+                throw new ArgumentException("Cannot move the root folder.", nameof(sourceFolderPath));
+            }
+
+            // Delete folder from source storage
+            IReadOnlyList<ManagedBookmark> deletedBookmarks = await _operations.DeleteFolderRecursiveAsync(normalizedSource, sourceStorage, cancellationToken);
+            ReloadDualBookmarks(deletedBookmarks);
+            RemoveFolderPathsForStorage(normalizedSource, sourceStorage);
+
+            // Create folder in target storage
+            string targetParentPath = GetParentFolderPath(normalizedTarget);
+            string targetFolderName = normalizedTarget.Contains("/")
+                ? normalizedTarget.Substring(normalizedTarget.LastIndexOf('/') + 1)
+                : normalizedTarget;
+
+            IReadOnlyList<ManagedBookmark> createdBookmarks = await _operations.CreateFolderAsync(targetParentPath, targetFolderName, targetStorage, cancellationToken);
+            ReloadDualBookmarks(createdBookmarks);
+            AddFolderPathForStorage(normalizedTarget, targetStorage);
+
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+            RebuildTree();
+            SelectFolder(normalizedTarget);
+            SetStatus("Folder moved to " + (targetStorage == BookmarkStorageLocation.Personal ? "User" : "Workspace") + " storage.");
         }
 
         public Task NavigateSelectedAsync(CancellationToken cancellationToken)
@@ -666,6 +742,20 @@ namespace BookmarkStudio
             targetSet.RemoveWhere(path =>
                 string.Equals(path, folderPath, StringComparison.OrdinalIgnoreCase)
                 || path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private void ClearFolderPathsForStorage(BookmarkStorageLocation storageLocation)
+        {
+            HashSet<string> targetSet = storageLocation == BookmarkStorageLocation.Personal
+                ? _personalFolderPaths
+                : _solutionFolderPaths;
+
+            // Remove all paths from this storage from the global set
+            _folderPaths.RemoveWhere(path => targetSet.Contains(path));
+            
+            // Clear the storage-specific set and add back the root
+            targetSet.Clear();
+            targetSet.Add(string.Empty);
         }
 
         private void AddFolderPathForStorage(string folderPath, BookmarkStorageLocation storageLocation)
@@ -1162,7 +1252,7 @@ namespace BookmarkStudio
                 return _storageLocation switch
                 {
                     BookmarkStorageLocation.Personal => "User",
-                    BookmarkStorageLocation.Solution => "Solution",
+                    BookmarkStorageLocation.Solution => "Workspace",
                     _ => "Root",
                 };
             }

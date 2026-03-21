@@ -5,7 +5,6 @@ namespace BookmarkStudio
 {
     internal static class BookmarkBuiltInCommandInterceptor
     {
-        private static readonly Guid StandardCommandSet2K = new Guid("1496A755-94DE-11D0-8C3F-00C04FC2AAE2");
         private static readonly System.Collections.Generic.List<IDisposable> _registrations = new System.Collections.Generic.List<IDisposable>();
         private static bool _isInitialized;
 
