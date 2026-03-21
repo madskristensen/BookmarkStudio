@@ -1,8 +1,10 @@
 using System;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
 using Microsoft.VisualStudio.Text.Tagging;
@@ -14,7 +16,7 @@ namespace BookmarkStudio
         public UIElement GenerateGlyph(IWpfTextViewLine line, IGlyphTag tag)
         {
             BookmarkGlyphTag? bookmarkTag = tag as BookmarkGlyphTag;
-            string tooltip = BuildTooltip(bookmarkTag);
+            object tooltip = BuildTooltip(bookmarkTag);
             Brush background = GetGlyphBrush(bookmarkTag);
             ContextMenu? contextMenu = null;
             string? bookmarkId = bookmarkTag?.BookmarkId;
@@ -105,7 +107,7 @@ namespace BookmarkStudio
             return BookmarkColorToBrushConverter.GetBrush(bookmarkTag.Color);
         }
 
-        private static string BuildTooltip(BookmarkGlyphTag? bookmarkTag)
+        private static object BuildTooltip(BookmarkGlyphTag? bookmarkTag)
         {
             if (bookmarkTag is null)
             {
@@ -117,7 +119,7 @@ namespace BookmarkStudio
 
             if (hasLabel && hasSlot)
             {
-                return string.Concat(bookmarkTag.Label, " [Slot ", bookmarkTag.SlotNumber.GetValueOrDefault().ToString(), "]");
+                return CreateThemedTooltip(bookmarkTag.Label, bookmarkTag.SlotNumber.Value);
             }
 
             if (hasLabel)
@@ -127,10 +129,49 @@ namespace BookmarkStudio
 
             if (hasSlot)
             {
-                return string.Concat("Slot ", bookmarkTag.SlotNumber.GetValueOrDefault().ToString());
+                return CreateThemedTooltip(null, bookmarkTag.SlotNumber.Value);
             }
 
             return "BookmarkStudio bookmark";
+        }
+
+        private static ToolTip CreateThemedTooltip(string? label, int slotNumber)
+        {
+            string shortcut = string.Concat("Alt+Shift+", slotNumber.ToString(CultureInfo.InvariantCulture));
+
+            StackPanel panel = new StackPanel
+            {
+                Orientation = Orientation.Vertical,
+            };
+
+            if (!string.IsNullOrWhiteSpace(label))
+            {
+                TextBlock labelText = new TextBlock
+                {
+                    Text = label,
+                    FontWeight = FontWeights.SemiBold,
+                };
+                labelText.SetResourceReference(TextBlock.ForegroundProperty, EnvironmentColors.ToolTipTextBrushKey);
+                panel.Children.Add(labelText);
+            }
+
+            TextBlock shortcutText = new TextBlock
+            {
+                Text = shortcut,
+                Opacity = 0.8,
+            };
+            shortcutText.SetResourceReference(TextBlock.ForegroundProperty, EnvironmentColors.ToolTipTextBrushKey);
+            panel.Children.Add(shortcutText);
+
+            ToolTip tooltip = new ToolTip
+            {
+                Content = panel,
+            };
+            tooltip.SetResourceReference(ToolTip.BackgroundProperty, EnvironmentColors.ToolTipBrushKey);
+            tooltip.SetResourceReference(ToolTip.BorderBrushProperty, EnvironmentColors.ToolTipBorderBrushKey);
+            tooltip.SetResourceReference(ToolTip.ForegroundProperty, EnvironmentColors.ToolTipTextBrushKey);
+
+            return tooltip;
         }
     }
 }

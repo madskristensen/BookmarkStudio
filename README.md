@@ -65,7 +65,7 @@ Each bookmark has a color and shows as a colored square in both:
 - Bookmark Manager tree view
 - Editor glyph margin
 
-![Glyphs](art/glyphs.png)
+![Glyphs](art/set-color.png)
 
 Available colors:
 
@@ -101,16 +101,18 @@ Default keybindings:
 
 Bookmark Studio intercepts Visual Studio built-in bookmark commands so existing workflows continue to work while using Bookmark Studio metadata and UI.
 
+![Glyphs](art/glyphs.png)
+
 The following built-in commands are intercepted:
 
-| Command | Default Shortcut | Description |
-|---------|------------------|-------------|
-| Toggle Bookmark | Ctrl+K, Ctrl+K | Toggle a bookmark at the current line |
-| Next Bookmark | Ctrl+K, Ctrl+N | Navigate to the next bookmark in the solution |
-| Previous Bookmark | Ctrl+K, Ctrl+P | Navigate to the previous bookmark in the solution |
-| Next Bookmark in Document | Ctrl+Shift+K, Ctrl+Shift+N | Navigate to the next bookmark in the current document |
+| Command                       | Default Shortcut           | Description                                               |
+| ----------------------------- | -------------------------- | --------------------------------------------------------- |
+| Toggle Bookmark               | Ctrl+K, Ctrl+K             | Toggle a bookmark at the current line                     |
+| Next Bookmark                 | Ctrl+K, Ctrl+N             | Navigate to the next bookmark in the solution             |
+| Previous Bookmark             | Ctrl+K, Ctrl+P             | Navigate to the previous bookmark in the solution         |
+| Next Bookmark in Document     | Ctrl+Shift+K, Ctrl+Shift+N | Navigate to the next bookmark in the current document     |
 | Previous Bookmark in Document | Ctrl+Shift+K, Ctrl+Shift+P | Navigate to the previous bookmark in the current document |
-| Clear Bookmarks in Document | Ctrl+Shift+K, Ctrl+Shift+L | Remove all bookmarks in the current document |
+| Clear Bookmarks in Document   | Ctrl+Shift+K, Ctrl+Shift+L | Remove all bookmarks in the current document              |
 
 This means you can continue using your familiar keyboard shortcuts while benefiting from Bookmark Studio's enhanced features like colors, labels, folders, and slots.
 
@@ -121,19 +123,6 @@ Bookmark Studio keeps bookmarks accurate as files change:
 - Tracks bookmark positions as text moves
 - Refreshes bookmark data when documents open, save, or focus changes
 - Updates manager and glyphs as metadata changes
-
-## Bookmark Metadata
-
-Each bookmark stores:
-
-- Slot number (optional)
-- Label
-- Color
-- Folder path
-- File path, line, and column location
-- Line preview text
-- Created timestamp
-- Last visited timestamp
 
 ## Commands
 

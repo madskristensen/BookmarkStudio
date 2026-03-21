@@ -14,6 +14,10 @@
     {
       "pathOnDisk": "art/glyphs.png",
       "targetPath": "art/glyphs.png"
+    },
+    {
+      "pathOnDisk": "art/set-color.png",
+      "targetPath": "art/set-color.png"
     }
   ],
   "overview": "README.md",
