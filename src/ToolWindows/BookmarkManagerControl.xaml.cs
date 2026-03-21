@@ -15,6 +15,57 @@ namespace BookmarkStudio
         private Point _dragStartPoint;
         private string? _dragBookmarkId;
 
+        // Dependency properties for resizable column widths
+        public static readonly DependencyProperty NameColumnWidthProperty =
+            DependencyProperty.Register(nameof(NameColumnWidth), typeof(GridLength), typeof(BookmarkManagerControl),
+                new PropertyMetadata(new GridLength(280)));
+
+        public static readonly DependencyProperty FileColumnWidthProperty =
+            DependencyProperty.Register(nameof(FileColumnWidth), typeof(GridLength), typeof(BookmarkManagerControl),
+                new PropertyMetadata(new GridLength(320)));
+
+        public static readonly DependencyProperty LineTextColumnWidthProperty =
+            DependencyProperty.Register(nameof(LineTextColumnWidth), typeof(GridLength), typeof(BookmarkManagerControl),
+                new PropertyMetadata(new GridLength(200)));
+
+        public static readonly DependencyProperty LineColumnWidthProperty =
+            DependencyProperty.Register(nameof(LineColumnWidth), typeof(GridLength), typeof(BookmarkManagerControl),
+                new PropertyMetadata(new GridLength(70)));
+
+        public static readonly DependencyProperty SlotColumnWidthProperty =
+            DependencyProperty.Register(nameof(SlotColumnWidth), typeof(GridLength), typeof(BookmarkManagerControl),
+                new PropertyMetadata(new GridLength(50)));
+
+        public GridLength NameColumnWidth
+        {
+            get => (GridLength)GetValue(NameColumnWidthProperty);
+            set => SetValue(NameColumnWidthProperty, value);
+        }
+
+        public GridLength FileColumnWidth
+        {
+            get => (GridLength)GetValue(FileColumnWidthProperty);
+            set => SetValue(FileColumnWidthProperty, value);
+        }
+
+        public GridLength LineTextColumnWidth
+        {
+            get => (GridLength)GetValue(LineTextColumnWidthProperty);
+            set => SetValue(LineTextColumnWidthProperty, value);
+        }
+
+        public GridLength LineColumnWidth
+        {
+            get => (GridLength)GetValue(LineColumnWidthProperty);
+            set => SetValue(LineColumnWidthProperty, value);
+        }
+
+        public GridLength SlotColumnWidth
+        {
+            get => (GridLength)GetValue(SlotColumnWidthProperty);
+            set => SetValue(SlotColumnWidthProperty, value);
+        }
+
         public BookmarkManagerControl()
             : this(null)
         {

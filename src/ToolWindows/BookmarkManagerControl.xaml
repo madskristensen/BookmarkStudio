@@ -21,6 +21,29 @@
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
         <local:BoolToVisibilityInverseConverter x:Key="BoolToVisibilityInverseConverter" />
 
+        <!-- GridSplitter Style for resizable columns -->
+        <Style x:Key="ColumnSplitterStyle" TargetType="{x:Type GridSplitter}">
+            <Setter Property="Width" Value="4" />
+            <Setter Property="Background" Value="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowBorderBrushKey}}" />
+            <Setter Property="HorizontalAlignment" Value="Center" />
+            <Setter Property="VerticalAlignment" Value="Stretch" />
+            <Setter Property="Cursor" Value="SizeWE" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type GridSplitter}">
+                        <Border Background="{TemplateBinding Background}"
+                                Width="{TemplateBinding Width}"
+                                SnapsToDevicePixels="True" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarMenuItemMouseOverBrushKey}}" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
         <!-- Themed Context Menu Styles -->
         <Style x:Key="ThemedContextMenuStyle" TargetType="{x:Type ContextMenu}">
             <Setter Property="Background" Value="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarMenuBackgroundGradientBeginBrushKey}}" />
@@ -282,12 +305,16 @@
                 </Border.ContextMenu>
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="24" />
-                        <ColumnDefinition Width="280" />
-                        <ColumnDefinition Width="320" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="90" />
-                        <ColumnDefinition Width="90" />
+                        <ColumnDefinition Width="5" />
+                        <ColumnDefinition Width="{Binding NameColumnWidth, RelativeSource={RelativeSource AncestorType=local:BookmarkManagerControl}}" />
+                        <ColumnDefinition Width="4" />
+                        <ColumnDefinition Width="{Binding FileColumnWidth, RelativeSource={RelativeSource AncestorType=local:BookmarkManagerControl}}" />
+                        <ColumnDefinition Width="4" />
+                        <ColumnDefinition Width="{Binding LineTextColumnWidth, RelativeSource={RelativeSource AncestorType=local:BookmarkManagerControl}}" />
+                        <ColumnDefinition Width="4" />
+                        <ColumnDefinition Width="{Binding LineColumnWidth, RelativeSource={RelativeSource AncestorType=local:BookmarkManagerControl}}" />
+                        <ColumnDefinition Width="4" />
+                        <ColumnDefinition Width="{Binding SlotColumnWidth, RelativeSource={RelativeSource AncestorType=local:BookmarkManagerControl}}" />
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="1" Orientation="Horizontal">
                         <!-- Folder icon for non-root -->
@@ -390,12 +417,16 @@
                 </Border.ContextMenu>
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="24" />
-                        <ColumnDefinition Width="280" />
-                        <ColumnDefinition Width="320" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="90" />
-                        <ColumnDefinition Width="90" />
+                        <ColumnDefinition Width="5" />
+                        <ColumnDefinition Width="{Binding NameColumnWidth, RelativeSource={RelativeSource AncestorType=local:BookmarkManagerControl}}" />
+                        <ColumnDefinition Width="4" />
+                        <ColumnDefinition Width="{Binding FileColumnWidth, RelativeSource={RelativeSource AncestorType=local:BookmarkManagerControl}}" />
+                        <ColumnDefinition Width="4" />
+                        <ColumnDefinition Width="{Binding LineTextColumnWidth, RelativeSource={RelativeSource AncestorType=local:BookmarkManagerControl}}" />
+                        <ColumnDefinition Width="4" />
+                        <ColumnDefinition Width="{Binding LineColumnWidth, RelativeSource={RelativeSource AncestorType=local:BookmarkManagerControl}}" />
+                        <ColumnDefinition Width="4" />
+                        <ColumnDefinition Width="{Binding SlotColumnWidth, RelativeSource={RelativeSource AncestorType=local:BookmarkManagerControl}}" />
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="1" Orientation="Horizontal">
                         <Border Width="10"
@@ -409,26 +440,24 @@
                                    VerticalAlignment="Center"
                                    TextTrimming="CharacterEllipsis" />
                     </StackPanel>
-                    <TextBlock Grid.Column="2"
+                    <TextBlock Grid.Column="3"
                                Margin="{Binding NonNameColumnMargin}"
                                Text="{Binding Bookmark.RepositoryRelativePath}"
                                VerticalAlignment="Center"
                                TextTrimming="CharacterEllipsis" />
-                    <TextBlock Grid.Column="3"
+                    <TextBlock Grid.Column="5"
                                Margin="{Binding NonNameColumnMargin}"
                                Text="{Binding Bookmark.LineText}"
                                VerticalAlignment="Center"
                                TextTrimming="CharacterEllipsis" />
-                    <TextBlock Grid.Column="4"
-                               Margin="{Binding NonNameRightAlignedMargin}"
-                               HorizontalAlignment="Right"
-                               TextAlignment="Right"
-                               Text="{Binding Bookmark.LineNumber}" />
-                    <TextBlock Grid.Column="5"
-                               Margin="{Binding NonNameRightAlignedMargin}"
-                               HorizontalAlignment="Right"
-                               TextAlignment="Right"
-                               Text="{Binding Bookmark.SlotNumber}" />
+                    <TextBlock Grid.Column="7"
+                               Margin="{Binding NonNameColumnMargin}"
+                               Text="{Binding Bookmark.LineNumber}"
+                               VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="9"
+                               Margin="{Binding NonNameColumnMargin}"
+                               Text="{Binding Bookmark.SlotNumber}"
+                               VerticalAlignment="Center" />
                 </Grid>
             </Border>
         </DataTemplate>
@@ -445,21 +474,29 @@
                 Background="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarGradientBeginBrushKey}}"
                 BorderThickness="0,0,0,1"
                 BorderBrush="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowBorderBrushKey}}"
-                Padding="6,4">
+                Padding="0,4,6,4">
             <Grid>
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="24" />
-                    <ColumnDefinition Width="280" />
-                    <ColumnDefinition Width="320" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="90" />
-                    <ColumnDefinition Width="90" />
+                    <ColumnDefinition Width="25" />
+                    <ColumnDefinition Width="{Binding NameColumnWidth, ElementName=Root, Mode=TwoWay}" MinWidth="100" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="{Binding FileColumnWidth, ElementName=Root, Mode=TwoWay}" MinWidth="100" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="{Binding LineTextColumnWidth, ElementName=Root, Mode=TwoWay}" MinWidth="50" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="{Binding LineColumnWidth, ElementName=Root, Mode=TwoWay}" MinWidth="40" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="{Binding SlotColumnWidth, ElementName=Root, Mode=TwoWay}" MinWidth="40" />
                 </Grid.ColumnDefinitions>
                 <TextBlock Grid.Column="1" Text="Name" FontWeight="SemiBold" />
-                <TextBlock Grid.Column="2" Text="File" FontWeight="SemiBold" Margin="13,0,0,0" />
-                <TextBlock Grid.Column="3" Text="Line Text" FontWeight="SemiBold" Margin="13,0,0,0" />
-                <TextBlock Grid.Column="4" Text="Line" FontWeight="SemiBold" HorizontalAlignment="Right" Margin="0,0,4,0" />
-                <TextBlock Grid.Column="5" Text="Slot" FontWeight="SemiBold" HorizontalAlignment="Right" Margin="0,0,4,0" />
+                <GridSplitter Grid.Column="2" Style="{StaticResource ColumnSplitterStyle}" ResizeBehavior="PreviousAndNext" />
+                <TextBlock Grid.Column="3" Text="File" FontWeight="SemiBold" Margin="4,0,0,0" />
+                <GridSplitter Grid.Column="4" Style="{StaticResource ColumnSplitterStyle}" ResizeBehavior="PreviousAndNext" />
+                <TextBlock Grid.Column="5" Text="Line Text" FontWeight="SemiBold" Margin="4,0,0,0" />
+                <GridSplitter Grid.Column="6" Style="{StaticResource ColumnSplitterStyle}" ResizeBehavior="PreviousAndNext" />
+                <TextBlock Grid.Column="7" Text="Line" FontWeight="SemiBold" Margin="4,0,0,0" />
+                <GridSplitter Grid.Column="8" Style="{StaticResource ColumnSplitterStyle}" ResizeBehavior="PreviousAndNext" />
+                <TextBlock Grid.Column="9" Text="Slot" FontWeight="SemiBold" Margin="4,0,0,0" />
             </Grid>
         </Border>
 

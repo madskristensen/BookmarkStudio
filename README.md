@@ -13,6 +13,8 @@ or get the latest CI build from [Open VSIX Gallery][vsixgallery].
 
 **Bookmark Studio helps you manage bookmarks across your entire solution, not just the current file.**
 
+**Zero learning curve** - Bookmark Studio uses the same keyboard shortcuts as Visual Studio's built-in bookmark features. Your existing muscle memory works perfectly, so you can start using enhanced bookmarks immediately without changing how you work.
+
 ![Tool window](art/bookmark-manager.png)
 
 ## Key Features at a Glance
