@@ -7,7 +7,7 @@ namespace BookmarkStudio
     [Export(typeof(IGlyphMouseProcessorProvider))]
     [Name("BookmarkStudioGlyphMouseProcessor")]
     [ContentType("text")]
-    [TextViewRole(PredefinedTextViewRoles.Document)]
+    [TextViewRole(PredefinedTextViewRoles.PrimaryDocument)]
     internal sealed class BookmarkGlyphMouseProcessorProvider : IGlyphMouseProcessorProvider
     {
         public IMouseProcessor GetAssociatedMouseProcessor(IWpfTextViewHost wpfTextViewHost, IWpfTextViewMargin margin)

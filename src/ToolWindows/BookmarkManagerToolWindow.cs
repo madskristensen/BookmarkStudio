@@ -56,10 +56,10 @@ namespace BookmarkStudio
         }
 
         internal static void ClearIfVisible()
-                {
-                    ThreadHelper.ThrowIfNotOnUIThread();
-                    _currentControl?.ViewModel.Clear();
-                }
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            _currentControl?.ViewModel.Clear();
+        }
 
         internal static async Task ShowAndRefreshAsync(CancellationToken cancellationToken)
         {
@@ -127,7 +127,7 @@ namespace BookmarkStudio
             _currentControl.SelectBookmark(bookmarkId);
         }
 
-        [Guid("d7033ba0-93cb-4b8e-b1d5-4eeef728e53a")]
+        [Guid("62892db9-8c0f-4458-995c-b317a5c3dd78")]
         internal sealed class Pane : ToolWindowPane
         {
             public Pane()
@@ -150,10 +150,10 @@ namespace BookmarkStudio
             }
 
             public override void ClearSearch()
-                        {
-                            ThreadHelper.ThrowIfNotOnUIThread();
-                            _currentControl?.ViewModel.ClearSearch();
-                        }
+            {
+                ThreadHelper.ThrowIfNotOnUIThread();
+                _currentControl?.ViewModel.ClearSearch();
+            }
         }
 
         private sealed class BookmarkManagerSearchTask : VsSearchTask

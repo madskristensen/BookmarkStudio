@@ -8,7 +8,7 @@ namespace BookmarkStudio
 {
     [Export(typeof(IViewTaggerProvider))]
     [ContentType("text")]
-    [TextViewRole(PredefinedTextViewRoles.Document)]
+    [TextViewRole(PredefinedTextViewRoles.PrimaryDocument)]
     [TagType(typeof(BookmarkGlyphTag))]
     internal sealed class BookmarkGlyphTaggerProvider : IViewTaggerProvider
     {

@@ -210,7 +210,7 @@ namespace BookmarkStudio
             }
 
             IReadOnlyList<ManagedBookmark> bookmarks = await _operations.AssignSlotAsync(SelectedSlotNumber.Value, selectedBookmark.BookmarkId, cancellationToken);
-            ReloadBookmarks(bookmarks);
+            ReloadDualBookmarks(bookmarks);
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             RebuildTree();
             SelectBookmark(selectedBookmark.BookmarkId);
@@ -227,7 +227,7 @@ namespace BookmarkStudio
         {
             ManagedBookmark selectedBookmark = GetRequiredSelection();
             IReadOnlyList<ManagedBookmark> bookmarks = await _operations.ClearSlotAsync(selectedBookmark.BookmarkId, cancellationToken);
-            ReloadBookmarks(bookmarks);
+            ReloadDualBookmarks(bookmarks);
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             RebuildTree();
             SelectBookmark(selectedBookmark.BookmarkId);
@@ -256,7 +256,7 @@ namespace BookmarkStudio
         {
             ManagedBookmark selectedBookmark = GetRequiredSelection();
             IReadOnlyList<ManagedBookmark> bookmarks = await _operations.SetColorAsync(selectedBookmark.BookmarkId, color, cancellationToken);
-            ReloadBookmarks(bookmarks);
+            ReloadDualBookmarks(bookmarks);
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             RebuildTree();
             SelectBookmark(selectedBookmark.BookmarkId);
@@ -283,7 +283,7 @@ namespace BookmarkStudio
 
             ManagedBookmark selectedBookmark = GetRequiredSelection();
             IReadOnlyList<ManagedBookmark> updated = await _operations.RemoveBookmarkAsync(selectedBookmark.BookmarkId, cancellationToken);
-            ReloadBookmarks(updated);
+            ReloadDualBookmarks(updated);
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             RebuildTree();
             SetStatus("Bookmark removed.");

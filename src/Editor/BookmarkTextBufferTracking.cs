@@ -10,7 +10,7 @@ namespace BookmarkStudio
 {
     [Export(typeof(IWpfTextViewCreationListener))]
     [ContentType("text")]
-    [TextViewRole(PredefinedTextViewRoles.Document)]
+    [TextViewRole(PredefinedTextViewRoles.PrimaryDocument)]
     internal sealed class BookmarkTextViewCreationListener : IWpfTextViewCreationListener
     {
         [Import]

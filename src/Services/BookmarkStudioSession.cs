@@ -343,7 +343,29 @@ namespace BookmarkStudio
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
             EnvDTE80.DTE2? dte = await VS.GetServiceAsync<EnvDTE.DTE, EnvDTE80.DTE2>();
-            _cachedSolutionPath = dte?.Solution?.FullName ?? string.Empty;
+            string? solutionFullName = dte?.Solution?.FullName;
+
+            // If a solution is open, use its path
+            if (!string.IsNullOrEmpty(solutionFullName))
+            {
+                _cachedSolutionPath = solutionFullName;
+                return _cachedSolutionPath;
+            }
+
+            // Check for Open Folder mode - get the solution directory which works for both solution and folder modes
+            Microsoft.VisualStudio.Shell.Interop.IVsSolution? solution = await VS.GetServiceAsync<Microsoft.VisualStudio.Shell.Interop.SVsSolution, Microsoft.VisualStudio.Shell.Interop.IVsSolution>();
+            if (solution is not null &&
+                solution.GetProperty((int)Microsoft.VisualStudio.Shell.Interop.__VSPROPID.VSPROPID_SolutionDirectory, out object directoryObj) == Microsoft.VisualStudio.VSConstants.S_OK &&
+                directoryObj is string directory &&
+                !string.IsNullOrEmpty(directory))
+            {
+                // In Open Folder mode, use the directory path as the "solution path"
+                // This allows bookmark storage to work based on the folder location
+                _cachedSolutionPath = directory.TrimEnd(System.IO.Path.DirectorySeparatorChar, System.IO.Path.AltDirectorySeparatorChar);
+                return _cachedSolutionPath;
+            }
+
+            _cachedSolutionPath = string.Empty;
             return _cachedSolutionPath;
         }
 

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
@@ -16,7 +15,7 @@ namespace BookmarkStudio
     [Export(typeof(IViewTaggerProvider))]
     [TagType(typeof(OverviewMarkTag))]
     [ContentType("text")]
-    [TextViewRole(PredefinedTextViewRoles.Document)]
+    [TextViewRole(PredefinedTextViewRoles.PrimaryDocument)]
     internal sealed class BookmarkOverviewTaggerProvider : IViewTaggerProvider
     {
         [Import]
