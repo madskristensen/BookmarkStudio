@@ -31,6 +31,9 @@ namespace BookmarkStudio
         public Task<BookmarkStorageInfo> GetStorageInfoAsync(CancellationToken cancellationToken)
             => _session.GetStorageInfoAsync(cancellationToken);
 
+        public string GetStoragePathForLocation(BookmarkStorageLocation location)
+            => _session.MetadataStore.GetStoragePathForLocation(_session.CachedSolutionPath, location);
+
         public Task<BookmarkStorageInfo> MoveToLocationAsync(BookmarkStorageLocation targetLocation, CancellationToken cancellationToken)
             => _session.MoveToLocationAsync(targetLocation, cancellationToken);
 

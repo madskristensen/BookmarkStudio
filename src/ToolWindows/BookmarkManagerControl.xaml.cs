@@ -560,6 +560,44 @@ namespace BookmarkStudio
             await RunAsync(cancellationToken => _viewModel.ClearBookmarksByStorageAsync(cancellationToken));
         }
 
+        private void OpenBackingFileMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (!SelectFolderFromContextMenu(sender))
+            {
+                return;
+            }
+
+            if (_viewModel.SelectedNode is not FolderNodeViewModel folderNode || !folderNode.IsRoot)
+            {
+                _viewModel.SetStatus("Select a root folder to open the backing file.");
+                return;
+            }
+
+            if (!folderNode.StorageLocation.HasValue)
+            {
+                _viewModel.SetStatus("Cannot determine storage location.");
+                return;
+            }
+
+            string storagePath = BookmarkOperationsService.Current.GetStoragePathForLocation(folderNode.StorageLocation.Value);
+
+            if (!System.IO.File.Exists(storagePath))
+            {
+                string storageName = folderNode.StorageLocation.Value == BookmarkStorageLocation.Personal ? "User" : "Workspace";
+                System.Windows.MessageBox.Show(
+                    $"No bookmark file exists for {storageName} yet. Add a bookmark to create the file.",
+                    "File Not Found",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Information);
+                return;
+            }
+
+            ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
+            {
+                await VS.Documents.OpenAsync(storagePath);
+            }).FireAndForget();
+        }
+
         private void ViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
         if (string.Equals(e.PropertyName, nameof(BookmarkManagerViewModel.SelectedNode), StringComparison.Ordinal))

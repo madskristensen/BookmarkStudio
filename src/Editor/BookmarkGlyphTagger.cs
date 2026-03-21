@@ -147,22 +147,30 @@ namespace BookmarkStudio
 
             foreach (ManagedBookmark bookmark in bookmarks)
             {
-                // Preserve existing tracking point if we have one - this keeps real-time
-                // tracked positions instead of resetting to persisted line numbers
+                int targetLineIndex = bookmark.LineNumber - 1;
+                if (targetLineIndex < 0 || targetLineIndex >= snapshot.LineCount)
+                {
+                    continue;
+                }
+
+                // Check if we have an existing tracking point and if it's still on the same line
+                // as the bookmark's persisted line number. If the line number changed (e.g., via
+                // drag-and-drop), we need to create a new tracking point at the new location.
                 if (existingTrackingPoints.TryGetValue(bookmark.BookmarkId, out ITrackingPoint existingPoint))
                 {
-                    newTrackingPoints[bookmark.BookmarkId] = existingPoint;
-                    continue;
+                    SnapshotPoint currentPoint = existingPoint.GetPoint(snapshot);
+                    int currentLineIndex = currentPoint.GetContainingLine().LineNumber;
+
+                    // If the tracking point is still on the target line, preserve it
+                    if (currentLineIndex == targetLineIndex)
+                    {
+                        newTrackingPoints[bookmark.BookmarkId] = existingPoint;
+                        continue;
+                    }
                 }
 
-                // Create new tracking point for new bookmarks
-                int lineIndex = bookmark.LineNumber - 1;
-                if (lineIndex < 0 || lineIndex >= snapshot.LineCount)
-                {
-                    continue;
-                }
-
-                ITextSnapshotLine line = snapshot.GetLineFromLineNumber(lineIndex);
+                // Create new tracking point at the bookmark's line number
+                ITextSnapshotLine line = snapshot.GetLineFromLineNumber(targetLineIndex);
 
                 // Create tracking point at the start of the line
                 // Use Positive tracking so insertions before this point push it forward

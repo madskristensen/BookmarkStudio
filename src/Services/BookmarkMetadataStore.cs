@@ -193,6 +193,13 @@ namespace BookmarkStudio
             return Path.Combine(solutionDirectory, ".vs", BookmarksFileName);
         }
 
+        public string GetStoragePathForLocation(string solutionPath, BookmarkStorageLocation location)
+        {
+            return location == BookmarkStorageLocation.Solution
+                ? GetSolutionStoragePath(solutionPath)
+                : GetPersonalStoragePath(solutionPath);
+        }
+
         public async Task<BookmarkStorageInfo> MoveToLocationAsync(string solutionPath, BookmarkStorageLocation targetLocation, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(solutionPath))

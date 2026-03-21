@@ -108,6 +108,8 @@ namespace BookmarkStudio
                                 targetLineNumber,
                                 lineText,
                                 CancellationToken.None);
+
+                            await BookmarkManagerToolWindow.RefreshIfVisibleAsync(bookmarkId, CancellationToken.None);
                         }
                         catch (Exception ex)
                         {

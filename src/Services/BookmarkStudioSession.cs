@@ -29,6 +29,8 @@ namespace BookmarkStudio
 
         public IReadOnlyList<string> CachedFolderPaths => _cachedFolderPaths;
 
+        public string CachedSolutionPath => _cachedSolutionPath ?? string.Empty;
+
         public BookmarkMetadataStore MetadataStore => _metadataStore;
 
         /// <summary>
