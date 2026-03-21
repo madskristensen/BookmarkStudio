@@ -186,6 +186,8 @@ namespace BookmarkStudio
 
         public BookmarkColor Color { get; set; }
 
+        public BookmarkStorageLocation StorageLocation { get; set; }
+
         public DateTime CreatedUtc { get; set; }
 
         public DateTime? LastVisitedUtc { get; set; }
@@ -224,6 +226,7 @@ namespace BookmarkStudio
                 Label = Label,
                 Group = Group,
                 Color = Color,
+                StorageLocation = StorageLocation,
                 CreatedUtc = CreatedUtc,
                 LastVisitedUtc = LastVisitedUtc,
             };
@@ -254,6 +257,8 @@ namespace BookmarkStudio
 
         public BookmarkColor Color { get; set; }
 
+        public BookmarkStorageLocation StorageLocation { get; set; }
+
         public DateTime CreatedUtc { get; set; }
 
         public DateTime? LastVisitedUtc { get; set; }
@@ -275,5 +280,48 @@ namespace BookmarkStudio
         public HashSet<string> FolderPaths { get; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         public HashSet<string> ExpandedFolders { get; } = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    }
+
+    internal sealed class DualBookmarkWorkspaceState
+    {
+        public DualBookmarkWorkspaceState(BookmarkWorkspaceState personalState, BookmarkWorkspaceState solutionState)
+        {
+            PersonalState = personalState ?? new BookmarkWorkspaceState();
+            SolutionState = solutionState ?? new BookmarkWorkspaceState();
+        }
+
+        public BookmarkWorkspaceState PersonalState { get; }
+
+        public BookmarkWorkspaceState SolutionState { get; }
+
+        public IReadOnlyList<BookmarkMetadata> AllBookmarks
+        {
+            get
+            {
+                List<BookmarkMetadata> all = new List<BookmarkMetadata>();
+                all.AddRange(PersonalState.Bookmarks);
+                all.AddRange(SolutionState.Bookmarks);
+                return all;
+            }
+        }
+
+        public IReadOnlyList<string> AllFolderPaths
+        {
+            get
+            {
+                HashSet<string> all = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (string path in PersonalState.FolderPaths)
+                {
+                    all.Add(path);
+                }
+
+                foreach (string path in SolutionState.FolderPaths)
+                {
+                    all.Add(path);
+                }
+
+                return all.ToArray();
+            }
+        }
     }
 }

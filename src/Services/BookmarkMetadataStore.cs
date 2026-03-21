@@ -234,6 +234,145 @@ namespace BookmarkStudio
             return GetStorageInfo(solutionPath);
         }
 
+        /// <summary>
+        /// Loads workspace state from a specific storage location.
+        /// </summary>
+        public async Task<BookmarkWorkspaceState> LoadWorkspaceFromLocationAsync(string solutionPath, BookmarkStorageLocation location, CancellationToken cancellationToken)
+        {
+            string storagePath = location == BookmarkStorageLocation.Solution
+                ? GetSolutionStoragePath(solutionPath)
+                : GetPersonalStoragePath(solutionPath);
+
+            if (!File.Exists(storagePath))
+            {
+                return new BookmarkWorkspaceState();
+            }
+
+            string json = await Task.Run(() => File.ReadAllText(storagePath, Encoding.UTF8), cancellationToken);
+            if (string.IsNullOrWhiteSpace(json))
+            {
+                return new BookmarkWorkspaceState();
+            }
+
+            string solutionDirectory = GetSolutionDirectory(solutionPath);
+            using JsonDocument document = JsonDocument.Parse(json);
+            JsonElement rootElement = document.RootElement;
+
+            BookmarkWorkspaceState state = new BookmarkWorkspaceState();
+
+            if (TryGetObjectProperty(rootElement, RootPropertyName, out JsonElement rootFolderElement))
+            {
+                ParseFolderNode(state, rootFolderElement, string.Empty, solutionDirectory, location, cancellationToken);
+                ParseExpandedFolders(state, rootElement);
+                return NormalizeState(state, location);
+            }
+
+            if (TryGetObjectProperty(rootElement, "bookmarks", out JsonElement legacyBookmarks) && legacyBookmarks.ValueKind == JsonValueKind.Array)
+            {
+                foreach (JsonElement item in legacyBookmarks.EnumerateArray())
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    BookmarkMetadata metadata = Normalize(ToMetadata(item, solutionDirectory, string.Empty));
+                    metadata.StorageLocation = location;
+                    state.Bookmarks.Add(metadata);
+                    RegisterFolderPath(state.FolderPaths, metadata.Group);
+                }
+            }
+
+            return NormalizeState(state, location);
+        }
+
+        /// <summary>
+        /// Saves workspace state to a specific storage location.
+        /// </summary>
+        public async Task SaveWorkspaceToLocationAsync(string solutionPath, BookmarkStorageLocation location, BookmarkWorkspaceState state, CancellationToken cancellationToken)
+        {
+            if (state is null)
+            {
+                throw new ArgumentNullException(nameof(state));
+            }
+
+            string storagePath = location == BookmarkStorageLocation.Solution
+                ? GetSolutionStoragePath(solutionPath)
+                : GetPersonalStoragePath(solutionPath);
+
+            string? directory = Path.GetDirectoryName(storagePath);
+            if (string.IsNullOrWhiteSpace(directory))
+            {
+                throw new InvalidOperationException("Bookmark storage directory could not be determined.");
+            }
+
+            Directory.CreateDirectory(directory);
+
+            string solutionDirectory = GetSolutionDirectory(solutionPath);
+            FolderNode root = BuildFolderTree(state);
+
+            string json = await Task.Run(() => SerializeTree(root, solutionDirectory, state.ExpandedFolders), cancellationToken);
+            await Task.Run(() => File.WriteAllText(storagePath, json, Encoding.UTF8), cancellationToken);
+        }
+
+        /// <summary>
+        /// Loads, updates, and saves workspace state for a specific storage location.
+        /// </summary>
+        public async Task<BookmarkWorkspaceState> UpdateWorkspaceAtLocationAsync(
+            string solutionPath,
+            BookmarkStorageLocation location,
+            Action<BookmarkWorkspaceState> updateAction,
+            CancellationToken cancellationToken)
+        {
+            BookmarkWorkspaceState state = await LoadWorkspaceFromLocationAsync(solutionPath, location, cancellationToken);
+            updateAction(state);
+            BookmarkRepositoryService.NormalizeWorkspaceState(state);
+            await SaveWorkspaceToLocationAsync(solutionPath, location, state, cancellationToken);
+            return state;
+        }
+
+        /// <summary>
+        /// Loads both Personal and Solution storage locations and returns combined state.
+        /// </summary>
+        public async Task<DualBookmarkWorkspaceState> LoadDualWorkspaceAsync(string solutionPath, CancellationToken cancellationToken)
+        {
+            BookmarkWorkspaceState personalState = await LoadWorkspaceFromLocationAsync(solutionPath, BookmarkStorageLocation.Personal, cancellationToken);
+            BookmarkWorkspaceState solutionState = await LoadWorkspaceFromLocationAsync(solutionPath, BookmarkStorageLocation.Solution, cancellationToken);
+
+            return new DualBookmarkWorkspaceState(personalState, solutionState);
+        }
+
+        /// <summary>
+        /// Moves a bookmark from one storage location to another.
+        /// </summary>
+        public async Task MoveBookmarkBetweenLocationsAsync(string solutionPath, string bookmarkId, BookmarkStorageLocation targetLocation, CancellationToken cancellationToken)
+        {
+            DualBookmarkWorkspaceState dualState = await LoadDualWorkspaceAsync(solutionPath, cancellationToken);
+
+            BookmarkWorkspaceState sourceState = targetLocation == BookmarkStorageLocation.Solution
+                ? dualState.PersonalState
+                : dualState.SolutionState;
+
+            BookmarkWorkspaceState targetState = targetLocation == BookmarkStorageLocation.Solution
+                ? dualState.SolutionState
+                : dualState.PersonalState;
+
+            BookmarkMetadata? bookmark = sourceState.Bookmarks.FirstOrDefault(b => string.Equals(b.BookmarkId, bookmarkId, StringComparison.Ordinal));
+            if (bookmark is null)
+            {
+                return;
+            }
+
+            sourceState.Bookmarks.Remove(bookmark);
+            bookmark.StorageLocation = targetLocation;
+            targetState.Bookmarks.Add(bookmark);
+            RegisterFolderPath(targetState.FolderPaths, bookmark.Group);
+
+            BookmarkStorageLocation sourceLocation = targetLocation == BookmarkStorageLocation.Solution
+                ? BookmarkStorageLocation.Personal
+                : BookmarkStorageLocation.Solution;
+
+            await SaveWorkspaceToLocationAsync(solutionPath, sourceLocation, sourceState, cancellationToken);
+            await SaveWorkspaceToLocationAsync(solutionPath, targetLocation, targetState, cancellationToken);
+        }
+
         private static void CleanupLegacyFiles(string currentPath)
         {
             string? directory = Path.GetDirectoryName(currentPath);
@@ -299,11 +438,17 @@ namespace BookmarkStudio
 
         private static BookmarkWorkspaceState NormalizeState(BookmarkWorkspaceState state)
         {
+            return NormalizeState(state, BookmarkStorageLocation.Personal);
+        }
+
+        private static BookmarkWorkspaceState NormalizeState(BookmarkWorkspaceState state, BookmarkStorageLocation location)
+        {
             RegisterFolderPath(state.FolderPaths, string.Empty);
 
             foreach (BookmarkMetadata bookmark in state.Bookmarks)
             {
                 bookmark.Group = BookmarkIdentity.NormalizeFolderPath(bookmark.Group);
+                bookmark.StorageLocation = location;
                 RegisterFolderPath(state.FolderPaths, bookmark.Group);
             }
 
@@ -311,6 +456,11 @@ namespace BookmarkStudio
         }
 
         private static void ParseFolderNode(BookmarkWorkspaceState state, JsonElement folderElement, string folderPath, string solutionDirectory, CancellationToken cancellationToken)
+        {
+            ParseFolderNode(state, folderElement, folderPath, solutionDirectory, BookmarkStorageLocation.Personal, cancellationToken);
+        }
+
+        private static void ParseFolderNode(BookmarkWorkspaceState state, JsonElement folderElement, string folderPath, string solutionDirectory, BookmarkStorageLocation location, CancellationToken cancellationToken)
         {
             RegisterFolderPath(state.FolderPaths, folderPath);
 
@@ -330,6 +480,7 @@ namespace BookmarkStudio
                         cancellationToken.ThrowIfCancellationRequested();
 
                         BookmarkMetadata metadata = Normalize(ToMetadata(bookmarkElement, solutionDirectory, folderPath));
+                        metadata.StorageLocation = location;
                         state.Bookmarks.Add(metadata);
                     }
 
@@ -345,7 +496,7 @@ namespace BookmarkStudio
                     ? property.Name
                     : string.Concat(folderPath, "/", property.Name);
 
-                ParseFolderNode(state, property.Value, BookmarkIdentity.NormalizeFolderPath(childPath), solutionDirectory, cancellationToken);
+                ParseFolderNode(state, property.Value, BookmarkIdentity.NormalizeFolderPath(childPath), solutionDirectory, location, cancellationToken);
             }
         }
 

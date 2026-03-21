@@ -9,62 +9,14 @@ namespace BookmarkStudio
 {
     public partial class BookmarkManagerControl : UserControl
     {
-        private static readonly string BookmarkDragFormat = DataFormats.UnicodeText;
+        private static readonly string BookmarkDragFormat = "BookmarkStudio.Bookmark";
+        private static readonly string FolderDragFormat = "BookmarkStudio.Folder";
         private readonly BookmarkManagerViewModel _viewModel = new BookmarkManagerViewModel();
         private readonly ToolWindowInitData? _initData;
         private Point _dragStartPoint;
         private string? _dragBookmarkId;
-
-        // Dependency properties for resizable column widths
-        public static readonly DependencyProperty NameColumnWidthProperty =
-            DependencyProperty.Register(nameof(NameColumnWidth), typeof(GridLength), typeof(BookmarkManagerControl),
-                new PropertyMetadata(new GridLength(280)));
-
-        public static readonly DependencyProperty FileColumnWidthProperty =
-            DependencyProperty.Register(nameof(FileColumnWidth), typeof(GridLength), typeof(BookmarkManagerControl),
-                new PropertyMetadata(new GridLength(320)));
-
-        public static readonly DependencyProperty LineTextColumnWidthProperty =
-            DependencyProperty.Register(nameof(LineTextColumnWidth), typeof(GridLength), typeof(BookmarkManagerControl),
-                new PropertyMetadata(new GridLength(200)));
-
-        public static readonly DependencyProperty LineColumnWidthProperty =
-            DependencyProperty.Register(nameof(LineColumnWidth), typeof(GridLength), typeof(BookmarkManagerControl),
-                new PropertyMetadata(new GridLength(70)));
-
-        public static readonly DependencyProperty SlotColumnWidthProperty =
-            DependencyProperty.Register(nameof(SlotColumnWidth), typeof(GridLength), typeof(BookmarkManagerControl),
-                new PropertyMetadata(new GridLength(50)));
-
-        public GridLength NameColumnWidth
-        {
-            get => (GridLength)GetValue(NameColumnWidthProperty);
-            set => SetValue(NameColumnWidthProperty, value);
-        }
-
-        public GridLength FileColumnWidth
-        {
-            get => (GridLength)GetValue(FileColumnWidthProperty);
-            set => SetValue(FileColumnWidthProperty, value);
-        }
-
-        public GridLength LineTextColumnWidth
-        {
-            get => (GridLength)GetValue(LineTextColumnWidthProperty);
-            set => SetValue(LineTextColumnWidthProperty, value);
-        }
-
-        public GridLength LineColumnWidth
-        {
-            get => (GridLength)GetValue(LineColumnWidthProperty);
-            set => SetValue(LineColumnWidthProperty, value);
-        }
-
-        public GridLength SlotColumnWidth
-        {
-            get => (GridLength)GetValue(SlotColumnWidthProperty);
-            set => SetValue(SlotColumnWidthProperty, value);
-        }
+        private string? _dragFolderPath;
+        private BookmarkStorageLocation? _dragSourceStorage;
 
         public BookmarkManagerControl()
             : this(null)
@@ -157,12 +109,10 @@ namespace BookmarkStudio
 
             if (_initData is not null)
             {
-                // Use pre-loaded data from background thread
                 _viewModel.InitializeWithData(_initData.Bookmarks, _initData.FolderPaths, _initData.ExpandedFolders);
             }
             else
             {
-                // Fallback to loading data now
                 await RunAsync(cancellationToken => _viewModel.InitializeAsync(cancellationToken));
             }
         }
@@ -194,7 +144,21 @@ namespace BookmarkStudio
         private void BookmarkTreeView_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             _dragStartPoint = e.GetPosition(BookmarkTreeView);
-            _dragBookmarkId = (GetNodeFromVisual(e.OriginalSource as DependencyObject) as BookmarkItemNodeViewModel)?.Bookmark.BookmarkId;
+            _dragBookmarkId = null;
+            _dragFolderPath = null;
+            _dragSourceStorage = null;
+
+            BookmarkNodeViewModel? node = GetNodeFromVisual(e.OriginalSource as DependencyObject);
+            if (node is BookmarkItemNodeViewModel bookmarkNode)
+            {
+                _dragBookmarkId = bookmarkNode.Bookmark.BookmarkId;
+                _dragSourceStorage = bookmarkNode.Bookmark.StorageLocation;
+            }
+            else if (node is FolderNodeViewModel folderNode && !folderNode.IsRoot)
+            {
+                _dragFolderPath = folderNode.FolderPath;
+                _dragSourceStorage = folderNode.StorageLocation;
+            }
         }
 
         private void BookmarkTreeView_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
@@ -210,8 +174,13 @@ namespace BookmarkStudio
 
         private void BookmarkTreeView_PreviewMouseMove(object sender, MouseEventArgs e)
         {
-            if (e.LeftButton != MouseButtonState.Pressed
-                || string.IsNullOrWhiteSpace(_dragBookmarkId))
+            if (e.LeftButton != MouseButtonState.Pressed)
+            {
+                return;
+            }
+
+            bool hasDragItem = !string.IsNullOrWhiteSpace(_dragBookmarkId) || !string.IsNullOrWhiteSpace(_dragFolderPath);
+            if (!hasDragItem)
             {
                 return;
             }
@@ -224,31 +193,75 @@ namespace BookmarkStudio
             }
 
             DataObject data = new DataObject();
-            data.SetData(BookmarkDragFormat, _dragBookmarkId, false);
+            if (!string.IsNullOrWhiteSpace(_dragBookmarkId))
+            {
+                data.SetData(BookmarkDragFormat, _dragBookmarkId, false);
+            }
+            else if (!string.IsNullOrWhiteSpace(_dragFolderPath))
+            {
+                data.SetData(FolderDragFormat, _dragFolderPath, false);
+            }
+
             DragDrop.DoDragDrop(BookmarkTreeView, data, DragDropEffects.Move);
             _dragBookmarkId = null;
+            _dragFolderPath = null;
+            _dragSourceStorage = null;
         }
 
         private void BookmarkTreeView_DragOver(object sender, DragEventArgs e)
         {
-            e.Effects = e.Data.GetDataPresent(BookmarkDragFormat, false)
-                ? DragDropEffects.Move
-                : DragDropEffects.None;
+            bool canDrop = e.Data.GetDataPresent(BookmarkDragFormat, false)
+                || e.Data.GetDataPresent(FolderDragFormat, false);
+
+            if (canDrop && e.Data.GetDataPresent(FolderDragFormat, false))
+            {
+                // Check if dropping folder onto itself or a descendant
+                string? draggedFolder = e.Data.GetData(FolderDragFormat, false) as string;
+                string targetFolder = GetDropTargetFolderPath(e.OriginalSource as DependencyObject);
+
+                if (!string.IsNullOrWhiteSpace(draggedFolder))
+                {
+                    // Cannot drop folder onto itself
+                    if (string.Equals(draggedFolder, targetFolder, StringComparison.OrdinalIgnoreCase))
+                    {
+                        canDrop = false;
+                    }
+                    // Cannot drop folder onto a descendant
+                    else if (targetFolder.StartsWith(draggedFolder + "/", StringComparison.OrdinalIgnoreCase))
+                    {
+                        canDrop = false;
+                    }
+                }
+            }
+
+            e.Effects = canDrop ? DragDropEffects.Move : DragDropEffects.None;
             e.Handled = true;
         }
 
         private async void BookmarkTreeView_Drop(object sender, DragEventArgs e)
         {
-            if (!e.Data.GetDataPresent(BookmarkDragFormat, false))
+            e.Handled = true;
+
+            // Handle bookmark drop
+            if (e.Data.GetDataPresent(BookmarkDragFormat, false))
             {
-                e.Handled = true;
+                await HandleBookmarkDropAsync(e);
                 return;
             }
 
+            // Handle folder drop
+            if (e.Data.GetDataPresent(FolderDragFormat, false))
+            {
+                await HandleFolderDropAsync(e);
+                return;
+            }
+        }
+
+        private async Task HandleBookmarkDropAsync(DragEventArgs e)
+        {
             string? bookmarkId = e.Data.GetData(BookmarkDragFormat, false) as string;
             if (string.IsNullOrWhiteSpace(bookmarkId))
             {
-                e.Handled = true;
                 return;
             }
 
@@ -256,19 +269,76 @@ namespace BookmarkStudio
             ManagedBookmark? selectedBookmark = _viewModel.SelectedBookmark;
             if (selectedBookmark is null)
             {
-                e.Handled = true;
+                return;
+            }
+
+            // Determine target folder and storage location
+            BookmarkStorageLocation? targetStorage = GetDropTargetStorageLocation(e.OriginalSource as DependencyObject);
+            string targetFolderPath = GetDropTargetFolderPath(e.OriginalSource as DependencyObject);
+
+            // Check if moving between storage locations
+            if (targetStorage.HasValue && _dragSourceStorage.HasValue && targetStorage.Value != _dragSourceStorage.Value)
+            {
+                // Move bookmark to different storage location
+                await RunAsync(async cancellationToken =>
+                {
+                    await BookmarkOperationsService.Current.MoveBookmarkToStorageAsync(bookmarkId!, targetStorage.Value, cancellationToken);
+                    await _viewModel.RefreshAsync(cancellationToken);
+                });
+            }
+            else if (!string.Equals(selectedBookmark.FolderPath, targetFolderPath, StringComparison.OrdinalIgnoreCase))
+            {
+                // Move within same storage to different folder
+                await RunAsync(cancellationToken => _viewModel.MoveSelectedBookmarkToFolderAsync(targetFolderPath, cancellationToken));
+            }
+        }
+
+        private async Task HandleFolderDropAsync(DragEventArgs e)
+        {
+            string? sourceFolderPath = e.Data.GetData(FolderDragFormat, false) as string;
+            if (string.IsNullOrWhiteSpace(sourceFolderPath))
+            {
                 return;
             }
 
             string targetFolderPath = GetDropTargetFolderPath(e.OriginalSource as DependencyObject);
-            if (string.Equals(selectedBookmark.FolderPath, targetFolderPath, StringComparison.OrdinalIgnoreCase))
+
+            // Cannot drop folder onto itself or a descendant
+            if (string.Equals(sourceFolderPath, targetFolderPath, StringComparison.OrdinalIgnoreCase))
             {
-                e.Handled = true;
                 return;
             }
 
-            _viewModel.MoveSelectedBookmarkToFolderAsync(targetFolderPath, CancellationToken.None).FireAndForget();
-            e.Handled = true;
+            if (targetFolderPath.StartsWith(sourceFolderPath + "/", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            // Get storage location from dragged folder
+            if (!_dragSourceStorage.HasValue)
+            {
+                return;
+            }
+
+            BookmarkStorageLocation storageLocation = _dragSourceStorage.Value;
+
+            // Get the folder name from the source path
+            string folderName = sourceFolderPath.Contains("/")
+                ? sourceFolderPath.Substring(sourceFolderPath.LastIndexOf('/') + 1)
+                : sourceFolderPath;
+
+            // Build the new path
+            string newFolderPath = string.IsNullOrEmpty(targetFolderPath)
+                ? folderName
+                : targetFolderPath + "/" + folderName;
+
+            // Cannot move if destination would be the same
+            if (string.Equals(sourceFolderPath, newFolderPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            await RunAsync(cancellationToken => _viewModel.MoveFolderAsync(sourceFolderPath!, newFolderPath, storageLocation, cancellationToken));
         }
 
         private async void NavigateMenuItem_Click(object sender, RoutedEventArgs e)
@@ -611,6 +681,41 @@ namespace BookmarkStudio
             }
 
             return (targetNode as BookmarkItemNodeViewModel)?.Bookmark.FolderPath ?? string.Empty;
+        }
+
+        private static BookmarkStorageLocation? GetDropTargetStorageLocation(DependencyObject? source)
+        {
+            BookmarkNodeViewModel? targetNode = GetNodeFromVisual(source);
+
+            // Walk up to find the root storage node
+            while (targetNode is not null)
+            {
+                if (targetNode is FolderNodeViewModel folderNode && folderNode.IsRoot)
+                {
+                    return folderNode.StorageLocation;
+                }
+
+                if (targetNode is BookmarkItemNodeViewModel bookmarkNode)
+                {
+                    return bookmarkNode.Bookmark.StorageLocation;
+                }
+
+                // Try to find parent through visual tree
+                DependencyObject? visual = source;
+                while (visual is not null)
+                {
+                    if (visual is TreeViewItem tvi && tvi.DataContext is FolderNodeViewModel parentFolder && parentFolder.IsRoot)
+                    {
+                        return parentFolder.StorageLocation;
+                    }
+
+                    visual = VisualTreeHelper.GetParent(visual);
+                }
+
+                break;
+            }
+
+            return null;
         }
     }
 }

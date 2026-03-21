@@ -234,6 +234,67 @@ namespace BookmarkStudio
             RegisterFolderPath(state.FolderPaths, normalizedFolderPath);
         }
 
+        public static void MoveFolder(BookmarkWorkspaceState state, string sourceFolderPath, string targetFolderPath)
+        {
+            if (state is null)
+            {
+                throw new ArgumentNullException(nameof(state));
+            }
+
+            string sourcePath = BookmarkIdentity.NormalizeFolderPath(sourceFolderPath);
+            string targetPath = BookmarkIdentity.NormalizeFolderPath(targetFolderPath);
+
+            if (string.IsNullOrWhiteSpace(sourcePath))
+            {
+                throw new ArgumentException("Source folder path cannot be empty.", nameof(sourceFolderPath));
+            }
+
+            if (string.Equals(sourcePath, targetPath, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            string sourcePrefix = sourcePath + "/";
+
+            // Update folder paths
+            List<string> affectedFolders = state.FolderPaths
+                .Where(path => string.Equals(path, sourcePath, StringComparison.OrdinalIgnoreCase)
+                    || path.StartsWith(sourcePrefix, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            foreach (string folder in affectedFolders)
+            {
+                state.FolderPaths.Remove(folder);
+            }
+
+            foreach (string folder in affectedFolders)
+            {
+                if (string.Equals(folder, sourcePath, StringComparison.OrdinalIgnoreCase))
+                {
+                    RegisterFolderPath(state.FolderPaths, targetPath);
+                }
+                else
+                {
+                    string suffix = folder.Substring(sourcePath.Length);
+                    RegisterFolderPath(state.FolderPaths, targetPath + suffix);
+                }
+            }
+
+            // Update bookmark groups
+            foreach (BookmarkMetadata bookmark in state.Bookmarks)
+            {
+                string group = BookmarkIdentity.NormalizeFolderPath(bookmark.Group);
+                if (string.Equals(group, sourcePath, StringComparison.OrdinalIgnoreCase))
+                {
+                    bookmark.Group = targetPath;
+                }
+                else if (group.StartsWith(sourcePrefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    bookmark.Group = targetPath + group.Substring(sourcePath.Length);
+                }
+            }
+        }
+
         public static IReadOnlyList<ManagedBookmark> ToManagedBookmarks(IEnumerable<BookmarkMetadata> bookmarks)
             => bookmarks.Select(item => item.ToManagedBookmark())
                 .OrderBy(item => item.SlotNumber.HasValue ? 0 : 1)

@@ -8,40 +8,46 @@
              xmlns:imaging="clr-namespace:Microsoft.VisualStudio.Imaging;assembly=Microsoft.VisualStudio.Imaging"
              xmlns:imageCatalog="clr-namespace:Microsoft.VisualStudio.Imaging;assembly=Microsoft.VisualStudio.ImageCatalog"
              xmlns:platformui="clr-namespace:Microsoft.VisualStudio.PlatformUI;assembly=Microsoft.VisualStudio.Shell.15.0"
-             xmlns:shell="clr-namespace:Microsoft.VisualStudio.Shell;assembly=Microsoft.VisualStudio.Shell.15.0"
              xmlns:toolkit="clr-namespace:Community.VisualStudio.Toolkit;assembly=Community.VisualStudio.Toolkit"
              mc:Ignorable="d"
              d:DesignHeight="480"
-             d:DesignWidth="960"
+             d:DesignWidth="280"
              Background="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowBackgroundBrushKey}}"
              Foreground="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowTextBrushKey}}"
              toolkit:Themes.UseVsTheme="True">
     <UserControl.Resources>
         <local:BookmarkColorToBrushConverter x:Key="ColorToBrushConverter" />
+        <local:TreeViewItemToIndentConverter x:Key="IndentConverter" />
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
         <local:BoolToVisibilityInverseConverter x:Key="BoolToVisibilityInverseConverter" />
 
-        <!-- GridSplitter Style for resizable columns -->
-        <Style x:Key="ColumnSplitterStyle" TargetType="{x:Type GridSplitter}">
-            <Setter Property="Width" Value="4" />
-            <Setter Property="Background" Value="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowBorderBrushKey}}" />
-            <Setter Property="HorizontalAlignment" Value="Center" />
-            <Setter Property="VerticalAlignment" Value="Stretch" />
-            <Setter Property="Cursor" Value="SizeWE" />
+        <!-- Subtle selection color like Solution Explorer -->
+        <SolidColorBrush x:Key="TreeViewSelectionBrush" Color="#20808080" />
+
+        <!-- Expander toggle arrow matching VS style -->
+        <Style x:Key="ExpandCollapseToggle" TargetType="ToggleButton">
+            <Setter Property="Focusable" Value="False" />
+            <Setter Property="Width" Value="16" />
+            <Setter Property="Height" Value="16" />
             <Setter Property="Template">
                 <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type GridSplitter}">
-                        <Border Background="{TemplateBinding Background}"
-                                Width="{TemplateBinding Width}"
-                                SnapsToDevicePixels="True" />
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border Background="Transparent" Padding="4,4,0,4">
+                            <Path x:Name="ExpandPath"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"
+                                  Data="M 0 0 L 4 4 L 0 8 Z"
+                                  Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=TreeViewItem}}"
+                                  SnapsToDevicePixels="True" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="ExpandPath" Property="Data" Value="M 0 0 L 8 0 L 4 4 Z" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
-            <Style.Triggers>
-                <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarMenuItemMouseOverBrushKey}}" />
-                </Trigger>
-            </Style.Triggers>
         </Style>
 
         <!-- Themed Context Menu Styles -->
@@ -86,11 +92,9 @@
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="17" />
                                 </Grid.ColumnDefinitions>
-                                <!-- Icon gutter background -->
                                 <Border x:Name="IconGutter"
                                         Grid.Column="0"
                                         Background="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarMenuIconBackgroundBrushKey}}" />
-                                <!-- Icon -->
                                 <ContentPresenter x:Name="Icon"
                                                   Grid.Column="0"
                                                   ContentSource="Icon"
@@ -99,14 +103,12 @@
                                                   Width="16"
                                                   Height="16"
                                                   Margin="4,0" />
-                                <!-- Header -->
                                 <ContentPresenter x:Name="Header"
                                                   Grid.Column="1"
                                                   ContentSource="Header"
                                                   RecognizesAccessKey="True"
                                                   Margin="6,4,6,4"
                                                   VerticalAlignment="Center" />
-                                <!-- Submenu arrow -->
                                 <Path x:Name="Arrow"
                                       Grid.Column="2"
                                       HorizontalAlignment="Center"
@@ -114,7 +116,6 @@
                                       Fill="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarMenuSubmenuGlyphBrushKey}}"
                                       Data="M0,0 L4,3.5 L0,7 z"
                                       Visibility="Collapsed" />
-                                <!-- Submenu popup -->
                                 <Popup x:Name="PART_Popup"
                                        AllowsTransparency="True"
                                        Placement="Right"
@@ -171,120 +172,10 @@
             </Setter>
         </Style>
 
-        <Style x:Key="TreeViewItemFocusVisual">
-            <Setter Property="Control.Template">
-                <Setter.Value>
-                    <ControlTemplate>
-                        <Rectangle />
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="ExpandCollapseToggleStyle" TargetType="{x:Type ToggleButton}">
-            <Setter Property="Focusable" Value="False" />
-            <Setter Property="Width" Value="16" />
-            <Setter Property="Height" Value="16" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type ToggleButton}">
-                        <Border Width="16" Height="16" Background="Transparent" Padding="5,5,5,5">
-                            <Path x:Name="ExpandPath"
-                                  Fill="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowTextBrushKey}}"
-                                  Data="M0,0 L0,6 L6,0 z">
-                                <Path.RenderTransform>
-                                    <RotateTransform Angle="135" CenterX="3" CenterY="3" />
-                                </Path.RenderTransform>
-                            </Path>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="ExpandPath" Property="RenderTransform">
-                                    <Setter.Value>
-                                        <RotateTransform Angle="180" CenterX="3" CenterY="3" />
-                                    </Setter.Value>
-                                </Setter>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="BookmarkTreeViewItemStyle" TargetType="{x:Type TreeViewItem}">
-            <Setter Property="Foreground" Value="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowTextBrushKey}}" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-            <Setter Property="VerticalContentAlignment" Value="Center" />
-            <Setter Property="Padding" Value="1,2,0,2" />
-            <Setter Property="FocusVisualStyle" Value="{StaticResource TreeViewItemFocusVisual}" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type TreeViewItem}">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" MinWidth="19" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition />
-                            </Grid.RowDefinitions>
-                            <Border x:Name="SelectionBd"
-                                    Grid.ColumnSpan="2"
-                                    Background="Transparent"
-                                    SnapsToDevicePixels="True" />
-                            <ToggleButton x:Name="Expander"
-                                          Style="{StaticResource ExpandCollapseToggleStyle}"
-                                          ClickMode="Press"
-                                          IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}" />
-                            <Border x:Name="Bd"
-                                    Grid.Column="1"
-                                    Background="{TemplateBinding Background}"
-                                    BorderBrush="{TemplateBinding BorderBrush}"
-                                    BorderThickness="{TemplateBinding BorderThickness}"
-                                    Padding="{TemplateBinding Padding}"
-                                    SnapsToDevicePixels="True">
-                                <ContentPresenter x:Name="PART_Header"
-                                                  ContentSource="Header"
-                                                  HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                  SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
-                            </Border>
-                            <ItemsPresenter x:Name="ItemsHost"
-                                            Grid.Row="1"
-                                            Grid.Column="1" />
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsExpanded" Value="False">
-                                <Setter TargetName="ItemsHost" Property="Visibility" Value="Collapsed" />
-                            </Trigger>
-                            <Trigger Property="HasItems" Value="False">
-                                <Setter TargetName="Expander" Property="Visibility" Value="Hidden" />
-                            </Trigger>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="SelectionBd" Property="Background" Value="#40808080" />
-                            </Trigger>
-                            <MultiTrigger>
-                                <MultiTrigger.Conditions>
-                                    <Condition Property="IsSelected" Value="True" />
-                                    <Condition Property="IsSelectionActive" Value="False" />
-                                </MultiTrigger.Conditions>
-                                <Setter TargetName="SelectionBd" Property="Background" Value="#30808080" />
-                            </MultiTrigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-            <Style.Triggers>
-                <DataTrigger Binding="{Binding IsFolder}" Value="True">
-                    <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
-                </DataTrigger>
-            </Style.Triggers>
-        </Style>
-
+        <!-- Folder Data Template -->
         <HierarchicalDataTemplate DataType="{x:Type local:FolderNodeViewModel}"
                                   ItemsSource="{Binding Children}">
-            <Border Padding="0,1">
+            <Border Padding="0,2">
                 <Border.ContextMenu>
                     <ContextMenu Style="{StaticResource ThemedContextMenuStyle}">
                         <MenuItem Header="Move to Solution" 
@@ -303,52 +194,39 @@
                                   Visibility="{Binding IsRoot, Converter={StaticResource BoolToVisibilityInverseConverter}}" />
                     </ContextMenu>
                 </Border.ContextMenu>
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="5" />
-                        <ColumnDefinition Width="{Binding NameColumnWidth, RelativeSource={RelativeSource AncestorType=local:BookmarkManagerControl}}" />
-                        <ColumnDefinition Width="4" />
-                        <ColumnDefinition Width="{Binding FileColumnWidth, RelativeSource={RelativeSource AncestorType=local:BookmarkManagerControl}}" />
-                        <ColumnDefinition Width="4" />
-                        <ColumnDefinition Width="{Binding LineTextColumnWidth, RelativeSource={RelativeSource AncestorType=local:BookmarkManagerControl}}" />
-                        <ColumnDefinition Width="4" />
-                        <ColumnDefinition Width="{Binding LineColumnWidth, RelativeSource={RelativeSource AncestorType=local:BookmarkManagerControl}}" />
-                        <ColumnDefinition Width="4" />
-                        <ColumnDefinition Width="{Binding SlotColumnWidth, RelativeSource={RelativeSource AncestorType=local:BookmarkManagerControl}}" />
-                    </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal">
-                        <!-- Folder icon for non-root -->
-                        <imaging:CrispImage Width="16"
-                                            Height="16"
-                                            Margin="0,0,6,0"
-                                            VerticalAlignment="Center"
-                                            Moniker="{x:Static imageCatalog:KnownMonikers.FolderClosed}"
-                                            Visibility="{Binding IsRoot, Converter={StaticResource BoolToVisibilityInverseConverter}}" />
-                        <!-- User icon for root personal -->
-                        <imaging:CrispImage Width="16"
-                                            Height="16"
-                                            Margin="0,0,6,0"
-                                            VerticalAlignment="Center"
-                                            Moniker="{x:Static imageCatalog:KnownMonikers.User}"
-                                            Visibility="{Binding IsPersonalRoot, Converter={StaticResource BoolToVisibilityConverter}}" />
-                        <!-- Solution icon for root solution -->
-                        <imaging:CrispImage Width="16"
-                                            Height="16"
-                                            Margin="0,0,6,0"
-                                            VerticalAlignment="Center"
-                                            Moniker="{x:Static imageCatalog:KnownMonikers.Solution}"
-                                            Visibility="{Binding IsSolutionRoot, Converter={StaticResource BoolToVisibilityConverter}}" />
-                        <TextBlock Text="{Binding FolderName}"
-                                   FontWeight="SemiBold"
-                                   VerticalAlignment="Center"
-                                   TextTrimming="CharacterEllipsis" />
-                    </StackPanel>
-                </Grid>
+                <StackPanel Orientation="Horizontal">
+                    <!-- Folder icon for non-root -->
+                    <imaging:CrispImage Width="16"
+                                        Height="16"
+                                        Margin="0,0,6,0"
+                                        VerticalAlignment="Center"
+                                        Moniker="{x:Static imageCatalog:KnownMonikers.FolderClosed}"
+                                        Visibility="{Binding IsRoot, Converter={StaticResource BoolToVisibilityInverseConverter}}" />
+                    <!-- User icon for root personal -->
+                    <imaging:CrispImage Width="16"
+                                        Height="16"
+                                        Margin="0,0,6,0"
+                                        VerticalAlignment="Center"
+                                        Moniker="{x:Static imageCatalog:KnownMonikers.User}"
+                                        Visibility="{Binding IsPersonalRoot, Converter={StaticResource BoolToVisibilityConverter}}" />
+                    <!-- Solution icon for root solution -->
+                    <imaging:CrispImage Width="16"
+                                        Height="16"
+                                        Margin="0,0,6,0"
+                                        VerticalAlignment="Center"
+                                        Moniker="{x:Static imageCatalog:KnownMonikers.Solution}"
+                                        Visibility="{Binding IsSolutionRoot, Converter={StaticResource BoolToVisibilityConverter}}" />
+                    <TextBlock Text="{Binding FolderName}"
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" />
+                </StackPanel>
             </Border>
         </HierarchicalDataTemplate>
 
+        <!-- Bookmark Data Template -->
         <DataTemplate DataType="{x:Type local:BookmarkItemNodeViewModel}">
-            <Border Padding="0,1">
+            <Border Padding="0,2">
                 <Border.ContextMenu>
                     <ContextMenu Style="{StaticResource ThemedContextMenuStyle}">
                         <MenuItem Header="Navigate" Click="NavigateMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" />
@@ -415,93 +293,37 @@
                         <MenuItem Header="Delete" Click="DeleteBookmarkMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" />
                     </ContextMenu>
                 </Border.ContextMenu>
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="5" />
-                        <ColumnDefinition Width="{Binding NameColumnWidth, RelativeSource={RelativeSource AncestorType=local:BookmarkManagerControl}}" />
-                        <ColumnDefinition Width="4" />
-                        <ColumnDefinition Width="{Binding FileColumnWidth, RelativeSource={RelativeSource AncestorType=local:BookmarkManagerControl}}" />
-                        <ColumnDefinition Width="4" />
-                        <ColumnDefinition Width="{Binding LineTextColumnWidth, RelativeSource={RelativeSource AncestorType=local:BookmarkManagerControl}}" />
-                        <ColumnDefinition Width="4" />
-                        <ColumnDefinition Width="{Binding LineColumnWidth, RelativeSource={RelativeSource AncestorType=local:BookmarkManagerControl}}" />
-                        <ColumnDefinition Width="4" />
-                        <ColumnDefinition Width="{Binding SlotColumnWidth, RelativeSource={RelativeSource AncestorType=local:BookmarkManagerControl}}" />
-                    </Grid.ColumnDefinitions>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal">
-                        <Border Width="10"
-                                Height="10"
-                                Margin="0,0,6,0"
-                                CornerRadius="2"
-                                VerticalAlignment="Center"
-                                HorizontalAlignment="Left"
-                                Background="{Binding Bookmark.Color, Converter={StaticResource ColorToBrushConverter}}" />
-                        <TextBlock Text="{Binding DisplayText}"
-                                   VerticalAlignment="Center"
-                                   TextTrimming="CharacterEllipsis" />
-                    </StackPanel>
-                    <TextBlock Grid.Column="3"
-                               Margin="{Binding NonNameColumnMargin}"
-                               Text="{Binding Bookmark.RepositoryRelativePath}"
-                               VerticalAlignment="Center"
-                               TextTrimming="CharacterEllipsis" />
-                    <TextBlock Grid.Column="5"
-                               Margin="{Binding NonNameColumnMargin}"
-                               Text="{Binding Bookmark.LineText}"
-                               VerticalAlignment="Center"
-                               TextTrimming="CharacterEllipsis" />
-                    <TextBlock Grid.Column="7"
-                               Margin="{Binding NonNameColumnMargin}"
-                               Text="{Binding Bookmark.LineNumber}"
-                               VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="9"
-                               Margin="{Binding NonNameColumnMargin}"
-                               Text="{Binding Bookmark.SlotNumber}"
-                               VerticalAlignment="Center" />
-                </Grid>
+                <StackPanel Orientation="Horizontal">
+                    <Border Width="10"
+                            Height="10"
+                            Margin="0,0,6,0"
+                            CornerRadius="2"
+                            VerticalAlignment="Center"
+                            HorizontalAlignment="Left"
+                            Background="{Binding Bookmark.Color, Converter={StaticResource ColorToBrushConverter}}" />
+                    <TextBlock VerticalAlignment="Center" TextTrimming="CharacterEllipsis">
+                        <TextBlock.Text>
+                            <MultiBinding StringFormat="{}{0} - {1}:{2}">
+                                <Binding Path="DisplayText" />
+                                <Binding Path="Bookmark.FileName" />
+                                <Binding Path="Bookmark.LineNumber" />
+                            </MultiBinding>
+                        </TextBlock.Text>
+                        <TextBlock.ToolTip>
+                            <StackPanel>
+                                <TextBlock Text="{Binding DisplayText}" FontWeight="SemiBold" />
+                                <TextBlock Text="{Binding Bookmark.RepositoryRelativePath}" Opacity="0.7" />
+                                <TextBlock Text="{Binding Bookmark.LineText}" FontStyle="Italic" TextTrimming="CharacterEllipsis" MaxWidth="400" />
+                            </StackPanel>
+                        </TextBlock.ToolTip>
+                    </TextBlock>
+                </StackPanel>
             </Border>
         </DataTemplate>
     </UserControl.Resources>
 
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-
-        <!-- Column Headers -->
-        <Border Grid.Row="0"
-                Background="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarGradientBeginBrushKey}}"
-                BorderThickness="0,0,0,1"
-                BorderBrush="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowBorderBrushKey}}"
-                Padding="0,4,6,4">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="25" />
-                    <ColumnDefinition Width="{Binding NameColumnWidth, ElementName=Root, Mode=TwoWay}" MinWidth="100" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="{Binding FileColumnWidth, ElementName=Root, Mode=TwoWay}" MinWidth="100" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="{Binding LineTextColumnWidth, ElementName=Root, Mode=TwoWay}" MinWidth="50" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="{Binding LineColumnWidth, ElementName=Root, Mode=TwoWay}" MinWidth="40" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="{Binding SlotColumnWidth, ElementName=Root, Mode=TwoWay}" MinWidth="40" />
-                </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="1" Text="Name" FontWeight="SemiBold" />
-                <GridSplitter Grid.Column="2" Style="{StaticResource ColumnSplitterStyle}" ResizeBehavior="PreviousAndNext" />
-                <TextBlock Grid.Column="3" Text="File" FontWeight="SemiBold" Margin="4,0,0,0" />
-                <GridSplitter Grid.Column="4" Style="{StaticResource ColumnSplitterStyle}" ResizeBehavior="PreviousAndNext" />
-                <TextBlock Grid.Column="5" Text="Line Text" FontWeight="SemiBold" Margin="4,0,0,0" />
-                <GridSplitter Grid.Column="6" Style="{StaticResource ColumnSplitterStyle}" ResizeBehavior="PreviousAndNext" />
-                <TextBlock Grid.Column="7" Text="Line" FontWeight="SemiBold" Margin="4,0,0,0" />
-                <GridSplitter Grid.Column="8" Style="{StaticResource ColumnSplitterStyle}" ResizeBehavior="PreviousAndNext" />
-                <TextBlock Grid.Column="9" Text="Slot" FontWeight="SemiBold" Margin="4,0,0,0" />
-            </Grid>
-        </Border>
-
         <TreeView x:Name="BookmarkTreeView"
-                  Grid.Row="1"
                   ItemsSource="{Binding RootNodes}"
                   SelectedItemChanged="BookmarkTreeView_SelectedItemChanged"
                   MouseDoubleClick="BookmarkTreeView_MouseDoubleClick"
@@ -512,12 +334,100 @@
                   DragOver="BookmarkTreeView_DragOver"
                   Drop="BookmarkTreeView_Drop"
                   BorderThickness="0"
+                  Padding="0,0,0,20"
+                  toolkit:Themes.UseVsTheme="False"
                   Background="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowBackgroundBrushKey}}"
-                  Foreground="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowTextBrushKey}}"
-                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
-                  ScrollViewer.VerticalScrollBarVisibility="Auto"
-                  ItemContainerStyle="{StaticResource BookmarkTreeViewItemStyle}"
+                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                  ScrollViewer.CanContentScroll="True"
+                  VirtualizingStackPanel.IsVirtualizing="True"
+                  VirtualizingStackPanel.VirtualizationMode="Recycling"
                   AutomationProperties.Name="Bookmark list"
-                  AutomationProperties.HelpText="List of bookmarks organized by folder. Press Enter to navigate, Delete to remove, F2 to rename." />
+                  AutomationProperties.HelpText="List of bookmarks organized by folder. Press Enter to navigate, Delete to remove, F2 to rename.">
+            <TreeView.ItemContainerStyle>
+                <Style TargetType="TreeViewItem">
+                    <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                    <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                    <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="Foreground"
+                            Value="{DynamicResource {x:Static platformui:EnvironmentColors.ToolWindowTextBrushKey}}" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="TreeViewItem">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto" />
+                                        <RowDefinition />
+                                    </Grid.RowDefinitions>
+
+                                    <!-- Full-width selection background using negative margin + padding trick -->
+                                    <Border x:Name="SelectionBd"
+                                            Background="Transparent"
+                                            Margin="-1000,0,0,0"
+                                            Padding="1000,0,0,0" />
+
+                                    <!-- Accent line on left edge (like Solution Explorer) -->
+                                    <Rectangle x:Name="AccentLine"
+                                               Width="2"
+                                               HorizontalAlignment="Left"
+                                               Margin="-1000,0,0,0"
+                                               Fill="Transparent" />
+
+                                    <!-- Header row with expander and content -->
+                                    <Grid Margin="{Binding RelativeSource={RelativeSource TemplatedParent},
+                                                          Converter={StaticResource IndentConverter}}">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" MinWidth="19" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <ToggleButton x:Name="Expander"
+                                                      Style="{StaticResource ExpandCollapseToggle}"
+                                                      ClickMode="Press"
+                                                      IsChecked="{Binding IsExpanded, RelativeSource={RelativeSource TemplatedParent}}" />
+                                        <ContentPresenter x:Name="PART_Header"
+                                                          Grid.Column="1"
+                                                          ContentSource="Header"
+                                                          HorizontalAlignment="Left"
+                                                          Margin="0,2" />
+                                    </Grid>
+
+                                    <ItemsPresenter x:Name="ItemsHost"
+                                                    Grid.Row="1"
+                                                    Visibility="Collapsed" />
+                                </Grid>
+
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsExpanded" Value="True">
+                                        <Setter TargetName="ItemsHost" Property="Visibility" Value="Visible" />
+                                    </Trigger>
+                                    <Trigger Property="HasItems" Value="False">
+                                        <Setter TargetName="Expander" Property="Visibility" Value="Hidden" />
+                                    </Trigger>
+                                    <!-- Selected + focused: show accent line -->
+                                    <MultiTrigger>
+                                        <MultiTrigger.Conditions>
+                                            <Condition Property="IsSelected" Value="True" />
+                                            <Condition Property="IsSelectionActive" Value="True" />
+                                        </MultiTrigger.Conditions>
+                                        <Setter TargetName="SelectionBd" Property="Background" 
+                                                Value="{StaticResource TreeViewSelectionBrush}" />
+                                        <Setter TargetName="AccentLine" Property="Fill" 
+                                                Value="{DynamicResource {x:Static platformui:TreeViewColors.SelectedItemActiveBrushKey}}" />
+                                    </MultiTrigger>
+                                    <!-- Selected + unfocused: subtle background only -->
+                                    <MultiTrigger>
+                                        <MultiTrigger.Conditions>
+                                            <Condition Property="IsSelected" Value="True" />
+                                            <Condition Property="IsSelectionActive" Value="False" />
+                                        </MultiTrigger.Conditions>
+                                        <Setter TargetName="SelectionBd" Property="Background" 
+                                                Value="{StaticResource TreeViewSelectionBrush}" />
+                                    </MultiTrigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </TreeView.ItemContainerStyle>
+        </TreeView>
     </Grid>
 </UserControl>

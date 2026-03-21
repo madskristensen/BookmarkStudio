@@ -211,6 +211,44 @@ namespace BookmarkStudio
             }
         }
 
+        public async Task<IReadOnlyList<ManagedBookmark>> UpdateWorkspaceAtLocationAsync(
+            BookmarkStorageLocation location,
+            Action<BookmarkWorkspaceState> updateAction,
+            CancellationToken cancellationToken)
+        {
+            await _repositoryGate.WaitAsync(cancellationToken);
+            try
+            {
+                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                await _metadataStore.UpdateWorkspaceAtLocationAsync(solutionPath, location, updateAction, cancellationToken);
+
+                // Refresh dual state to update cache
+                DualBookmarkWorkspaceState dualState = await _metadataStore.LoadDualWorkspaceAsync(solutionPath, cancellationToken);
+
+                List<ManagedBookmark> allBookmarks = new List<ManagedBookmark>();
+                allBookmarks.AddRange(BookmarkRepositoryService.ToManagedBookmarks(dualState.PersonalState.Bookmarks));
+                allBookmarks.AddRange(BookmarkRepositoryService.ToManagedBookmarks(dualState.SolutionState.Bookmarks));
+
+                HashSet<string> allFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (string path in dualState.PersonalState.FolderPaths)
+                {
+                    allFolders.Add(path);
+                }
+
+                foreach (string path in dualState.SolutionState.FolderPaths)
+                {
+                    allFolders.Add(path);
+                }
+
+                SetCachedState(allBookmarks, allFolders);
+                return _cachedBookmarks;
+            }
+            finally
+            {
+                _repositoryGate.Release();
+            }
+        }
+
         public async Task<string> GetStoragePathAsync(CancellationToken cancellationToken)
         {
             await _repositoryGate.WaitAsync(cancellationToken);
@@ -238,6 +276,53 @@ namespace BookmarkStudio
             {
                 string solutionPath = await GetSolutionPathAsync(cancellationToken);
                 return await _metadataStore.MoveToLocationAsync(solutionPath, targetLocation, cancellationToken);
+            }
+            finally
+            {
+                _repositoryGate.Release();
+            }
+        }
+
+        public async Task<DualBookmarkWorkspaceState> RefreshDualAsync(CancellationToken cancellationToken)
+        {
+            await _repositoryGate.WaitAsync(cancellationToken);
+            try
+            {
+                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                DualBookmarkWorkspaceState dualState = await _metadataStore.LoadDualWorkspaceAsync(solutionPath, cancellationToken);
+
+                // Combine and cache all bookmarks
+                List<ManagedBookmark> allBookmarks = new List<ManagedBookmark>();
+                allBookmarks.AddRange(BookmarkRepositoryService.ToManagedBookmarks(dualState.PersonalState.Bookmarks));
+                allBookmarks.AddRange(BookmarkRepositoryService.ToManagedBookmarks(dualState.SolutionState.Bookmarks));
+
+                HashSet<string> allFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (string path in dualState.PersonalState.FolderPaths)
+                {
+                    allFolders.Add(path);
+                }
+
+                foreach (string path in dualState.SolutionState.FolderPaths)
+                {
+                    allFolders.Add(path);
+                }
+
+                SetCachedState(allBookmarks, allFolders);
+                return dualState;
+            }
+            finally
+            {
+                _repositoryGate.Release();
+            }
+        }
+
+        public async Task MoveBookmarkToStorageAsync(string bookmarkId, BookmarkStorageLocation targetLocation, CancellationToken cancellationToken)
+        {
+            await _repositoryGate.WaitAsync(cancellationToken);
+            try
+            {
+                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                await _metadataStore.MoveBookmarkBetweenLocationsAsync(solutionPath, bookmarkId, targetLocation, cancellationToken);
             }
             finally
             {

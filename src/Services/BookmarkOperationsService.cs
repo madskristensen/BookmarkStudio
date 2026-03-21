@@ -1,11 +1,9 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using EnvDTE;
 using EnvDTE80;
-using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
 
 namespace BookmarkStudio
@@ -27,11 +25,17 @@ namespace BookmarkStudio
         public Task<IReadOnlyList<ManagedBookmark>> RefreshAsync(CancellationToken cancellationToken)
             => _session.RefreshAsync(cancellationToken);
 
+        public Task<DualBookmarkWorkspaceState> RefreshDualAsync(CancellationToken cancellationToken)
+            => _session.RefreshDualAsync(cancellationToken);
+
         public Task<BookmarkStorageInfo> GetStorageInfoAsync(CancellationToken cancellationToken)
             => _session.GetStorageInfoAsync(cancellationToken);
 
         public Task<BookmarkStorageInfo> MoveToLocationAsync(BookmarkStorageLocation targetLocation, CancellationToken cancellationToken)
             => _session.MoveToLocationAsync(targetLocation, cancellationToken);
+
+        public Task MoveBookmarkToStorageAsync(string bookmarkId, BookmarkStorageLocation targetLocation, CancellationToken cancellationToken)
+            => _session.MoveBookmarkToStorageAsync(bookmarkId, targetLocation, cancellationToken);
 
         public Task<ManagedBookmark> GetBookmarkAsync(string? bookmarkId, CancellationToken cancellationToken)
             => GetRequiredBookmarkAsync(bookmarkId, cancellationToken);
@@ -293,6 +297,23 @@ namespace BookmarkStudio
             }, cancellationToken);
         }
 
+        public async Task<IReadOnlyList<ManagedBookmark>> DeleteFolderRecursiveAsync(string? folderPath, BookmarkStorageLocation storageLocation, CancellationToken cancellationToken)
+        {
+            string normalizedFolderPath = BookmarkIdentity.NormalizeFolderPath(folderPath);
+            if (string.IsNullOrWhiteSpace(normalizedFolderPath))
+            {
+                throw new ArgumentException("Select a folder to delete.", nameof(folderPath));
+            }
+
+            return await _session.UpdateWorkspaceAtLocationAsync(storageLocation, workspace =>
+            {
+                if (!BookmarkRepositoryService.DeleteFolderRecursive(workspace, normalizedFolderPath))
+                {
+                    throw new InvalidOperationException("The selected folder could not be deleted.");
+                }
+            }, cancellationToken);
+        }
+
         public Task<IReadOnlyList<ManagedBookmark>> ClearAllAsync(CancellationToken cancellationToken)
             => _session.UpdateWorkspaceAsync(workspace =>
             {
@@ -329,6 +350,83 @@ namespace BookmarkStudio
             return await _session.UpdateWorkspaceAsync(workspace =>
             {
                 BookmarkRepositoryService.MoveBookmarkToFolder(workspace, targetBookmark.BookmarkId, folderPath);
+            }, cancellationToken);
+        }
+
+        public async Task<IReadOnlyList<ManagedBookmark>> MoveBookmarkToFolderAsync(string? bookmarkId, string? folderPath, BookmarkStorageLocation storageLocation, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(bookmarkId))
+            {
+                throw new ArgumentException("Select a bookmark to move.", nameof(bookmarkId));
+            }
+
+            return await _session.UpdateWorkspaceAtLocationAsync(storageLocation, workspace =>
+            {
+                BookmarkRepositoryService.MoveBookmarkToFolder(workspace, bookmarkId, folderPath);
+            }, cancellationToken);
+        }
+
+        public async Task<IReadOnlyList<ManagedBookmark>> MoveFolderAsync(string? sourceFolderPath, string? targetFolderPath, CancellationToken cancellationToken)
+        {
+            string sourcePath = BookmarkIdentity.NormalizeFolderPath(sourceFolderPath);
+            string targetPath = BookmarkIdentity.NormalizeFolderPath(targetFolderPath);
+
+            if (string.IsNullOrWhiteSpace(sourcePath))
+            {
+                throw new ArgumentException("Select a folder to move.", nameof(sourceFolderPath));
+            }
+
+            if (string.Equals(sourcePath, targetPath, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("Source and target folders are the same.", nameof(targetFolderPath));
+            }
+
+            if (targetPath.StartsWith(sourcePath + "/", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("Cannot move a folder into itself or a descendant.", nameof(targetFolderPath));
+            }
+
+            return await _session.UpdateWorkspaceAsync(workspace =>
+            {
+                // Check if target path already exists
+                if (workspace.FolderPaths.Contains(targetPath, StringComparer.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException("A folder with the same name already exists at the target location.");
+                }
+
+                BookmarkRepositoryService.MoveFolder(workspace, sourcePath, targetPath);
+            }, cancellationToken);
+        }
+
+        public async Task<IReadOnlyList<ManagedBookmark>> MoveFolderAsync(string? sourceFolderPath, string? targetFolderPath, BookmarkStorageLocation storageLocation, CancellationToken cancellationToken)
+        {
+            string sourcePath = BookmarkIdentity.NormalizeFolderPath(sourceFolderPath);
+            string targetPath = BookmarkIdentity.NormalizeFolderPath(targetFolderPath);
+
+            if (string.IsNullOrWhiteSpace(sourcePath))
+            {
+                throw new ArgumentException("Select a folder to move.", nameof(sourceFolderPath));
+            }
+
+            if (string.Equals(sourcePath, targetPath, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("Source and target folders are the same.", nameof(targetFolderPath));
+            }
+
+            if (targetPath.StartsWith(sourcePath + "/", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new ArgumentException("Cannot move a folder into itself or a descendant.", nameof(targetFolderPath));
+            }
+
+            return await _session.UpdateWorkspaceAtLocationAsync(storageLocation, workspace =>
+            {
+                // Check if target path already exists
+                if (workspace.FolderPaths.Contains(targetPath, StringComparer.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException("A folder with the same name already exists at the target location.");
+                }
+
+                BookmarkRepositoryService.MoveFolder(workspace, sourcePath, targetPath);
             }, cancellationToken);
         }
 
