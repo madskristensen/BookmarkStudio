@@ -40,6 +40,8 @@ namespace BookmarkStudio
         public const int AddBookmarkCommand = 0x0102;
         public const int RefreshBookmarkManagerCommand = 0x0101;
         public const int AddFolderCommand = 0x0103;
+        public const int ToggleBookmarkCommand = 0x0104;
+        public const int GoToNextBookmarkCommand = 0x0105;
         public const int ExportBookmarksCommand = 0x0404;
         public const int GoToShortcut1Command = 0x0500;
         public const int GoToShortcut2Command = 0x0501;

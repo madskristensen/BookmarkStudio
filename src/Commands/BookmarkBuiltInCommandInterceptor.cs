@@ -16,12 +16,48 @@ namespace BookmarkStudio
             }
 
             _isInitialized = true;
+
+            General.Saved += OnSettingsSaved;
+
+            if (General.Instance.InterceptBuiltInCommands)
+            {
+                await RegisterInterceptionsAsync();
+            }
+        }
+
+        private static void OnSettingsSaved(General settings)
+        {
+            ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
+            {
+                if (settings.InterceptBuiltInCommands && _registrations.Count == 0)
+                {
+                    await RegisterInterceptionsAsync();
+                }
+                else if (!settings.InterceptBuiltInCommands && _registrations.Count > 0)
+                {
+                    UnregisterInterceptions();
+                }
+            }).FireAndForget();
+        }
+
+        private static async Task RegisterInterceptionsAsync()
+        {
             _registrations.Add(await VS.Commands.InterceptAsync(VSConstants.VSStd2KCmdID.TOGGLETEMPBOOKMARK, () => Execute(cancellationToken => BookmarkCommandActions.ToggleBookmarkAsync(cancellationToken))));
             _registrations.Add(await VS.Commands.InterceptAsync(VSConstants.VSStd2KCmdID.GOTONEXTBOOKMARK, () => Execute(cancellationToken => BookmarkCommandActions.GoToNextBookmarkAsync(cancellationToken))));
             _registrations.Add(await VS.Commands.InterceptAsync(VSConstants.VSStd2KCmdID.GOTOPREVBOOKMARK, () => Execute(cancellationToken => BookmarkCommandActions.GoToPreviousBookmarkAsync(cancellationToken))));
             _registrations.Add(await VS.Commands.InterceptAsync(VSConstants.VSStd2KCmdID.ECMD_GOTONEXTBOOKMARKINDOC, () => Execute(cancellationToken => BookmarkCommandActions.GoToNextBookmarkInDocumentAsync(cancellationToken))));
             _registrations.Add(await VS.Commands.InterceptAsync(VSConstants.VSStd2KCmdID.ECMD_GOTOPREVBOOKMARKINDOC, () => Execute(cancellationToken => BookmarkCommandActions.GoToPreviousBookmarkInDocumentAsync(cancellationToken))));
             _registrations.Add(await VS.Commands.InterceptAsync(VSConstants.VSStd2KCmdID.ECMD_DELETEALLBOOKMARKSINDOC, () => Execute(cancellationToken => BookmarkCommandActions.ClearBookmarksInDocumentAsync(cancellationToken))));
+        }
+
+        private static void UnregisterInterceptions()
+        {
+            foreach (IDisposable registration in _registrations)
+            {
+                registration.Dispose();
+            }
+
+            _registrations.Clear();
         }
 
         private static CommandProgression Execute(Func<CancellationToken, Task> action)

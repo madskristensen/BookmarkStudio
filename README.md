@@ -107,13 +107,25 @@ From the Bookmark Manager, right-click a bookmark to assign it to a different sh
 | Action                        | Shortcut                        |
 | ----------------------------- | ------------------------------- |
 | Toggle bookmark               | Ctrl+K, Ctrl+K                  |
+| Toggle bookmark (direct)      | Alt+Shift+Space                 |
 | Next bookmark                 | Ctrl+K, Ctrl+N                  |
+| Next bookmark (direct)        | Alt+Shift+N                     |
 | Previous bookmark             | Ctrl+K, Ctrl+P                  |
 | Next bookmark in document     | Ctrl+Shift+K, Ctrl+Shift+N      |
 | Previous bookmark in document | Ctrl+Shift+K, Ctrl+Shift+P      |
 | Clear bookmarks in document   | Ctrl+Shift+K, Ctrl+Shift+L      |
 | Jump to bookmark 1-9          | Alt+Shift+1 through Alt+Shift+9 |
 | Open Bookmark Manager         | Alt+Shift+B                     |
+
+## Settings
+
+Access settings via **Tools > Options > Bookmark Studio > General**.
+
+| Setting                            | Description                                                                                                   |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Prompt for bookmark name           | When enabled, a dialog prompts for a name when creating a new bookmark.                                       |
+| Default storage location           | Choose where new bookmarks are stored: *Personal* (.vs folder) or *Workspace* (solution root for sharing).   |
+| Intercept built-in bookmark commands | When enabled, the standard Visual Studio bookmark commands (Ctrl+K, Ctrl+K etc.) use Bookmark Studio instead. Disable this if you want to use the native bookmarks alongside Bookmark Studio - use the direct shortcuts (Alt+Shift+Space, Alt+Shift+N) for Bookmark Studio commands. |
 
 ## Sharing Bookmarks
 

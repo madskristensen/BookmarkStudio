@@ -118,6 +118,26 @@
         </Strings>
       </Button>
 
+      <Button guid="BookmarkStudio" id="ToggleBookmarkCommand" priority="0x0120" type="Button">
+        <Icon guid="ImageCatalogGuid" id="Bookmark" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>CommandWellOnly</CommandFlag>
+        <Strings>
+          <ButtonText>Toggle Bookmark</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.ToggleBookmark</LocCanonicalName>
+        </Strings>
+      </Button>
+
+      <Button guid="BookmarkStudio" id="GoToNextBookmarkCommand" priority="0x0121" type="Button">
+        <Icon guid="ImageCatalogGuid" id="GoToLast" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>CommandWellOnly</CommandFlag>
+        <Strings>
+          <ButtonText>Go To Next Bookmark</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.GoToNextBookmark</LocCanonicalName>
+        </Strings>
+      </Button>
+
       <Button guid="BookmarkStudio" id="GoToShortcut1Command" priority="0x0500" type="Button">
         <Icon guid="ImageCatalogGuid" id="GoToLast" />
         <CommandFlag>IconIsMoniker</CommandFlag>
@@ -307,6 +327,8 @@
 
   <KeyBindings>
     <KeyBinding guid="BookmarkStudio" id="OpenBookmarkManagerCommand" editor="guidVSStd97" key1="B" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="ToggleBookmarkCommand" editor="guidVSStd97" key1="VK_SPACE" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToNextBookmarkCommand" editor="guidVSStd97" key1="N" mod1="Alt Shift" />
 
     <KeyBinding guid="BookmarkStudio" id="GoToShortcut1Command" editor="guidVSStd97" key1="1" mod1="Alt Shift" />
     <KeyBinding guid="BookmarkStudio" id="GoToShortcut2Command" editor="guidVSStd97" key1="2" mod1="Alt Shift" />
@@ -330,7 +352,7 @@
   </KeyBindings>
 
   <CommandPlacements>
-    <CommandPlacement guid="VSStd2KCmdID" id="ToggleBookmark">
+    <CommandPlacement guid="BookmarkStudio" id="ToggleBookmarkCommand">
       <Parent guid="BookmarkStudio" id="MarginContextMenuBookmarkGroup"/>
     </CommandPlacement>
     <CommandPlacement guid="BookmarkStudio" id="OpenBookmarkManagerCommand" priority="0x0100">
@@ -383,6 +405,8 @@
       <IDSymbol name="AddBookmarkCommand" value="0x0102" />
       <IDSymbol name="RefreshBookmarkManagerCommand" value="0x0101" />
       <IDSymbol name="AddFolderCommand" value="0x0103" />
+      <IDSymbol name="ToggleBookmarkCommand" value="0x0104" />
+      <IDSymbol name="GoToNextBookmarkCommand" value="0x0105" />
       <IDSymbol name="ExportBookmarksCommand" value="0x0404" />
       <IDSymbol name="GoToShortcut1Command" value="0x0500" />
       <IDSymbol name="GoToShortcut2Command" value="0x0501" />

@@ -23,5 +23,11 @@ namespace BookmarkStudio
         [DefaultValue(BookmarkStorageLocation.Personal)]
         [TypeConverter(typeof(EnumConverter))]
         public BookmarkStorageLocation DefaultStorageLocation { get; set; } = BookmarkStorageLocation.Personal;
+
+        [Category("Commands")]
+        [DisplayName("Intercept old commands")]
+        [Description("When enabled, the built-in Visual Studio bookmark commands (Ctrl+K,K etc.) will use Bookmark Studio instead.")]
+        [DefaultValue(true)]
+        public bool InterceptBuiltInCommands { get; set; } = true;
     }
 }
