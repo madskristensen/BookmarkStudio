@@ -38,10 +38,10 @@ public class RepositoryAndModelTests
     {
         BookmarkMetadata[] metadata =
         [
-            new() { BookmarkId = "3", Group = "B", DocumentPath = @"C:\repo\b.cs", LineNumber = 8, SlotNumber = null },
-            new() { BookmarkId = "2", Group = "A", DocumentPath = @"C:\repo\a.cs", LineNumber = 20, SlotNumber = 2 },
-            new() { BookmarkId = "1", Group = "A", DocumentPath = @"C:\repo\a.cs", LineNumber = 10, SlotNumber = 1 },
-            new() { BookmarkId = "4", Group = "A", DocumentPath = @"C:\repo\a.cs", LineNumber = 2, SlotNumber = null },
+            new() { BookmarkId = "3", Group = "B", DocumentPath = @"C:\repo\b.cs", LineNumber = 8, ShortcutNumber = null },
+            new() { BookmarkId = "2", Group = "A", DocumentPath = @"C:\repo\a.cs", LineNumber = 20, ShortcutNumber = 2 },
+            new() { BookmarkId = "1", Group = "A", DocumentPath = @"C:\repo\a.cs", LineNumber = 10, ShortcutNumber = 1 },
+            new() { BookmarkId = "4", Group = "A", DocumentPath = @"C:\repo\a.cs", LineNumber = 2, ShortcutNumber = null },
         ];
 
         IReadOnlyList<ManagedBookmark> managed = BookmarkRepositoryService.ToManagedBookmarks(metadata);
@@ -77,7 +77,7 @@ public class RepositoryAndModelTests
             DocumentPath = @"C:\repo\file.cs",
             LineNumber = 15,
             LineText = "  preview text  ",
-            SlotNumber = 4,
+            ShortcutNumber = 4,
             Label = "label",
             Group = "group/sub",
             Color = BookmarkColor.Teal,
@@ -89,7 +89,7 @@ public class RepositoryAndModelTests
         Assert.AreEqual(@"C:\repo\file.cs", managed.DocumentPath);
         Assert.AreEqual(15, managed.LineNumber);
         Assert.AreEqual("preview text", managed.LineText);
-        Assert.AreEqual(4, managed.SlotNumber);
+        Assert.AreEqual(4, managed.ShortcutNumber);
         Assert.AreEqual("label", managed.Label);
         Assert.AreEqual("group/sub", managed.Group);
         Assert.AreEqual(BookmarkColor.Teal, managed.Color);
@@ -112,7 +112,7 @@ public class RepositoryAndModelTests
             DocumentPath = Path.Combine(solutionDirectory, "src", "file.cs"),
             LineNumber = 23,
             LineText = "preview",
-            SlotNumber = 2,
+            ShortcutNumber = 2,
             Label = "label",
             Group = "FolderA/Sub",
             Color = BookmarkColor.Green,
@@ -157,9 +157,9 @@ public class RepositoryAndModelTests
 
         await store.SaveAsync(solutionPath, new[]
         {
-            new BookmarkMetadata { BookmarkId = "a", DocumentPath = @"C:\repo\a.cs", LineNumber = 1, SlotNumber = 1 },
-            new BookmarkMetadata { BookmarkId = "b", DocumentPath = @"C:\repo\b.cs", LineNumber = 2, SlotNumber = 2 },
-            new BookmarkMetadata { BookmarkId = "c", DocumentPath = @"C:\repo\c.cs", LineNumber = 3, SlotNumber = 4 },
+            new BookmarkMetadata { BookmarkId = "a", DocumentPath = @"C:\repo\a.cs", LineNumber = 1, ShortcutNumber = 1 },
+            new BookmarkMetadata { BookmarkId = "b", DocumentPath = @"C:\repo\b.cs", LineNumber = 2, ShortcutNumber = 2 },
+            new BookmarkMetadata { BookmarkId = "c", DocumentPath = @"C:\repo\c.cs", LineNumber = 3, ShortcutNumber = 4 },
         }, CancellationToken.None);
 
         var snapshot = new BookmarkSnapshot
@@ -172,7 +172,7 @@ public class RepositoryAndModelTests
         ManagedBookmark? added = await repository.ToggleAsync(solutionPath, snapshot, CancellationToken.None);
 
         Assert.IsNotNull(added);
-        Assert.AreEqual(3, added.SlotNumber);
+        Assert.AreEqual(3, added.ShortcutNumber);
         Assert.AreEqual("Bookmark1", added.Label);
     }
 
@@ -406,10 +406,10 @@ public class RepositoryAndModelTests
     public void FindNextAvailableSlot_WhenAllSlotsUsed_ReturnsNull()
     {
         BookmarkMetadata[] bookmarks = Enumerable.Range(1, 9)
-            .Select(slot => new BookmarkMetadata { BookmarkId = slot.ToString(), SlotNumber = slot })
+            .Select(slot => new BookmarkMetadata { BookmarkId = slot.ToString(), ShortcutNumber = slot })
             .ToArray();
 
-        int? result = BookmarkRepositoryService.FindNextAvailableSlot(bookmarks);
+        int? result = BookmarkRepositoryService.FindNextAvailableShortcut(bookmarks);
 
         Assert.IsNull(result);
     }
@@ -417,7 +417,7 @@ public class RepositoryAndModelTests
     [TestMethod]
     public void FindNextAvailableSlot_WhenNoBookmarks_ReturnsOne()
     {
-        int? result = BookmarkRepositoryService.FindNextAvailableSlot(Array.Empty<BookmarkMetadata>());
+        int? result = BookmarkRepositoryService.FindNextAvailableShortcut(Array.Empty<BookmarkMetadata>());
 
         Assert.AreEqual(1, result);
     }
@@ -427,13 +427,13 @@ public class RepositoryAndModelTests
     {
         BookmarkMetadata[] bookmarks =
         [
-            new() { BookmarkId = "a", SlotNumber = 1 },
-            new() { BookmarkId = "b", SlotNumber = 2 },
-            new() { BookmarkId = "c", SlotNumber = 4 },
-            new() { BookmarkId = "d", SlotNumber = 7 },
+            new() { BookmarkId = "a", ShortcutNumber = 1 },
+            new() { BookmarkId = "b", ShortcutNumber = 2 },
+            new() { BookmarkId = "c", ShortcutNumber = 4 },
+            new() { BookmarkId = "d", ShortcutNumber = 7 },
         ];
 
-        int? result = BookmarkRepositoryService.FindNextAvailableSlot(bookmarks);
+        int? result = BookmarkRepositoryService.FindNextAvailableShortcut(bookmarks);
 
         Assert.AreEqual(3, result);
     }
@@ -473,6 +473,72 @@ public class RepositoryAndModelTests
         string result = BookmarkRepositoryService.FindNextDefaultLabel(bookmarks);
 
         Assert.AreEqual("Bookmark3", result);
+    }
+
+    [TestMethod]
+    public void FindNextDefaultFolderName_WhenNoFolders_ReturnsFolder1()
+    {
+        string result = BookmarkRepositoryService.FindNextDefaultFolderName(Array.Empty<string>());
+
+        Assert.AreEqual("Folder1", result);
+    }
+
+    [TestMethod]
+    public void FindNextDefaultFolderName_WhenGapInNumbering_FillsGap()
+    {
+        string[] folderPaths =
+        [
+            "Folder1",
+            "Folder3",
+            "CustomFolder",
+        ];
+
+        string result = BookmarkRepositoryService.FindNextDefaultFolderName(folderPaths);
+
+        Assert.AreEqual("Folder2", result);
+    }
+
+    [TestMethod]
+    public void FindNextDefaultFolderName_WhenAllSequential_ReturnsNextInSequence()
+    {
+        string[] folderPaths =
+        [
+            "Folder1",
+            "Folder2",
+        ];
+
+        string result = BookmarkRepositoryService.FindNextDefaultFolderName(folderPaths);
+
+        Assert.AreEqual("Folder3", result);
+    }
+
+    [TestMethod]
+    public void FindNextDefaultFolderName_WithNestedPaths_ExtractsFolderNames()
+    {
+        string[] folderPaths =
+        [
+            "Parent/Folder1",
+            "Parent/Child/Folder2",
+            "Folder3",
+        ];
+
+        string result = BookmarkRepositoryService.FindNextDefaultFolderName(folderPaths);
+
+        Assert.AreEqual("Folder4", result);
+    }
+
+    [TestMethod]
+    public void FindNextDefaultFolderName_IsCaseInsensitive()
+    {
+        string[] folderPaths =
+        [
+            "folder1",
+            "FOLDER2",
+        ];
+
+        string result = BookmarkRepositoryService.FindNextDefaultFolderName(folderPaths);
+
+        Assert.AreEqual("Folder3", result);
     }
 
     [TestMethod]

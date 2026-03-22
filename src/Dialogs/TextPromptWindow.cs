@@ -47,6 +47,7 @@ namespace BookmarkStudio
             _inputTextBox = new TextBox
             {
                 Margin = new Thickness(0, 0, 0, 12),
+                Padding = new Thickness(4, 6, 4, 6),
                 Text = initialValue ?? string.Empty,
             };
             _inputTextBox.SetResourceReference(StyleProperty, VsResourceKeys.ThemedDialogTextBoxStyleKey);
@@ -59,7 +60,7 @@ namespace BookmarkStudio
                 Orientation = Orientation.Horizontal,
             };
 
-            var okButton = new DialogButton
+            var okButton = new Button
             {
                 Content = "OK",
                 IsDefault = true,
@@ -74,7 +75,7 @@ namespace BookmarkStudio
             okButton.Click += OkButton_Click;
             buttons.Children.Add(okButton);
 
-            var cancelButton = new DialogButton
+            var cancelButton = new Button
             {
                 Content = "Cancel",
                 IsCancel = true,

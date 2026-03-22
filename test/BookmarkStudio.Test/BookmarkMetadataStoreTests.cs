@@ -36,7 +36,7 @@ public class BookmarkMetadataStoreTests
                 DocumentPath = Path.Combine(tempDir, "src", "Program.cs"),
                 LineNumber = 42,
                 LineText = "Console.WriteLine(\"Hello\");",
-                SlotNumber = 3,
+                ShortcutNumber = 3,
                 Label = "Important entry point",
                 Group = "Core/Startup",
                 Color = BookmarkColor.Green,
@@ -51,7 +51,7 @@ public class BookmarkMetadataStoreTests
             Assert.AreEqual(original.DocumentPath, result.DocumentPath);
             Assert.AreEqual(original.LineNumber, result.LineNumber);
             Assert.AreEqual(original.LineText, result.LineText);
-            Assert.AreEqual(original.SlotNumber, result.SlotNumber);
+            Assert.AreEqual(original.ShortcutNumber, result.ShortcutNumber);
             Assert.AreEqual(original.Label, result.Label);
             Assert.AreEqual(original.Color, result.Color);
             Assert.AreEqual("Core/Startup", result.Group);
@@ -249,7 +249,7 @@ public class BookmarkMetadataStoreTests
             IReadOnlyList<BookmarkMetadata> loaded = await store.LoadAsync(solutionPath, CancellationToken.None);
 
             Assert.HasCount(1, loaded);
-            Assert.IsNull(loaded[0].SlotNumber);
+            Assert.IsNull(loaded[0].ShortcutNumber);
             Assert.AreEqual(BookmarkColor.None, loaded[0].Color);
             Assert.AreEqual(string.Empty, loaded[0].Label);
         }

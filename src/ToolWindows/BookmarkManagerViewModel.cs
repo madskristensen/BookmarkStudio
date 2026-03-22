@@ -398,6 +398,9 @@ namespace BookmarkStudio
             OnPropertyChanged(nameof(CanMoveToPersonal));
         }
 
+        public string GetNextDefaultFolderName()
+            => BookmarkRepositoryService.FindNextDefaultFolderName(_folderPaths);
+
         public async Task CreateFolderAsync(string folderName, CancellationToken cancellationToken)
         {
             string parentPath;
@@ -776,6 +779,38 @@ namespace BookmarkStudio
                 {
                     _solutionBookmarks.Add(bookmark);
                     _solutionFolderPaths.Add(bookmark.FolderPath);
+                }
+            }
+
+            // Also load explicit folder paths from the cached dual state
+            // This ensures empty folders are preserved after bookmark moves
+            DualBookmarkWorkspaceState? dualState = BookmarkStudioSession.Current.CachedDualState;
+            if (dualState is not null)
+            {
+                foreach (var folderPath in dualState.PersonalState.FolderPaths)
+                {
+                    var normalized = BookmarkIdentity.NormalizeFolderPath(folderPath);
+                    _folderPaths.Add(normalized);
+                    _personalFolderPaths.Add(normalized);
+                }
+
+                foreach (var folderPath in dualState.SolutionState.FolderPaths)
+                {
+                    var normalized = BookmarkIdentity.NormalizeFolderPath(folderPath);
+                    _folderPaths.Add(normalized);
+                    _solutionFolderPaths.Add(normalized);
+                }
+
+                // Reload expanded folders from the cached state to reflect any path changes
+                _expandedFolders.Clear();
+                foreach (var folder in dualState.PersonalState.ExpandedFolders)
+                {
+                    _expandedFolders.Add(BookmarkIdentity.NormalizeFolderPath(folder));
+                }
+
+                foreach (var folder in dualState.SolutionState.ExpandedFolders)
+                {
+                    _expandedFolders.Add(BookmarkIdentity.NormalizeFolderPath(folder));
                 }
             }
         }

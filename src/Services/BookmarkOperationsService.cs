@@ -242,7 +242,8 @@ namespace BookmarkStudio
 
         public async Task SetExpandedFoldersAsync(IEnumerable<string> expandedFolders, CancellationToken cancellationToken)
         {
-            await _session.UpdateWorkspaceAsync(workspace =>
+            // Store expanded folders in the personal workspace (user preference)
+            await _session.UpdateWorkspaceAtLocationAsync(BookmarkStorageLocation.Personal, workspace =>
             {
                 workspace.ExpandedFolders.Clear();
                 foreach (var folder in expandedFolders)

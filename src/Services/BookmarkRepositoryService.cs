@@ -201,6 +201,22 @@ namespace BookmarkStudio
                 RegisterFolderPath(state.FolderPaths, string.Concat(renamedPath, suffix));
             }
 
+            // Update expanded folders to preserve expansion state after rename
+            List<string> affectedExpandedFolders = [.. state.ExpandedFolders
+                .Where(path => string.Equals(path, sourcePath, StringComparison.OrdinalIgnoreCase)
+                    || path.StartsWith(sourcePrefix, StringComparison.OrdinalIgnoreCase))];
+
+            foreach (var folder in affectedExpandedFolders)
+            {
+                state.ExpandedFolders.Remove(folder);
+            }
+
+            foreach (var folder in affectedExpandedFolders)
+            {
+                var suffix = folder.Length == sourcePath.Length ? string.Empty : folder.Substring(sourcePath.Length);
+                state.ExpandedFolders.Add(string.Concat(renamedPath, suffix));
+            }
+
             foreach (BookmarkMetadata bookmark in state.Bookmarks)
             {
                 var group = BookmarkIdentity.NormalizeFolderPath(bookmark.Group);
@@ -364,6 +380,53 @@ namespace BookmarkStudio
             }
 
             return string.Concat(prefix, next.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
+
+        /// <summary>
+        /// Returns the next default folder name in the format "Folder1", "Folder2", etc.
+        /// </summary>
+        internal static string FindNextDefaultFolderName(IEnumerable<string> folderPaths)
+        {
+            const string prefix = "Folder";
+            var usedNumbers = new HashSet<int>();
+
+            foreach (string folderPath in folderPaths)
+            {
+                // Get the folder name (last segment of the path)
+                var folderName = GetFolderNameFromPath(folderPath);
+                if (string.IsNullOrEmpty(folderName) || !folderName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var suffix = folderName.Substring(prefix.Length);
+                if (int.TryParse(suffix, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var number) && number > 0)
+                {
+                    usedNumbers.Add(number);
+                }
+            }
+
+            var next = 1;
+            while (usedNumbers.Contains(next))
+            {
+                next++;
+            }
+
+            return string.Concat(prefix, next.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
+
+        private static string GetFolderNameFromPath(string folderPath)
+        {
+            if (string.IsNullOrEmpty(folderPath))
+            {
+                return string.Empty;
+            }
+
+            var normalized = BookmarkIdentity.NormalizeFolderPath(folderPath);
+            var separatorIndex = normalized.LastIndexOf('/');
+            return separatorIndex < 0
+                ? normalized
+                : normalized.Substring(separatorIndex + 1);
         }
 
         private static string GetParentFolderPath(string folderPath)

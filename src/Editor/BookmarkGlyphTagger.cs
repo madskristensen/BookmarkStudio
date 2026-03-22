@@ -140,17 +140,18 @@ namespace BookmarkStudio
 
         private void RefreshCachedBookmarks()
         {
-            IReadOnlyList<ManagedBookmark> bookmarks = BookmarkStudioSession.Current.CachedBookmarks
+            IReadOnlyList<ManagedBookmark> oldBookmarks = _cachedDocumentBookmarks;
+            IReadOnlyList<ManagedBookmark> newBookmarks = BookmarkStudioSession.Current.CachedBookmarks
                 .Where(MatchesDocumentPath)
                 .ToArray();
 
-            _cachedDocumentBookmarks = bookmarks;
+            _cachedDocumentBookmarks = newBookmarks;
 
             // Create or update tracking points for each bookmark
-            RebuildTrackingPoints(bookmarks);
+            RebuildTrackingPoints(oldBookmarks, newBookmarks);
         }
 
-        private void RebuildTrackingPoints(IReadOnlyList<ManagedBookmark> bookmarks)
+        private void RebuildTrackingPoints(IReadOnlyList<ManagedBookmark> oldBookmarks, IReadOnlyList<ManagedBookmark> newBookmarks)
         {
             ITextSnapshot snapshot = _buffer.CurrentSnapshot;
             var newTrackingPoints = new Dictionary<string, ITrackingPoint>(StringComparer.Ordinal);
@@ -161,31 +162,65 @@ namespace BookmarkStudio
                 existingTrackingPoints = _trackingPoints;
             }
 
-            foreach (ManagedBookmark bookmark in bookmarks)
+            // Build a lookup of old bookmark line numbers to detect explicit moves
+            var oldLineNumbers = new Dictionary<string, int>(StringComparer.Ordinal);
+            foreach (ManagedBookmark oldBookmark in oldBookmarks)
+            {
+                oldLineNumbers[oldBookmark.BookmarkId] = oldBookmark.LineNumber;
+            }
+
+            foreach (ManagedBookmark bookmark in newBookmarks)
             {
                 var targetLineIndex = bookmark.LineNumber - 1;
+
+                // Check if we have an existing tracking point
+                if (existingTrackingPoints.TryGetValue(bookmark.BookmarkId, out ITrackingPoint existingPoint))
+                {
+                    SnapshotPoint currentPoint = existingPoint.GetPoint(snapshot);
+                    var trackedLineIndex = currentPoint.GetContainingLine().LineNumber;
+
+                    // Check if the tracking point is still valid (within bounds)
+                    if (trackedLineIndex >= 0 && trackedLineIndex < snapshot.LineCount)
+                    {
+                        // Determine if this is an explicit move vs tracked position:
+                        // - If the bookmark's stored LineNumber changed AND doesn't match where the
+                        //   tracking point tracked to, it's an explicit move (e.g., drag-drop)
+                        // - If the bookmark's stored LineNumber matches the tracked position, the
+                        //   debounced update caught up - we can use either (they're the same)
+                        // - If the bookmark's stored LineNumber is stale (doesn't match tracked and
+                        //   wasn't explicitly changed), preserve the tracking point
+
+                        var wasExplicitlyMoved = false;
+                        if (oldLineNumbers.TryGetValue(bookmark.BookmarkId, out var oldLineNumber))
+                        {
+                            // Bookmark existed before - check if its line number was explicitly changed
+                            // An explicit move: old != new AND new != tracked
+                            // A tracked update: old != new AND new == tracked (debounce caught up)
+                            // Stale state: old == new AND new != tracked (tracking is ahead)
+                            var storedLineChanged = oldLineNumber != bookmark.LineNumber;
+                            var storedMatchesTracked = (bookmark.LineNumber - 1) == trackedLineIndex;
+
+                            wasExplicitlyMoved = storedLineChanged && !storedMatchesTracked;
+                        }
+
+                        if (!wasExplicitlyMoved)
+                        {
+                            // Preserve the tracking point - it has the accurate position
+                            newTrackingPoints[bookmark.BookmarkId] = existingPoint;
+                            continue;
+                        }
+
+                        // Explicit move detected - fall through to create new tracking point
+                    }
+                }
+
+                // No existing tracking point, invalid tracking point, or explicit move
+                // Create a new tracking point at the target line
                 if (targetLineIndex < 0 || targetLineIndex >= snapshot.LineCount)
                 {
                     continue;
                 }
 
-                // Check if we have an existing tracking point and if it's still on the same line
-                // as the bookmark's persisted line number. If the line number changed (e.g., via
-                // drag-and-drop), we need to create a new tracking point at the new location.
-                if (existingTrackingPoints.TryGetValue(bookmark.BookmarkId, out ITrackingPoint existingPoint))
-                {
-                    SnapshotPoint currentPoint = existingPoint.GetPoint(snapshot);
-                    var currentLineIndex = currentPoint.GetContainingLine().LineNumber;
-
-                    // If the tracking point is still on the target line, preserve it
-                    if (currentLineIndex == targetLineIndex)
-                    {
-                        newTrackingPoints[bookmark.BookmarkId] = existingPoint;
-                        continue;
-                    }
-                }
-
-                // Create new tracking point at the bookmark's line number
                 ITextSnapshotLine line = snapshot.GetLineFromLineNumber(targetLineIndex);
 
                 // Create tracking point at the start of the line

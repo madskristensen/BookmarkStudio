@@ -614,7 +614,8 @@ namespace BookmarkStudio
 
         private async Task PromptCreateFolderInternalAsync()
         {
-            var folderName = TextPromptWindow.Show("Add Folder", "Enter a folder name:", string.Empty);
+            var defaultName = _viewModel.GetNextDefaultFolderName();
+            var folderName = TextPromptWindow.Show("Add Folder", "Enter a folder name:", defaultName, selectTextOnLoad: true);
             if (folderName is null)
             {
                 return;

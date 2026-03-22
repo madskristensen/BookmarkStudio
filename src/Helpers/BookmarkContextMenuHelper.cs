@@ -139,7 +139,7 @@ namespace BookmarkStudio
                     }
                     else
                     {
-                        shortcutMenuItem.Header = string.Concat(shortcutNumber.ToString(System.Globalization.CultureInfo.InvariantCulture), " - Unassigned");
+                        shortcutMenuItem.Header = string.Concat(shortcutNumber.ToString(System.Globalization.CultureInfo.InvariantCulture), " - <Unassigned>");
                     }
                 }
             }

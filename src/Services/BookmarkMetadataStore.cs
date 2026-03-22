@@ -139,9 +139,9 @@ namespace BookmarkStudio
             Directory.CreateDirectory(directory);
 
             var solutionDirectory = GetSolutionDirectory(solutionPath);
-            FolderNode root = BuildFolderTree(state);
+            FolderNode root = BuildFolderTree(state, state.ExpandedFolders);
 
-            var json = await Task.Run(() => SerializeTree(root, solutionDirectory, state.ExpandedFolders), cancellationToken);
+            var json = await Task.Run(() => SerializeTree(root, solutionDirectory), cancellationToken);
             await Task.Run(() => File.WriteAllText(storagePath, json, Encoding.UTF8), cancellationToken);
         }
 
@@ -374,9 +374,9 @@ namespace BookmarkStudio
             Directory.CreateDirectory(directory);
 
             var solutionDirectory = GetSolutionDirectory(solutionPath);
-            FolderNode root = BuildFolderTree(state);
+            FolderNode root = BuildFolderTree(state, state.ExpandedFolders);
 
-            var json = await Task.Run(() => SerializeTree(root, solutionDirectory, state.ExpandedFolders), cancellationToken);
+            var json = await Task.Run(() => SerializeTree(root, solutionDirectory), cancellationToken);
             await Task.Run(() => File.WriteAllText(storagePath, json, Encoding.UTF8), cancellationToken);
         }
 
@@ -680,6 +680,13 @@ namespace BookmarkStudio
         {
             RegisterFolderPath(state.FolderPaths, folderPath);
 
+            if (folderElement.TryGetProperty("expanded", out JsonElement expandedElement) &&
+                expandedElement.ValueKind == JsonValueKind.True &&
+                !string.IsNullOrEmpty(folderPath))
+            {
+                state.ExpandedFolders.Add(folderPath);
+            }
+
             foreach (JsonProperty property in folderElement.EnumerateObject())
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -756,7 +763,7 @@ namespace BookmarkStudio
             };
         }
 
-        private static string SerializeTree(FolderNode root, string solutionDirectory, IEnumerable<string> expandedFolders)
+        private static string SerializeTree(FolderNode root, string solutionDirectory)
         {
             using var stream = new MemoryStream();
             using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
@@ -764,15 +771,6 @@ namespace BookmarkStudio
                 writer.WriteStartObject();
                 writer.WritePropertyName(RootPropertyName);
                 WriteFolderNode(writer, root, solutionDirectory);
-
-                writer.WritePropertyName("expandedFolders");
-                writer.WriteStartArray();
-                foreach (var folder in expandedFolders.OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
-                {
-                    writer.WriteStringValue(folder);
-                }
-
-                writer.WriteEndArray();
                 writer.WriteEndObject();
             }
 
@@ -782,6 +780,11 @@ namespace BookmarkStudio
         private static void WriteFolderNode(Utf8JsonWriter writer, FolderNode folderNode, string solutionDirectory)
         {
             writer.WriteStartObject();
+
+            if (folderNode.IsExpanded)
+            {
+                writer.WriteBoolean("expanded", true);
+            }
 
             writer.WritePropertyName(BookmarksPropertyName);
             writer.WriteStartArray();
@@ -826,13 +829,17 @@ namespace BookmarkStudio
             writer.WriteEndObject();
         }
 
-        private static FolderNode BuildFolderTree(BookmarkWorkspaceState state)
+        private static FolderNode BuildFolderTree(BookmarkWorkspaceState state, ISet<string> expandedFolders)
         {
             var root = new FolderNode();
 
             foreach (var path in state.FolderPaths)
             {
-                EnsureFolder(root, path);
+                FolderNode folder = EnsureFolder(root, path);
+                if (expandedFolders.Contains(path))
+                {
+                    folder.IsExpanded = true;
+                }
             }
 
             foreach (BookmarkMetadata bookmark in state.Bookmarks)
@@ -1047,6 +1054,8 @@ namespace BookmarkStudio
             public Dictionary<string, FolderNode> Children { get; } = new Dictionary<string, FolderNode>(StringComparer.OrdinalIgnoreCase);
 
             public List<BookmarkMetadata> Bookmarks { get; } = new List<BookmarkMetadata>();
+
+            public bool IsExpanded { get; set; }
         }
     }
 }
