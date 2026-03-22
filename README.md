@@ -33,6 +33,10 @@ Press **Ctrl+K, Ctrl+K** on any line to create a bookmark. A colored glyph appea
 
 ![Glyphs](art/glyphs.png)
 
+### Migrating from Native Bookmarks
+
+Already using Visual Studio's built-in bookmarks? No migration needed. When you toggle a bookmark on a line that has a native VS bookmark, Bookmark Studio automatically converts it - the native bookmark is removed and a Bookmark Studio bookmark takes its place. Just keep working and your bookmarks will migrate naturally.
+
 ### Jump to Bookmarks Instantly
 
 - **Alt+Shift+1** through **Alt+Shift+9** - Jump directly to numbered bookmarks

@@ -181,6 +181,10 @@ namespace BookmarkStudio
                 }
                 else
                 {
+                    // Remove any native VS bookmark on this line before creating our bookmark
+                    // This converts native bookmarks to BookmarkStudio bookmarks seamlessly
+                    await NativeBookmarkHelper.TryRemoveNativeBookmarkAsync(snapshot.DocumentPath, snapshot.LineNumber);
+
                     // Create new bookmark - combine all bookmarks to find next available slot/label
                     var allBookmarks = new List<BookmarkMetadata>();
                     allBookmarks.AddRange(dualState.PersonalState.Bookmarks);
