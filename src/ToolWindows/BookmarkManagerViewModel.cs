@@ -184,10 +184,20 @@ namespace BookmarkStudio
             string? selectedBookmarkId = SelectedBookmark?.BookmarkId;
             string? selectedFolderPath = SelectedNode is FolderNodeViewModel folderNode ? folderNode.FolderPath : null;
 
-            IReadOnlyList<ManagedBookmark> cachedBookmarks = BookmarkStudioSession.Current.CachedBookmarks;
-            IReadOnlyList<string> cachedFolderPaths = BookmarkStudioSession.Current.CachedFolderPaths;
+            DualBookmarkWorkspaceState? cachedDualState = BookmarkStudioSession.Current.CachedDualState;
+            if (cachedDualState is not null)
+            {
+                ReloadDualData(cachedDualState);
+            }
+            else
+            {
+                IReadOnlyList<ManagedBookmark> cachedBookmarks = BookmarkStudioSession.Current.CachedBookmarks;
+                IReadOnlyList<string> cachedFolderPaths = BookmarkStudioSession.Current.CachedFolderPaths;
 
-            ReloadData(cachedBookmarks, cachedFolderPaths, _expandedFolders);
+                ReloadDualBookmarks(cachedBookmarks);
+                ReloadFolderPaths(cachedFolderPaths);
+            }
+
             RebuildTree();
             RestoreSelection(selectedBookmarkId, selectedFolderPath);
 
@@ -767,6 +777,20 @@ namespace BookmarkStudio
                     _solutionBookmarks.Add(bookmark);
                     _solutionFolderPaths.Add(bookmark.FolderPath);
                 }
+            }
+        }
+
+        /// <summary>
+        /// Adds folder paths from the session cache.
+        /// Called after ReloadDualBookmarks to include any explicit folder paths that
+        /// don't have bookmarks yet. Since the session cache combines folder paths
+        /// from both storage locations, we add them to the combined folder set.
+        /// </summary>
+        private void ReloadFolderPaths(IReadOnlyList<string> folderPaths)
+        {
+            foreach (string folderPath in folderPaths)
+            {
+                _folderPaths.Add(BookmarkIdentity.NormalizeFolderPath(folderPath));
             }
         }
 
