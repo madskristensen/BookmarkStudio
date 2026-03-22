@@ -138,6 +138,16 @@
         </Strings>
       </Button>
 
+      <Button guid="BookmarkStudio" id="GoToPreviousBookmarkCommand" priority="0x0122" type="Button">
+        <Icon guid="ImageCatalogGuid" id="GoToFirst" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>CommandWellOnly</CommandFlag>
+        <Strings>
+          <ButtonText>Go To Previous Bookmark</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.GoToPreviousBookmark</LocCanonicalName>
+        </Strings>
+      </Button>
+
       <Button guid="BookmarkStudio" id="GoToShortcut1Command" priority="0x0500" type="Button">
         <Icon guid="ImageCatalogGuid" id="GoToLast" />
         <CommandFlag>IconIsMoniker</CommandFlag>
@@ -329,6 +339,7 @@
     <KeyBinding guid="BookmarkStudio" id="OpenBookmarkManagerCommand" editor="guidVSStd97" key1="B" mod1="Alt Shift" />
     <KeyBinding guid="BookmarkStudio" id="ToggleBookmarkCommand" editor="guidVSStd97" key1="VK_SPACE" mod1="Alt Shift" />
     <KeyBinding guid="BookmarkStudio" id="GoToNextBookmarkCommand" editor="guidVSStd97" key1="N" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToPreviousBookmarkCommand" editor="guidVSStd97" key1="H" mod1="Alt Shift" />
 
     <KeyBinding guid="BookmarkStudio" id="GoToShortcut1Command" editor="guidVSStd97" key1="1" mod1="Alt Shift" />
     <KeyBinding guid="BookmarkStudio" id="GoToShortcut2Command" editor="guidVSStd97" key1="2" mod1="Alt Shift" />
@@ -407,6 +418,7 @@
       <IDSymbol name="AddFolderCommand" value="0x0103" />
       <IDSymbol name="ToggleBookmarkCommand" value="0x0104" />
       <IDSymbol name="GoToNextBookmarkCommand" value="0x0105" />
+      <IDSymbol name="GoToPreviousBookmarkCommand" value="0x0106" />
       <IDSymbol name="ExportBookmarksCommand" value="0x0404" />
       <IDSymbol name="GoToShortcut1Command" value="0x0500" />
       <IDSymbol name="GoToShortcut2Command" value="0x0501" />

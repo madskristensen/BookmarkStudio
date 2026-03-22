@@ -104,18 +104,28 @@ From the Bookmark Manager, right-click a bookmark to assign it to a different sh
 
 ## Keyboard Shortcuts
 
+### Bookmark Studio Shortcuts
+
+| Action                        | Shortcut                        |
+| ----------------------------- | ------------------------------- |
+| Toggle bookmark               | Alt+Shift+Space                 |
+| Next bookmark                 | Alt+Shift+N                     |
+| Previous bookmark             | Alt+Shift+H                     |
+| Jump to bookmark 1-9          | Alt+Shift+1 through Alt+Shift+9 |
+| Open Bookmark Manager         | Alt+Shift+B                     |
+
+### Intercepted Visual Studio Shortcuts
+
+These shortcuts work when you opt in to intercept built-in bookmark commands (you'll be prompted on first use).
+
 | Action                        | Shortcut                        |
 | ----------------------------- | ------------------------------- |
 | Toggle bookmark               | Ctrl+K, Ctrl+K                  |
-| Toggle bookmark (direct)      | Alt+Shift+Space                 |
 | Next bookmark                 | Ctrl+K, Ctrl+N                  |
-| Next bookmark (direct)        | Alt+Shift+N                     |
 | Previous bookmark             | Ctrl+K, Ctrl+P                  |
 | Next bookmark in document     | Ctrl+Shift+K, Ctrl+Shift+N      |
 | Previous bookmark in document | Ctrl+Shift+K, Ctrl+Shift+P      |
 | Clear bookmarks in document   | Ctrl+Shift+K, Ctrl+Shift+L      |
-| Jump to bookmark 1-9          | Alt+Shift+1 through Alt+Shift+9 |
-| Open Bookmark Manager         | Alt+Shift+B                     |
 
 ## Settings
 

@@ -49,6 +49,7 @@
     <Compile Include="Commands\AddFolderCommand.cs" />
     <Compile Include="Commands\FilterByColorCommands.cs" />
     <Compile Include="Commands\GoToNextBookmarkCommand.cs" />
+    <Compile Include="Commands\GoToPreviousBookmarkCommand.cs" />
     <Compile Include="Commands\GoToShortcutCommands.cs" />
     <Compile Include="Commands\OpenSettingsCommand.cs" />
     <Compile Include="Commands\ToggleBookmarkCommand.cs" />
