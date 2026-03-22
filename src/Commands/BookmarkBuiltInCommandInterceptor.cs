@@ -19,30 +19,28 @@ namespace BookmarkStudio
 
             General.Saved += OnSettingsSaved;
 
-            if (General.Instance.InterceptBuiltInCommands)
-            {
-                await RegisterInterceptionsAsync();
-            }
+            // Always register interceptions initially - we'll handle the Ask/No cases in Execute
+            await RegisterInterceptionsAsync();
         }
 
         private static void OnSettingsSaved(General settings)
         {
             ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
             {
-                if (settings.InterceptBuiltInCommands && _registrations.Count == 0)
-                {
-                    await RegisterInterceptionsAsync();
-                }
-                else if (!settings.InterceptBuiltInCommands && _registrations.Count > 0)
+                if (settings.InterceptBuiltInCommands == CommandInterceptionMode.No && _registrations.Count > 0)
                 {
                     UnregisterInterceptions();
+                }
+                else if (settings.InterceptBuiltInCommands != CommandInterceptionMode.No && _registrations.Count == 0)
+                {
+                    await RegisterInterceptionsAsync();
                 }
             }).FireAndForget();
         }
 
         private static async Task RegisterInterceptionsAsync()
         {
-            _registrations.Add(await VS.Commands.InterceptAsync(VSConstants.VSStd2KCmdID.TOGGLETEMPBOOKMARK, () => Execute(cancellationToken => BookmarkCommandActions.ToggleBookmarkAsync(cancellationToken))));
+            _registrations.Add(await VS.Commands.InterceptAsync(VSConstants.VSStd2KCmdID.TOGGLETEMPBOOKMARK, () => ExecuteWithPrompt(cancellationToken => BookmarkCommandActions.ToggleBookmarkAsync(cancellationToken))));
             _registrations.Add(await VS.Commands.InterceptAsync(VSConstants.VSStd2KCmdID.GOTONEXTBOOKMARK, () => Execute(cancellationToken => BookmarkCommandActions.GoToNextBookmarkAsync(cancellationToken))));
             _registrations.Add(await VS.Commands.InterceptAsync(VSConstants.VSStd2KCmdID.GOTOPREVBOOKMARK, () => Execute(cancellationToken => BookmarkCommandActions.GoToPreviousBookmarkAsync(cancellationToken))));
             _registrations.Add(await VS.Commands.InterceptAsync(VSConstants.VSStd2KCmdID.ECMD_GOTONEXTBOOKMARKINDOC, () => Execute(cancellationToken => BookmarkCommandActions.GoToNextBookmarkInDocumentAsync(cancellationToken))));
@@ -60,11 +58,63 @@ namespace BookmarkStudio
             _registrations.Clear();
         }
 
+        private static CommandProgression ExecuteWithPrompt(Func<CancellationToken, Task> action)
+        {
+            CommandInterceptionMode mode = General.Instance.InterceptBuiltInCommands;
+
+            if (mode == CommandInterceptionMode.Ask)
+            {
+                ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
+                {
+                    bool shouldIntercept = await PromptUserForInterceptionChoiceAsync();
+
+                    if (shouldIntercept)
+                    {
+                        await ExecuteAsync(action);
+                    }
+                }).FireAndForget();
+
+                // Stop the original command while we prompt - if user says No, the bookmark won't be created
+                // but they can use Ctrl+K,K again and it will pass through
+                return CommandProgression.Stop;
+            }
+
+            return Execute(action);
+        }
+
         private static CommandProgression Execute(Func<CancellationToken, Task> action)
         {
+            if (General.Instance.InterceptBuiltInCommands == CommandInterceptionMode.No)
+            {
+                return CommandProgression.Continue;
+            }
+
             ThreadHelper.JoinableTaskFactory.RunAsync(() => ExecuteAsync(action)).FireAndForget();
 
             return CommandProgression.Stop;
+        }
+
+        private static async Task<bool> PromptUserForInterceptionChoiceAsync()
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+
+            bool userChoseYes = await VS.MessageBox.ShowConfirmAsync(
+                "Bookmark Studio",
+                "Do you want Ctrl+K,K and other built-in bookmark shortcuts to use Bookmark Studio?\n\n" +
+                "You can change this anytime in Tools > Options > Bookmark Studio.");
+
+            General.Instance.InterceptBuiltInCommands = userChoseYes
+                ? CommandInterceptionMode.Yes
+                : CommandInterceptionMode.No;
+
+            await General.Instance.SaveAsync();
+
+            if (!userChoseYes)
+            {
+                UnregisterInterceptions();
+            }
+
+            return userChoseYes;
         }
 
         private static async Task ExecuteAsync(Func<CancellationToken, Task> action)

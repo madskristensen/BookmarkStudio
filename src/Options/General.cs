@@ -3,6 +3,13 @@ using System.Runtime.InteropServices;
 
 namespace BookmarkStudio
 {
+    public enum CommandInterceptionMode
+    {
+        Ask,
+        Yes,
+        No,
+    }
+
     internal partial class OptionsProvider
     {
         [ComVisible(true)]
@@ -25,9 +32,10 @@ namespace BookmarkStudio
         public BookmarkStorageLocation DefaultStorageLocation { get; set; } = BookmarkStorageLocation.Personal;
 
         [Category("Commands")]
-        [DisplayName("Intercept old commands")]
-        [Description("When enabled, the built-in Visual Studio bookmark commands (Ctrl+K,K etc.) will use Bookmark Studio instead.")]
-        [DefaultValue(true)]
-        public bool InterceptBuiltInCommands { get; set; } = true;
+        [DisplayName("Intercept built-in bookmark commands")]
+        [Description("Controls whether the built-in Visual Studio bookmark commands (Ctrl+K,K etc.) use Bookmark Studio. 'Ask' prompts on first use, 'Yes' always intercepts, 'No' never intercepts.")]
+        [DefaultValue(CommandInterceptionMode.Ask)]
+        [TypeConverter(typeof(EnumConverter))]
+        public CommandInterceptionMode InterceptBuiltInCommands { get; set; } = CommandInterceptionMode.Ask;
     }
 }
