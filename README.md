@@ -104,15 +104,16 @@ From the Bookmark Manager, right-click a bookmark to assign it to a different sh
 
 ## Keyboard Shortcuts
 
-| Action                        | Shortcut                   |
-| ----------------------------- | -------------------------- |
-| Toggle bookmark               | Ctrl+K, Ctrl+K             |
-| Next bookmark                 | Ctrl+K, Ctrl+N             |
-| Previous bookmark             | Ctrl+K, Ctrl+P             |
-| Next bookmark in document     | Ctrl+Shift+K, Ctrl+Shift+N |
-| Previous bookmark in document | Ctrl+Shift+K, Ctrl+Shift+P |
-| Clear bookmarks in document   | Ctrl+Shift+K, Ctrl+Shift+L |
+| Action                        | Shortcut                        |
+| ----------------------------- | ------------------------------- |
+| Toggle bookmark               | Ctrl+K, Ctrl+K                  |
+| Next bookmark                 | Ctrl+K, Ctrl+N                  |
+| Previous bookmark             | Ctrl+K, Ctrl+P                  |
+| Next bookmark in document     | Ctrl+Shift+K, Ctrl+Shift+N      |
+| Previous bookmark in document | Ctrl+Shift+K, Ctrl+Shift+P      |
+| Clear bookmarks in document   | Ctrl+Shift+K, Ctrl+Shift+L      |
 | Jump to bookmark 1-9          | Alt+Shift+1 through Alt+Shift+9 |
+| Open Bookmark Manager         | Alt+Shift+B                     |
 
 ## Sharing Bookmarks
 

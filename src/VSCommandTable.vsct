@@ -48,7 +48,6 @@
 
     <Menus>
       <Menu guid="BookmarkStudio" id="BookmarkManagerToolbar" priority="0x0000" type="ToolWindowToolbar">
-        <CommandFlag>DefaultDocked</CommandFlag>
         <Strings>
           <ButtonText>Bookmark Manager Toolbar</ButtonText>
           <CommandName>Bookmark Manager Toolbar</CommandName>
@@ -56,8 +55,6 @@
       </Menu>
       <Menu guid="BookmarkStudio" id="SettingsMenu" priority="0x0100" type="MenuControllerLatched">
         <Parent guid="BookmarkStudio" id="BookmarkManagerToolbarSettingsGroup"/>
-        <Icon guid="ImageCatalogGuid" id="Settings" />
-        <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>TextChanges</CommandFlag>
         <Strings>
           <ButtonText>Settings</ButtonText>
@@ -309,6 +306,8 @@
   </Commands>
 
   <KeyBindings>
+    <KeyBinding guid="BookmarkStudio" id="OpenBookmarkManagerCommand" editor="guidVSStd97" key1="B" mod1="Alt Shift" />
+
     <KeyBinding guid="BookmarkStudio" id="GoToShortcut1Command" editor="guidVSStd97" key1="1" mod1="Alt Shift" />
     <KeyBinding guid="BookmarkStudio" id="GoToShortcut2Command" editor="guidVSStd97" key1="2" mod1="Alt Shift" />
     <KeyBinding guid="BookmarkStudio" id="GoToShortcut3Command" editor="guidVSStd97" key1="3" mod1="Alt Shift" />
