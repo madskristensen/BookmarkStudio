@@ -1,4 +1,5 @@
 using System.IO;
+using System.Linq;
 
 namespace BookmarkStudio.Test;
 
@@ -510,6 +511,78 @@ public class RepositoryAndModelTests
         string result = BookmarkRepositoryService.FindNextDefaultFolderName(folderPaths);
 
         Assert.AreEqual("Folder3", result);
+    }
+
+    [TestMethod]
+    public void DualBookmarkWorkspaceState_AllBookmarks_CombinesBothHives()
+    {
+        var personalState = new BookmarkWorkspaceState();
+        personalState.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "personal-1", Label = "Bookmark1" });
+        personalState.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "personal-2", Label = "Bookmark2" });
+
+        var solutionState = new BookmarkWorkspaceState();
+        solutionState.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "solution-1", Label = "Bookmark3" });
+
+        var dualState = new DualBookmarkWorkspaceState(personalState, solutionState);
+
+        Assert.HasCount(3, dualState.AllBookmarks);
+        Assert.IsTrue(dualState.AllBookmarks.Any(b => b.BookmarkId == "personal-1"));
+        Assert.IsTrue(dualState.AllBookmarks.Any(b => b.BookmarkId == "personal-2"));
+        Assert.IsTrue(dualState.AllBookmarks.Any(b => b.BookmarkId == "solution-1"));
+    }
+
+    [TestMethod]
+    public void DualBookmarkWorkspaceState_AllFolderPaths_CombinesBothHives()
+    {
+        var personalState = new BookmarkWorkspaceState();
+        personalState.FolderPaths.Add(string.Empty);
+        personalState.FolderPaths.Add("PersonalFolder");
+
+        var solutionState = new BookmarkWorkspaceState();
+        solutionState.FolderPaths.Add(string.Empty);
+        solutionState.FolderPaths.Add("SolutionFolder");
+
+        var dualState = new DualBookmarkWorkspaceState(personalState, solutionState);
+
+        Assert.HasCount(3, dualState.AllFolderPaths);
+        Assert.Contains(string.Empty, dualState.AllFolderPaths);
+        Assert.Contains("PersonalFolder", dualState.AllFolderPaths);
+        Assert.Contains("SolutionFolder", dualState.AllFolderPaths);
+    }
+
+    [TestMethod]
+    public void DualBookmarkWorkspaceState_AllFolderPaths_DeduplicatesCommonPaths()
+    {
+        var personalState = new BookmarkWorkspaceState();
+        personalState.FolderPaths.Add(string.Empty);
+        personalState.FolderPaths.Add("SharedFolder");
+
+        var solutionState = new BookmarkWorkspaceState();
+        solutionState.FolderPaths.Add(string.Empty);
+        solutionState.FolderPaths.Add("SharedFolder");
+
+        var dualState = new DualBookmarkWorkspaceState(personalState, solutionState);
+
+        Assert.HasCount(2, dualState.AllFolderPaths);
+    }
+
+    [TestMethod]
+    public void FindNextDefaultLabel_WhenBookmarksSplitAcrossBothHives_ChecksAllBookmarks()
+    {
+        // This tests the bug scenario where Bookmark1 exists in Personal but not in Workspace.
+        // When creating a new bookmark (which goes to Workspace), the name generation
+        // should check both hives and return Bookmark2 instead of Bookmark1.
+        var personalState = new BookmarkWorkspaceState();
+        personalState.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "p1", Label = "Bookmark1" });
+
+        var solutionState = new BookmarkWorkspaceState();
+        solutionState.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "s1", Label = "Bookmark3" });
+
+        var dualState = new DualBookmarkWorkspaceState(personalState, solutionState);
+
+        string result = BookmarkRepositoryService.FindNextDefaultLabel(dualState.AllBookmarks);
+
+        Assert.AreEqual("Bookmark2", result, "Should skip Bookmark1 (in Personal) and Bookmark3 (in Solution), returning Bookmark2");
     }
 
     [TestMethod]
