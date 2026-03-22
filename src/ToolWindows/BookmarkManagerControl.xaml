@@ -183,16 +183,26 @@
         <!-- Folder Data Template -->
         <HierarchicalDataTemplate DataType="{x:Type local:FolderNodeViewModel}"
                                   ItemsSource="{Binding Children}">
-            <Border Padding="0,2" HorizontalAlignment="Stretch" Background="Transparent">
+            <Border Padding="0,2" HorizontalAlignment="Stretch" BorderThickness="0">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Background" Value="Transparent" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsMultiSelected}" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarSelectedBrushKey}}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
                 <Border.ContextMenu>
-                    <ContextMenu Style="{StaticResource ThemedContextMenuStyle}">
-                        <MenuItem Header="Add Folder" Click="AddFolderMenuItem_Click"
+                    <ContextMenu Style="{StaticResource ThemedContextMenuStyle}" Opened="FolderContextMenu_Opened">
+                        <MenuItem x:Name="AddFolderMenuItem" Header="Add Folder" Click="AddFolderMenuItem_Click"
                                   Style="{StaticResource ThemedMenuItemStyle}">
                             <MenuItem.Icon>
                                 <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.NewFolder}" />
                             </MenuItem.Icon>
                         </MenuItem>
-                        <Separator Style="{StaticResource ThemedSeparatorStyle}" />
+                        <Separator x:Name="FolderSeparator1" Style="{StaticResource ThemedSeparatorStyle}" />
                         <MenuItem Header="Clear Bookmarks" 
                                   Click="ClearBookmarksMenuItem_Click"
                                   Style="{StaticResource ThemedMenuItemStyle}"
@@ -210,7 +220,7 @@
                                 <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.JSONScript}" />
                             </MenuItem.Icon>
                         </MenuItem>
-                        <MenuItem Header="Rename" Click="RenameFolderMenuItem_Click" InputGestureText="F2"
+                        <MenuItem x:Name="RenameFolderMenuItem" Header="Rename" Click="RenameFolderMenuItem_Click" InputGestureText="F2"
                                   Style="{StaticResource ThemedMenuItemStyle}"
                                   Visibility="{Binding IsRoot, Converter={StaticResource BoolToVisibilityInverseConverter}}">
                             <MenuItem.Icon>
@@ -258,22 +268,32 @@
 
         <!-- Bookmark Data Template -->
         <DataTemplate DataType="{x:Type local:BookmarkItemNodeViewModel}">
-            <Border Padding="0,2" HorizontalAlignment="Stretch" Background="Transparent">
+            <Border x:Name="BookmarkBorder" Padding="0,2" HorizontalAlignment="Stretch" BorderThickness="0">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Background" Value="Transparent" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsMultiSelected}" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource {x:Static platformui:EnvironmentColors.CommandBarSelectedBrushKey}}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
                 <Border.ContextMenu>
-                    <ContextMenu Style="{StaticResource ThemedContextMenuStyle}">
-                        <MenuItem Header="Navigate" Click="NavigateMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" InputGestureText="Enter">
+                    <ContextMenu Style="{StaticResource ThemedContextMenuStyle}" Opened="BookmarkContextMenu_Opened">
+                        <MenuItem x:Name="NavigateMenuItem" Header="Navigate" Click="NavigateMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" InputGestureText="Enter">
                             <MenuItem.Icon>
                                 <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.GoToLast}" />
                             </MenuItem.Icon>
                         </MenuItem>
-                        <MenuItem Header="Copy Location" Click="CopyLocationMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" InputGestureText="Ctrl+C" />
-                        <Separator Style="{StaticResource ThemedSeparatorStyle}" />
-                        <MenuItem Header="Rename" Click="EditLabelMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" InputGestureText="F2">
+                        <MenuItem x:Name="CopyLocationMenuItem" Header="Copy Location" Click="CopyLocationMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" InputGestureText="Ctrl+C" />
+                        <Separator x:Name="Separator1" Style="{StaticResource ThemedSeparatorStyle}" />
+                        <MenuItem x:Name="RenameMenuItem" Header="Rename" Click="EditLabelMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" InputGestureText="F2">
                             <MenuItem.Icon>
                                 <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.Rename}" />
                             </MenuItem.Icon>
                         </MenuItem>
-                        <Separator Style="{StaticResource ThemedSeparatorStyle}" />                        <MenuItem x:Name="AssignShortcutSubmenu" Header="Assign shortcut" Style="{StaticResource ThemedMenuItemStyle}" SubmenuOpened="AssignShortcutSubmenu_Opened">
+                        <Separator x:Name="Separator2" Style="{StaticResource ThemedSeparatorStyle}" />                        <MenuItem x:Name="AssignShortcutSubmenu" Header="Assign shortcut" Style="{StaticResource ThemedMenuItemStyle}" SubmenuOpened="AssignShortcutSubmenu_Opened">
                             <MenuItem Header="1" Tag="1" Click="AssignShortcutMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" />
                             <MenuItem Header="2" Tag="2" Click="AssignShortcutMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" />
                             <MenuItem Header="3" Tag="3" Click="AssignShortcutMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" />
@@ -286,8 +306,8 @@
                             <Separator Style="{StaticResource ThemedSeparatorStyle}" />
                             <MenuItem Header="Clear Shortcut" Click="ClearShortcutMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" />
                         </MenuItem>
-                        <Separator Style="{StaticResource ThemedSeparatorStyle}" />
-                        <MenuItem Header="Set Color" Style="{StaticResource ThemedMenuItemStyle}">
+                        <Separator x:Name="Separator3" Style="{StaticResource ThemedSeparatorStyle}" />
+                        <MenuItem x:Name="SetColorMenuItem" Header="Set Color" Style="{StaticResource ThemedMenuItemStyle}">
                             <MenuItem Header="Blue (default)" Tag="5" Click="SetColorMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}">
                                 <MenuItem.Icon>
                                     <Border Width="10" Height="14" CornerRadius="3" Background="#1E88E5" />
@@ -329,7 +349,7 @@
                                 </MenuItem.Icon>
                             </MenuItem>
                         </MenuItem>
-                        <Separator Style="{StaticResource ThemedSeparatorStyle}" />
+                        <Separator x:Name="Separator4" Style="{StaticResource ThemedSeparatorStyle}" />
                         <MenuItem Header="Delete" Click="DeleteBookmarkMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" InputGestureText="Del">
                             <MenuItem.Icon>
                                 <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.Cancel}" />
@@ -372,11 +392,13 @@
                                VerticalAlignment="Center"
                                TextTrimming="CharacterEllipsis">
                         <TextBlock.ToolTip>
-                            <StackPanel>
-                                <TextBlock Text="{Binding DisplayText}" FontWeight="SemiBold" />
-                                <TextBlock Text="{Binding Bookmark.RepositoryRelativePath}" Opacity="0.7" />
-                                <TextBlock Text="{Binding Bookmark.LineText}" FontStyle="Italic" TextTrimming="CharacterEllipsis" MaxWidth="400" />
-                            </StackPanel>
+                            <ToolTip>
+                                <StackPanel>
+                                    <TextBlock Text="{Binding DisplayText}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Bookmark.RepositoryRelativePath}" Opacity="0.7" />
+                                    <TextBlock Text="{Binding Bookmark.LineText}" FontFamily="Consolas" TextTrimming="CharacterEllipsis" MaxWidth="500" Margin="0,6,0,0" />
+                                </StackPanel>
+                            </ToolTip>
                         </TextBlock.ToolTip>
                     </TextBlock>
                     <TextBlock Grid.Column="2"

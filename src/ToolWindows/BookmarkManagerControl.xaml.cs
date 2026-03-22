@@ -185,15 +185,48 @@ namespace BookmarkStudio
             _dragSourceStorage = null;
 
             BookmarkNodeViewModel? node = GetNodeFromVisual(e.OriginalSource as DependencyObject);
-            if (node is BookmarkItemNodeViewModel bookmarkNode)
+
+            // Handle Ctrl+Click for multi-selection
+            if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control && node is not null)
             {
-                _dragBookmarkId = bookmarkNode.Bookmark.BookmarkId;
-                _dragSourceStorage = bookmarkNode.Bookmark.StorageLocation;
+                // Don't allow multi-selecting root folders
+                if (node is FolderNodeViewModel folderNode && folderNode.IsRoot)
+                {
+                    return;
+                }
+
+                // If starting multi-selection, include the currently selected item first
+                if (!_viewModel.HasMultiSelection && _viewModel.SelectedNode is not null)
+                {
+                    // Don't include root folders
+                    if (!(_viewModel.SelectedNode is FolderNodeViewModel selectedFolder && selectedFolder.IsRoot))
+                    {
+                        _viewModel.AddToMultiSelection(_viewModel.SelectedNode);
+                    }
+                }
+
+                _viewModel.ToggleMultiSelection(node);
+
+                // Don't set e.Handled - let the TreeView update its selection too
+                // The multi-selection visual is additive to the TreeView selection
+                return;
             }
-            else if (node is FolderNodeViewModel folderNode && !folderNode.IsRoot)
+
+            // Clear multi-selection on regular click
+            if (_viewModel.HasMultiSelection)
             {
-                _dragFolderPath = folderNode.FolderPath;
-                _dragSourceStorage = folderNode.StorageLocation;
+                _viewModel.ClearMultiSelection();
+            }
+
+            if (node is BookmarkItemNodeViewModel clickedBookmarkNode)
+            {
+                _dragBookmarkId = clickedBookmarkNode.Bookmark.BookmarkId;
+                _dragSourceStorage = clickedBookmarkNode.Bookmark.StorageLocation;
+            }
+            else if (node is FolderNodeViewModel clickedFolderNode && !clickedFolderNode.IsRoot)
+            {
+                _dragFolderPath = clickedFolderNode.FolderPath;
+                _dragSourceStorage = clickedFolderNode.StorageLocation;
             }
         }
 
@@ -482,6 +515,87 @@ namespace BookmarkStudio
         {
             SelectNodeFromContextMenu(sender);
             await RunAsync(cancellationToken => _viewModel.DeleteSelectedAsync(cancellationToken));
+        }
+
+        private void BookmarkContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            if (sender is not ContextMenu contextMenu)
+            {
+                return;
+            }
+
+            // When multi-selecting, only show Delete and Set Color
+            var hasMultiSelection = _viewModel.HasMultiSelection;
+            var hasOnlyBookmarks = _viewModel.MultiSelectionHasOnlyBookmarks;
+
+            // Find menu items by name and set visibility
+            foreach (var item in contextMenu.Items)
+            {
+                if (item is MenuItem menuItem)
+                {
+                    switch (menuItem.Name)
+                    {
+                        case "NavigateMenuItem":
+                        case "CopyLocationMenuItem":
+                        case "RenameMenuItem":
+                        case "AssignShortcutSubmenu":
+                            menuItem.Visibility = hasMultiSelection ? Visibility.Collapsed : Visibility.Visible;
+                            break;
+                        case "SetColorMenuItem":
+                            // Set Color only available for bookmarks-only selection
+                            menuItem.Visibility = (hasMultiSelection && !hasOnlyBookmarks) ? Visibility.Collapsed : Visibility.Visible;
+                            break;
+                    }
+                }
+                else if (item is Separator separator)
+                {
+                    switch (separator.Name)
+                    {
+                        case "Separator1":
+                        case "Separator2":
+                            separator.Visibility = hasMultiSelection ? Visibility.Collapsed : Visibility.Visible;
+                            break;
+                        case "Separator3":
+                            // Hide separator before Set Color if Set Color is hidden
+                            separator.Visibility = (hasMultiSelection && !hasOnlyBookmarks) ? Visibility.Collapsed : Visibility.Visible;
+                            break;
+                    }
+                }
+            }
+        }
+
+        private void FolderContextMenu_Opened(object sender, RoutedEventArgs e)
+        {
+            if (sender is not ContextMenu contextMenu)
+            {
+                return;
+            }
+
+            // When multi-selecting, only show Delete
+            var hasMultiSelection = _viewModel.HasMultiSelection;
+
+            foreach (var item in contextMenu.Items)
+            {
+                if (item is MenuItem menuItem)
+                {
+                    switch (menuItem.Name)
+                    {
+                        case "AddFolderMenuItem":
+                        case "RenameFolderMenuItem":
+                            menuItem.Visibility = hasMultiSelection ? Visibility.Collapsed : Visibility.Visible;
+                            break;
+                    }
+                }
+                else if (item is Separator separator)
+                {
+                    switch (separator.Name)
+                    {
+                        case "FolderSeparator1":
+                            separator.Visibility = hasMultiSelection ? Visibility.Collapsed : Visibility.Visible;
+                            break;
+                    }
+                }
+            }
         }
 
         private async void MoveToSolutionMenuItem_Click(object sender, RoutedEventArgs e)

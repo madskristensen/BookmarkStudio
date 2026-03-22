@@ -85,6 +85,94 @@ namespace BookmarkStudio
 
         public string SelectedPreview => SelectedBookmark?.LineText ?? string.Empty;
 
+        public HashSet<BookmarkNodeViewModel> MultiSelectedNodes { get; } = new HashSet<BookmarkNodeViewModel>();
+
+        public bool HasMultiSelection => MultiSelectedNodes.Count > 1;
+
+        public int MultiSelectionCount => MultiSelectedNodes.Count;
+
+        public bool MultiSelectionHasOnlyBookmarks => HasMultiSelection
+            && MultiSelectedNodes.All(n => n is BookmarkItemNodeViewModel);
+
+        public bool MultiSelectionHasFolders => HasMultiSelection
+            && MultiSelectedNodes.Any(n => n is FolderNodeViewModel);
+
+        public void ToggleMultiSelection(BookmarkNodeViewModel node)
+        {
+            if (node is null)
+            {
+                return;
+            }
+
+            // Don't allow selecting root folders
+            if (node is FolderNodeViewModel folderNode && folderNode.IsRoot)
+            {
+                return;
+            }
+
+            if (MultiSelectedNodes.Contains(node))
+            {
+                MultiSelectedNodes.Remove(node);
+                SetNodeMultiSelected(node, false);
+            }
+            else
+            {
+                MultiSelectedNodes.Add(node);
+                SetNodeMultiSelected(node, true);
+            }
+
+            NotifyMultiSelectionChanged();
+        }
+
+        public void ClearMultiSelection()
+        {
+            foreach (var node in MultiSelectedNodes)
+            {
+                SetNodeMultiSelected(node, false);
+            }
+
+            MultiSelectedNodes.Clear();
+            NotifyMultiSelectionChanged();
+        }
+
+        public void AddToMultiSelection(BookmarkNodeViewModel node)
+        {
+            if (node is null || MultiSelectedNodes.Contains(node))
+            {
+                return;
+            }
+
+            // Don't allow selecting root folders
+            if (node is FolderNodeViewModel folderNode && folderNode.IsRoot)
+            {
+                return;
+            }
+
+            MultiSelectedNodes.Add(node);
+            SetNodeMultiSelected(node, true);
+            NotifyMultiSelectionChanged();
+        }
+
+        private void NotifyMultiSelectionChanged()
+        {
+            OnPropertyChanged(nameof(HasMultiSelection));
+            OnPropertyChanged(nameof(MultiSelectionCount));
+            OnPropertyChanged(nameof(MultiSelectionHasOnlyBookmarks));
+            OnPropertyChanged(nameof(MultiSelectionHasFolders));
+        }
+
+        private static void SetNodeMultiSelected(BookmarkNodeViewModel node, bool isSelected)
+        {
+            if (node is BookmarkItemNodeViewModel bookmarkNode)
+            {
+                bookmarkNode.IsMultiSelected = isSelected;
+            }
+            else if (node is FolderNodeViewModel folderNode)
+            {
+                folderNode.IsMultiSelected = isSelected;
+            }
+        }
+
         public string SearchText
         {
             get => _searchText;
@@ -304,9 +392,33 @@ namespace BookmarkStudio
 
         public async Task SetSelectedColorAsync(BookmarkColor color, CancellationToken cancellationToken)
         {
+            // Handle multi-selection (only for bookmarks)
+            if (HasMultiSelection && MultiSelectionHasOnlyBookmarks)
+            {
+                var bookmarkNodes = MultiSelectedNodes.OfType<BookmarkItemNodeViewModel>().ToList();
+                IReadOnlyList<ManagedBookmark> bookmarks = null;
+
+                foreach (var bookmarkNode in bookmarkNodes)
+                {
+                    bookmarks = await _operations.SetColorAsync(bookmarkNode.Bookmark.BookmarkId, color, cancellationToken);
+                }
+
+                ClearMultiSelection();
+
+                if (bookmarks is not null)
+                {
+                    ReloadDualBookmarks(bookmarks);
+                }
+
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+                RebuildTree();
+                SetStatus($"Color set to {color} for {bookmarkNodes.Count} bookmarks.");
+                return;
+            }
+
             ManagedBookmark selectedBookmark = GetRequiredSelection();
-            IReadOnlyList<ManagedBookmark> bookmarks = await _operations.SetColorAsync(selectedBookmark.BookmarkId, color, cancellationToken);
-            ReloadDualBookmarks(bookmarks);
+            IReadOnlyList<ManagedBookmark> updated = await _operations.SetColorAsync(selectedBookmark.BookmarkId, color, cancellationToken);
+            ReloadDualBookmarks(updated);
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             RebuildTree();
             SelectBookmark(selectedBookmark.BookmarkId);
@@ -315,6 +427,45 @@ namespace BookmarkStudio
 
         public async Task DeleteSelectedAsync(CancellationToken cancellationToken)
         {
+            // Handle multi-selection
+            if (HasMultiSelection)
+            {
+                IReadOnlyList<ManagedBookmark> bookmarks = null;
+                var deletedCount = 0;
+
+                // Delete folders first (they may contain bookmarks we're also trying to delete)
+                var folders = MultiSelectedNodes.OfType<FolderNodeViewModel>().ToList();
+                foreach (var folder in folders)
+                {
+                    if (folder.StorageLocation.HasValue)
+                    {
+                        bookmarks = await _operations.DeleteFolderRecursiveAsync(folder.FolderPath, folder.StorageLocation.Value, cancellationToken);
+                        RemoveFolderPathsForStorage(folder.FolderPath, folder.StorageLocation.Value);
+                        deletedCount++;
+                    }
+                }
+
+                // Then delete individual bookmarks
+                var bookmarkNodes = MultiSelectedNodes.OfType<BookmarkItemNodeViewModel>().ToList();
+                foreach (var bookmarkNode in bookmarkNodes)
+                {
+                    bookmarks = await _operations.RemoveBookmarkAsync(bookmarkNode.Bookmark.BookmarkId, cancellationToken);
+                    deletedCount++;
+                }
+
+                ClearMultiSelection();
+
+                if (bookmarks is not null)
+                {
+                    ReloadDualBookmarks(bookmarks);
+                }
+
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+                RebuildTree();
+                SetStatus($"{deletedCount} items removed.");
+                return;
+            }
+
             if (SelectedNode is FolderNodeViewModel folderNode)
             {
                 if (!folderNode.StorageLocation.HasValue)
@@ -956,6 +1107,8 @@ namespace BookmarkStudio
 
         private void RebuildTreeInternal()
         {
+            ClearMultiSelection();
+
             if (_isTestMode)
             {
                 RebuildTreeForTests();
@@ -1291,6 +1444,7 @@ namespace BookmarkStudio
     public sealed class FolderNodeViewModel : BookmarkNodeViewModel, INotifyPropertyChanged
     {
         private bool _isExpanded;
+        private bool _isMultiSelected;
         private BookmarkStorageLocation? _storageLocation;
 
         public FolderNodeViewModel(string folderPath, int treeDepth)
@@ -1360,6 +1514,19 @@ namespace BookmarkStudio
 
         public int TreeDepth { get; }
 
+        public bool IsMultiSelected
+        {
+            get => _isMultiSelected;
+            set
+            {
+                if (_isMultiSelected != value)
+                {
+                    _isMultiSelected = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsMultiSelected)));
+                }
+            }
+        }
+
         public bool IsExpanded
         {
             get => _isExpanded;
@@ -1381,9 +1548,10 @@ namespace BookmarkStudio
         public override string DisplayText => FolderName;
     }
 
-    public sealed class BookmarkItemNodeViewModel : BookmarkNodeViewModel
+    public sealed class BookmarkItemNodeViewModel : BookmarkNodeViewModel, INotifyPropertyChanged
     {
         private const int TreeIndentPixels = 19;
+        private bool _isMultiSelected;
 
         public BookmarkItemNodeViewModel(ManagedBookmark bookmark, int treeDepth)
         {
@@ -1391,9 +1559,24 @@ namespace BookmarkStudio
             TreeDepth = Math.Max(0, treeDepth);
         }
 
+        public event PropertyChangedEventHandler? PropertyChanged;
+
         public ManagedBookmark Bookmark { get; }
 
         public int TreeDepth { get; }
+
+        public bool IsMultiSelected
+        {
+            get => _isMultiSelected;
+            set
+            {
+                if (_isMultiSelected != value)
+                {
+                    _isMultiSelected = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsMultiSelected)));
+                }
+            }
+        }
 
         public Thickness NonNameColumnMargin => new(-(Math.Max(0, TreeDepth - 1) * TreeIndentPixels), 0, 0, 0);
 
