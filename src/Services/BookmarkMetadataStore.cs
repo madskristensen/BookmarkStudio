@@ -68,10 +68,10 @@ namespace BookmarkStudio
 
         private BookmarkWorkspaceState ParseWorkspaceJson(string json, string solutionDirectory, CancellationToken cancellationToken)
         {
-            using JsonDocument document = JsonDocument.Parse(json);
+            using var document = JsonDocument.Parse(json);
             JsonElement rootElement = document.RootElement;
 
-            BookmarkWorkspaceState state = new BookmarkWorkspaceState();
+            var state = new BookmarkWorkspaceState();
 
             if (TryGetObjectProperty(rootElement, RootPropertyName, out JsonElement rootFolderElement))
             {
@@ -118,6 +118,18 @@ namespace BookmarkStudio
             }
 
             var storagePath = GetStoragePath(solutionPath);
+
+            // If the state is empty (no bookmarks and only the root folder), delete the file instead of persisting an empty state
+            if (IsEmptyState(state))
+            {
+                if (File.Exists(storagePath))
+                {
+                    await Task.Run(() => File.Delete(storagePath), cancellationToken);
+                }
+
+                return;
+            }
+
             var directory = Path.GetDirectoryName(storagePath);
             if (string.IsNullOrWhiteSpace(directory))
             {
@@ -131,6 +143,32 @@ namespace BookmarkStudio
 
             var json = await Task.Run(() => SerializeTree(root, solutionDirectory, state.ExpandedFolders), cancellationToken);
             await Task.Run(() => File.WriteAllText(storagePath, json, Encoding.UTF8), cancellationToken);
+        }
+
+        /// <summary>
+        /// Determines whether the workspace state is empty (no bookmarks and no user-created folders).
+        /// </summary>
+        private static bool IsEmptyState(BookmarkWorkspaceState state)
+        {
+            // State is empty if there are no bookmarks
+            if (state.Bookmarks.Count > 0)
+            {
+                return false;
+            }
+
+            // State is empty if there are no folders, or only the root folder (empty string)
+            if (state.FolderPaths.Count == 0)
+            {
+                return true;
+            }
+
+            // If there's only one folder path and it's the root (empty string), state is empty
+            if (state.FolderPaths.Count == 1 && state.FolderPaths.Contains(string.Empty))
+            {
+                return true;
+            }
+
+            return false;
         }
 
         public string GetStoragePath(string solutionPath)
@@ -285,10 +323,10 @@ namespace BookmarkStudio
 
         private BookmarkWorkspaceState ParseWorkspaceJsonFromLocation(string json, string solutionDirectory, BookmarkStorageLocation location, CancellationToken cancellationToken)
         {
-            using JsonDocument document = JsonDocument.Parse(json);
+            using var document = JsonDocument.Parse(json);
             JsonElement rootElement = document.RootElement;
 
-            BookmarkWorkspaceState state = new BookmarkWorkspaceState();
+            var state = new BookmarkWorkspaceState();
 
             if (TryGetObjectProperty(rootElement, RootPropertyName, out JsonElement rootFolderElement))
             {
@@ -708,7 +746,7 @@ namespace BookmarkStudio
                 DocumentPath = MakeAbsolutePath(documentPath, solutionDirectory),
                 LineNumber = lineNumber,
                 LineText = GetStringProperty(element, "lineText"),
-                SlotNumber = GetNullableIntProperty(element, "slotNumber"),
+                ShortcutNumber = GetNullableIntProperty(element, "slotNumber"),
                 Label = GetStringProperty(element, "label"),
                 Group = !string.IsNullOrWhiteSpace(GetStringProperty(element, "group"))
                     ? GetStringProperty(element, "group")
@@ -720,8 +758,8 @@ namespace BookmarkStudio
 
         private static string SerializeTree(FolderNode root, string solutionDirectory, IEnumerable<string> expandedFolders)
         {
-            using MemoryStream stream = new MemoryStream();
-            using (Utf8JsonWriter writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
+            using var stream = new MemoryStream();
+            using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
             {
                 writer.WriteStartObject();
                 writer.WritePropertyName(RootPropertyName);
@@ -759,9 +797,9 @@ namespace BookmarkStudio
                 writer.WriteNumber("lineNumber", bookmark.LineNumber);
                 writer.WriteString("lineText", bookmark.LineText ?? string.Empty);
 
-                if (bookmark.SlotNumber.HasValue)
+                if (bookmark.ShortcutNumber.HasValue)
                 {
-                    writer.WriteNumber("slotNumber", bookmark.SlotNumber.Value);
+                    writer.WriteNumber("slotNumber", bookmark.ShortcutNumber.Value);
                 }
 
                 if (!string.IsNullOrWhiteSpace(bookmark.Label))
@@ -790,7 +828,7 @@ namespace BookmarkStudio
 
         private static FolderNode BuildFolderTree(BookmarkWorkspaceState state)
         {
-            FolderNode root = new FolderNode();
+            var root = new FolderNode();
 
             foreach (var path in state.FolderPaths)
             {

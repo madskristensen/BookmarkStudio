@@ -213,7 +213,7 @@ namespace BookmarkStudio
         private void CreateDropIndicator()
         {
             FrameworkElement marginElement = _margin.VisualElement;
-            AdornerLayer? adornerLayer = AdornerLayer.GetAdornerLayer(marginElement);
+            var adornerLayer = AdornerLayer.GetAdornerLayer(marginElement);
             if (adornerLayer is null)
             {
                 return;
@@ -247,7 +247,7 @@ namespace BookmarkStudio
         {
             if (_dropIndicatorAdorner is not null)
             {
-                AdornerLayer? adornerLayer = AdornerLayer.GetAdornerLayer(_margin.VisualElement);
+                var adornerLayer = AdornerLayer.GetAdornerLayer(_margin.VisualElement);
                 adornerLayer?.Remove(_dropIndicatorAdorner);
                 _dropIndicatorAdorner = null;
             }
@@ -278,7 +278,7 @@ namespace BookmarkStudio
                 Brush brush = new SolidColorBrush(Color.FromArgb(200, 0, 122, 204));
                 brush.Freeze();
 
-                Rect rect = new Rect(0, _indicatorY, AdornedElement.RenderSize.Width, 2);
+                var rect = new Rect(0, _indicatorY, AdornedElement.RenderSize.Width, 2);
                 drawingContext.DrawRectangle(brush, null, rect);
             }
         }

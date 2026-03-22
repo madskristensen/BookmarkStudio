@@ -38,11 +38,11 @@
       <Group guid="BookmarkStudio" id="StandardToolbarBookmarkGroup" priority="0x0900">
         <Parent guid="guidSHLMainMenu" id="IDM_VS_TOOL_STANDARD"/>
       </Group>
-      <Group guid="BookmarkStudio" id="BookmarkSlotsMenuGroup" priority="0x0000">
-        <Parent guid="BookmarkStudio" id="BookmarkSlotsMenu"/>
+      <Group guid="BookmarkStudio" id="BookmarkShortcutsMenuGroup" priority="0x0000">
+        <Parent guid="BookmarkStudio" id="BookmarkShortcutsMenu"/>
       </Group>
-      <Group guid="BookmarkStudio" id="BookmarkSlotsMenuGoToGroup" priority="0x0100">
-        <Parent guid="BookmarkStudio" id="BookmarkSlotsMenu"/>
+      <Group guid="BookmarkStudio" id="BookmarkShortcutsMenuGoToGroup" priority="0x0100">
+        <Parent guid="BookmarkStudio" id="BookmarkShortcutsMenu"/>
       </Group>
     </Groups>
 
@@ -71,11 +71,11 @@
           <CommandName>Filter by Color</CommandName>
         </Strings>
       </Menu>
-      <Menu guid="BookmarkStudio" id="BookmarkSlotsMenu" priority="0x0100" type="MenuControllerLatched">
+      <Menu guid="BookmarkStudio" id="BookmarkShortcutsMenu" priority="0x0100" type="MenuControllerLatched">
         <Parent guid="BookmarkStudio" id="StandardToolbarBookmarkGroup"/>
         <CommandFlag>TextChanges</CommandFlag>
         <Strings>
-          <CommandName>Bookmark Slots</CommandName>
+          <CommandName>Bookmark Shortcuts</CommandName>
         </Strings>
       </Menu>
     </Menus>
@@ -121,103 +121,103 @@
         </Strings>
       </Button>
 
-      <Button guid="BookmarkStudio" id="GoToSlot1Command" priority="0x0500" type="Button">
+      <Button guid="BookmarkStudio" id="GoToShortcut1Command" priority="0x0500" type="Button">
         <Icon guid="ImageCatalogGuid" id="GoToLast" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>CommandWellOnly</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <CommandFlag>TextChanges</CommandFlag>
         <Strings>
-          <ButtonText>Bookmark Slot 1</ButtonText>
-          <LocCanonicalName>.BookmarkStudio.GoToSlot1</LocCanonicalName>
+          <ButtonText>Bookmark Shortcut 1</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.GoToShortcut1</LocCanonicalName>
         </Strings>
       </Button>
-      <Button guid="BookmarkStudio" id="GoToSlot2Command" priority="0x0501" type="Button">
+      <Button guid="BookmarkStudio" id="GoToShortcut2Command" priority="0x0501" type="Button">
         <Icon guid="ImageCatalogGuid" id="GoToLast" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>CommandWellOnly</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <CommandFlag>TextChanges</CommandFlag>
         <Strings>
-          <ButtonText>Bookmark Slot 2</ButtonText>
-          <LocCanonicalName>.BookmarkStudio.GoToSlot2</LocCanonicalName>
+          <ButtonText>Bookmark Shortcut 2</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.GoToShortcut2</LocCanonicalName>
         </Strings>
       </Button>
-      <Button guid="BookmarkStudio" id="GoToSlot3Command" priority="0x0502" type="Button">
+      <Button guid="BookmarkStudio" id="GoToShortcut3Command" priority="0x0502" type="Button">
         <Icon guid="ImageCatalogGuid" id="GoToLast" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>CommandWellOnly</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <CommandFlag>TextChanges</CommandFlag>
         <Strings>
-          <ButtonText>Bookmark Slot 3</ButtonText>
-          <LocCanonicalName>.BookmarkStudio.GoToSlot3</LocCanonicalName>
+          <ButtonText>Bookmark Shortcut 3</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.GoToShortcut3</LocCanonicalName>
         </Strings>
       </Button>
-      <Button guid="BookmarkStudio" id="GoToSlot4Command" priority="0x0503" type="Button">
+      <Button guid="BookmarkStudio" id="GoToShortcut4Command" priority="0x0503" type="Button">
         <Icon guid="ImageCatalogGuid" id="GoToLast" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>CommandWellOnly</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <CommandFlag>TextChanges</CommandFlag>
         <Strings>
-          <ButtonText>Bookmark Slot 4</ButtonText>
-          <LocCanonicalName>.BookmarkStudio.GoToSlot4</LocCanonicalName>
+          <ButtonText>Bookmark Shortcut 4</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.GoToShortcut4</LocCanonicalName>
         </Strings>
       </Button>
-      <Button guid="BookmarkStudio" id="GoToSlot5Command" priority="0x0504" type="Button">
+      <Button guid="BookmarkStudio" id="GoToShortcut5Command" priority="0x0504" type="Button">
         <Icon guid="ImageCatalogGuid" id="GoToLast" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>CommandWellOnly</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <CommandFlag>TextChanges</CommandFlag>
         <Strings>
-          <ButtonText>Bookmark Slot 5</ButtonText>
-          <LocCanonicalName>.BookmarkStudio.GoToSlot5</LocCanonicalName>
+          <ButtonText>Bookmark Shortcut 5</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.GoToShortcut5</LocCanonicalName>
         </Strings>
       </Button>
-      <Button guid="BookmarkStudio" id="GoToSlot6Command" priority="0x0505" type="Button">
+      <Button guid="BookmarkStudio" id="GoToShortcut6Command" priority="0x0505" type="Button">
         <Icon guid="ImageCatalogGuid" id="GoToLast" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>CommandWellOnly</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <CommandFlag>TextChanges</CommandFlag>
         <Strings>
-          <ButtonText>Bookmark Slot 6</ButtonText>
-          <LocCanonicalName>.BookmarkStudio.GoToSlot6</LocCanonicalName>
+          <ButtonText>Bookmark Shortcut 6</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.GoToShortcut6</LocCanonicalName>
         </Strings>
       </Button>
-      <Button guid="BookmarkStudio" id="GoToSlot7Command" priority="0x0506" type="Button">
+      <Button guid="BookmarkStudio" id="GoToShortcut7Command" priority="0x0506" type="Button">
         <Icon guid="ImageCatalogGuid" id="GoToLast" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>CommandWellOnly</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <CommandFlag>TextChanges</CommandFlag>
         <Strings>
-          <ButtonText>Bookmark Slot 7</ButtonText>
-          <LocCanonicalName>.BookmarkStudio.GoToSlot7</LocCanonicalName>
+          <ButtonText>Bookmark Shortcut 7</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.GoToShortcut7</LocCanonicalName>
         </Strings>
       </Button>
-      <Button guid="BookmarkStudio" id="GoToSlot8Command" priority="0x0507" type="Button">
+      <Button guid="BookmarkStudio" id="GoToShortcut8Command" priority="0x0507" type="Button">
         <Icon guid="ImageCatalogGuid" id="GoToLast" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>CommandWellOnly</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <CommandFlag>TextChanges</CommandFlag>
         <Strings>
-          <ButtonText>Bookmark Slot 8</ButtonText>
-          <LocCanonicalName>.BookmarkStudio.GoToSlot8</LocCanonicalName>
+          <ButtonText>Bookmark Shortcut 8</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.GoToShortcut8</LocCanonicalName>
         </Strings>
       </Button>
-      <Button guid="BookmarkStudio" id="GoToSlot9Command" priority="0x0508" type="Button">
+      <Button guid="BookmarkStudio" id="GoToShortcut9Command" priority="0x0508" type="Button">
         <Icon guid="ImageCatalogGuid" id="GoToLast" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>CommandWellOnly</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
         <CommandFlag>TextChanges</CommandFlag>
         <Strings>
-          <ButtonText>Bookmark Slot 9</ButtonText>
-          <LocCanonicalName>.BookmarkStudio.GoToSlot9</LocCanonicalName>
+          <ButtonText>Bookmark Shortcut 9</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.GoToShortcut9</LocCanonicalName>
         </Strings>
       </Button>
 
@@ -309,25 +309,25 @@
   </Commands>
 
   <KeyBindings>
-    <KeyBinding guid="BookmarkStudio" id="GoToSlot1Command" editor="guidVSStd97" key1="1" mod1="Alt Shift" />
-    <KeyBinding guid="BookmarkStudio" id="GoToSlot2Command" editor="guidVSStd97" key1="2" mod1="Alt Shift" />
-    <KeyBinding guid="BookmarkStudio" id="GoToSlot3Command" editor="guidVSStd97" key1="3" mod1="Alt Shift" />
-    <KeyBinding guid="BookmarkStudio" id="GoToSlot4Command" editor="guidVSStd97" key1="4" mod1="Alt Shift" />
-    <KeyBinding guid="BookmarkStudio" id="GoToSlot5Command" editor="guidVSStd97" key1="5" mod1="Alt Shift" />
-    <KeyBinding guid="BookmarkStudio" id="GoToSlot6Command" editor="guidVSStd97" key1="6" mod1="Alt Shift" />
-    <KeyBinding guid="BookmarkStudio" id="GoToSlot7Command" editor="guidVSStd97" key1="7" mod1="Alt Shift" />
-    <KeyBinding guid="BookmarkStudio" id="GoToSlot8Command" editor="guidVSStd97" key1="8" mod1="Alt Shift" />
-    <KeyBinding guid="BookmarkStudio" id="GoToSlot9Command" editor="guidVSStd97" key1="9" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToShortcut1Command" editor="guidVSStd97" key1="1" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToShortcut2Command" editor="guidVSStd97" key1="2" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToShortcut3Command" editor="guidVSStd97" key1="3" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToShortcut4Command" editor="guidVSStd97" key1="4" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToShortcut5Command" editor="guidVSStd97" key1="5" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToShortcut6Command" editor="guidVSStd97" key1="6" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToShortcut7Command" editor="guidVSStd97" key1="7" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToShortcut8Command" editor="guidVSStd97" key1="8" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToShortcut9Command" editor="guidVSStd97" key1="9" mod1="Alt Shift" />
 
-    <KeyBinding guid="BookmarkStudio" id="GoToSlot1Command" editor="GUID_TextEditorFactory" key1="1" mod1="Alt Shift" />
-    <KeyBinding guid="BookmarkStudio" id="GoToSlot2Command" editor="GUID_TextEditorFactory" key1="2" mod1="Alt Shift" />
-    <KeyBinding guid="BookmarkStudio" id="GoToSlot3Command" editor="GUID_TextEditorFactory" key1="3" mod1="Alt Shift" />
-    <KeyBinding guid="BookmarkStudio" id="GoToSlot4Command" editor="GUID_TextEditorFactory" key1="4" mod1="Alt Shift" />
-    <KeyBinding guid="BookmarkStudio" id="GoToSlot5Command" editor="GUID_TextEditorFactory" key1="5" mod1="Alt Shift" />
-    <KeyBinding guid="BookmarkStudio" id="GoToSlot6Command" editor="GUID_TextEditorFactory" key1="6" mod1="Alt Shift" />
-    <KeyBinding guid="BookmarkStudio" id="GoToSlot7Command" editor="GUID_TextEditorFactory" key1="7" mod1="Alt Shift" />
-    <KeyBinding guid="BookmarkStudio" id="GoToSlot8Command" editor="GUID_TextEditorFactory" key1="8" mod1="Alt Shift" />
-    <KeyBinding guid="BookmarkStudio" id="GoToSlot9Command" editor="GUID_TextEditorFactory" key1="9" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToShortcut1Command" editor="GUID_TextEditorFactory" key1="1" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToShortcut2Command" editor="GUID_TextEditorFactory" key1="2" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToShortcut3Command" editor="GUID_TextEditorFactory" key1="3" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToShortcut4Command" editor="GUID_TextEditorFactory" key1="4" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToShortcut5Command" editor="GUID_TextEditorFactory" key1="5" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToShortcut6Command" editor="GUID_TextEditorFactory" key1="6" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToShortcut7Command" editor="GUID_TextEditorFactory" key1="7" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToShortcut8Command" editor="GUID_TextEditorFactory" key1="8" mod1="Alt Shift" />
+    <KeyBinding guid="BookmarkStudio" id="GoToShortcut9Command" editor="GUID_TextEditorFactory" key1="9" mod1="Alt Shift" />
   </KeyBindings>
 
   <CommandPlacements>
@@ -335,34 +335,34 @@
       <Parent guid="BookmarkStudio" id="MarginContextMenuBookmarkGroup"/>
     </CommandPlacement>
     <CommandPlacement guid="BookmarkStudio" id="OpenBookmarkManagerCommand" priority="0x0100">
-      <Parent guid="BookmarkStudio" id="BookmarkSlotsMenuGroup"/>
+      <Parent guid="BookmarkStudio" id="BookmarkShortcutsMenuGroup"/>
     </CommandPlacement>
-    <CommandPlacement guid="BookmarkStudio" id="GoToSlot1Command" priority="0x0200">
-      <Parent guid="BookmarkStudio" id="BookmarkSlotsMenuGoToGroup"/>
+    <CommandPlacement guid="BookmarkStudio" id="GoToShortcut1Command" priority="0x0200">
+      <Parent guid="BookmarkStudio" id="BookmarkShortcutsMenuGoToGroup"/>
     </CommandPlacement>
-    <CommandPlacement guid="BookmarkStudio" id="GoToSlot2Command" priority="0x0201">
-      <Parent guid="BookmarkStudio" id="BookmarkSlotsMenuGoToGroup"/>
+    <CommandPlacement guid="BookmarkStudio" id="GoToShortcut2Command" priority="0x0201">
+      <Parent guid="BookmarkStudio" id="BookmarkShortcutsMenuGoToGroup"/>
     </CommandPlacement>
-    <CommandPlacement guid="BookmarkStudio" id="GoToSlot3Command" priority="0x0202">
-      <Parent guid="BookmarkStudio" id="BookmarkSlotsMenuGoToGroup"/>
+    <CommandPlacement guid="BookmarkStudio" id="GoToShortcut3Command" priority="0x0202">
+      <Parent guid="BookmarkStudio" id="BookmarkShortcutsMenuGoToGroup"/>
     </CommandPlacement>
-    <CommandPlacement guid="BookmarkStudio" id="GoToSlot4Command" priority="0x0203">
-      <Parent guid="BookmarkStudio" id="BookmarkSlotsMenuGoToGroup"/>
+    <CommandPlacement guid="BookmarkStudio" id="GoToShortcut4Command" priority="0x0203">
+      <Parent guid="BookmarkStudio" id="BookmarkShortcutsMenuGoToGroup"/>
     </CommandPlacement>
-    <CommandPlacement guid="BookmarkStudio" id="GoToSlot5Command" priority="0x0204">
-      <Parent guid="BookmarkStudio" id="BookmarkSlotsMenuGoToGroup"/>
+    <CommandPlacement guid="BookmarkStudio" id="GoToShortcut5Command" priority="0x0204">
+      <Parent guid="BookmarkStudio" id="BookmarkShortcutsMenuGoToGroup"/>
     </CommandPlacement>
-    <CommandPlacement guid="BookmarkStudio" id="GoToSlot6Command" priority="0x0205">
-      <Parent guid="BookmarkStudio" id="BookmarkSlotsMenuGoToGroup"/>
+    <CommandPlacement guid="BookmarkStudio" id="GoToShortcut6Command" priority="0x0205">
+      <Parent guid="BookmarkStudio" id="BookmarkShortcutsMenuGoToGroup"/>
     </CommandPlacement>
-    <CommandPlacement guid="BookmarkStudio" id="GoToSlot7Command" priority="0x0206">
-      <Parent guid="BookmarkStudio" id="BookmarkSlotsMenuGoToGroup"/>
+    <CommandPlacement guid="BookmarkStudio" id="GoToShortcut7Command" priority="0x0206">
+      <Parent guid="BookmarkStudio" id="BookmarkShortcutsMenuGoToGroup"/>
     </CommandPlacement>
-    <CommandPlacement guid="BookmarkStudio" id="GoToSlot8Command" priority="0x0207">
-      <Parent guid="BookmarkStudio" id="BookmarkSlotsMenuGoToGroup"/>
+    <CommandPlacement guid="BookmarkStudio" id="GoToShortcut8Command" priority="0x0207">
+      <Parent guid="BookmarkStudio" id="BookmarkShortcutsMenuGoToGroup"/>
     </CommandPlacement>
-    <CommandPlacement guid="BookmarkStudio" id="GoToSlot9Command" priority="0x0208">
-      <Parent guid="BookmarkStudio" id="BookmarkSlotsMenuGoToGroup"/>
+    <CommandPlacement guid="BookmarkStudio" id="GoToShortcut9Command" priority="0x0208">
+      <Parent guid="BookmarkStudio" id="BookmarkShortcutsMenuGoToGroup"/>
     </CommandPlacement>
   </CommandPlacements>
 
@@ -385,15 +385,15 @@
       <IDSymbol name="RefreshBookmarkManagerCommand" value="0x0101" />
       <IDSymbol name="AddFolderCommand" value="0x0103" />
       <IDSymbol name="ExportBookmarksCommand" value="0x0404" />
-      <IDSymbol name="GoToSlot1Command" value="0x0500" />
-      <IDSymbol name="GoToSlot2Command" value="0x0501" />
-      <IDSymbol name="GoToSlot3Command" value="0x0502" />
-      <IDSymbol name="GoToSlot4Command" value="0x0503" />
-      <IDSymbol name="GoToSlot5Command" value="0x0504" />
-      <IDSymbol name="GoToSlot6Command" value="0x0505" />
-      <IDSymbol name="GoToSlot7Command" value="0x0506" />
-      <IDSymbol name="GoToSlot8Command" value="0x0507" />
-      <IDSymbol name="GoToSlot9Command" value="0x0508" />
+      <IDSymbol name="GoToShortcut1Command" value="0x0500" />
+      <IDSymbol name="GoToShortcut2Command" value="0x0501" />
+      <IDSymbol name="GoToShortcut3Command" value="0x0502" />
+      <IDSymbol name="GoToShortcut4Command" value="0x0503" />
+      <IDSymbol name="GoToShortcut5Command" value="0x0504" />
+      <IDSymbol name="GoToShortcut6Command" value="0x0505" />
+      <IDSymbol name="GoToShortcut7Command" value="0x0506" />
+      <IDSymbol name="GoToShortcut8Command" value="0x0507" />
+      <IDSymbol name="GoToShortcut9Command" value="0x0508" />
       <IDSymbol name="TogglePromptForNameCommand" value="0x0600" />
       <IDSymbol name="OpenSettingsCommand" value="0x0601" />
       <IDSymbol name="BookmarkManagerToolbarFilterGroup" value="0x1005" />
@@ -410,9 +410,9 @@
       <IDSymbol name="FilterByColorPinkCommand" value="0x0707" />
       <IDSymbol name="FilterByColorTealCommand" value="0x0708" />
       <IDSymbol name="StandardToolbarBookmarkGroup" value="0x1030" />
-      <IDSymbol name="BookmarkSlotsMenu" value="0x1031" />
-      <IDSymbol name="BookmarkSlotsMenuGroup" value="0x1032" />
-      <IDSymbol name="BookmarkSlotsMenuGoToGroup" value="0x1033" />
+      <IDSymbol name="BookmarkShortcutsMenu" value="0x1031" />
+      <IDSymbol name="BookmarkShortcutsMenuGroup" value="0x1032" />
+      <IDSymbol name="BookmarkShortcutsMenuGoToGroup" value="0x1033" />
     </GuidSymbol>
 
     <!-- Editor margin context menu -->

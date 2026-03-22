@@ -1,4 +1,3 @@
-using System;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
@@ -7,7 +6,6 @@ using System.Windows.Media;
 using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Formatting;
-using Microsoft.VisualStudio.Text.Tagging;
 
 namespace BookmarkStudio
 {
@@ -15,7 +13,7 @@ namespace BookmarkStudio
     {
         public UIElement GenerateGlyph(IWpfTextViewLine line, IGlyphTag tag)
         {
-            BookmarkGlyphTag? bookmarkTag = tag as BookmarkGlyphTag;
+            var bookmarkTag = tag as BookmarkGlyphTag;
             var tooltip = BuildTooltip(bookmarkTag);
             Brush background = GetGlyphBrush(bookmarkTag);
             ContextMenu? contextMenu = null;
@@ -26,10 +24,10 @@ namespace BookmarkStudio
                 contextMenu = BuildGlyphContextMenu(bookmarkTag.BookmarkId);
             }
 
-            // If there's a slot number, render it as text on the glyph
-            if (bookmarkTag?.SlotNumber.HasValue == true)
+            // If there's a shortcut number, render it as text on the glyph
+            if (bookmarkTag?.ShortcutNumber.HasValue == true)
             {
-                Grid container = new Grid
+                var container = new Grid
                 {
                     Width = 14,
                     Height = 14,
@@ -48,7 +46,7 @@ namespace BookmarkStudio
 
                 container.Children.Add(new TextBlock
                 {
-                    Text = bookmarkTag.SlotNumber.Value.ToString(),
+                    Text = bookmarkTag.ShortcutNumber.Value.ToString(),
                     Foreground = Brushes.White,
                     FontSize = 11,
                     FontWeight = FontWeights.Bold,
@@ -67,7 +65,7 @@ namespace BookmarkStudio
                 return container;
             }
 
-            Border glyph = new Border
+            var glyph = new Border
             {
                 Width = 14,
                 Height = 14,
@@ -85,9 +83,9 @@ namespace BookmarkStudio
 
         private static ContextMenu BuildGlyphContextMenu(string bookmarkId)
         {
-            ContextMenu menu = new ContextMenu();
+            var menu = new ContextMenu();
 
-            menu.Items.Add(BookmarkContextMenuHelper.CreateAssignSlotSubmenu(bookmarkId, BookmarkManagerToolWindow.RefreshIfVisibleAsync));
+            menu.Items.Add(BookmarkContextMenuHelper.CreateAssignShortcutSubmenu(bookmarkId, BookmarkManagerToolWindow.RefreshIfVisibleAsync));
             menu.Items.Add(new Separator());
             menu.Items.Add(BookmarkContextMenuHelper.CreateSetColorSubmenu(bookmarkId, BookmarkManagerToolWindow.RefreshIfVisibleAsync));
             menu.Items.Add(new Separator());
@@ -115,11 +113,11 @@ namespace BookmarkStudio
             }
 
             var hasLabel = !string.IsNullOrWhiteSpace(bookmarkTag.Label);
-            var hasSlot = bookmarkTag.SlotNumber.HasValue;
+            var hasShortcut = bookmarkTag.ShortcutNumber.HasValue;
 
-            if (hasLabel && hasSlot)
+            if (hasLabel && hasShortcut)
             {
-                return CreateThemedTooltip(bookmarkTag.Label, bookmarkTag.SlotNumber.Value);
+                return CreateThemedTooltip(bookmarkTag.Label, bookmarkTag.ShortcutNumber.Value);
             }
 
             if (hasLabel)
@@ -127,9 +125,9 @@ namespace BookmarkStudio
                 return bookmarkTag.Label;
             }
 
-            if (hasSlot)
+            if (hasShortcut)
             {
-                return CreateThemedTooltip(null, bookmarkTag.SlotNumber.Value);
+                return CreateThemedTooltip(null, bookmarkTag.ShortcutNumber.Value);
             }
 
             return "BookmarkStudio bookmark";
@@ -139,14 +137,14 @@ namespace BookmarkStudio
         {
             var shortcut = string.Concat("Alt+Shift+", slotNumber.ToString(CultureInfo.InvariantCulture));
 
-            StackPanel panel = new StackPanel
+            var panel = new StackPanel
             {
                 Orientation = Orientation.Vertical,
             };
 
             if (!string.IsNullOrWhiteSpace(label))
             {
-                TextBlock labelText = new TextBlock
+                var labelText = new TextBlock
                 {
                     Text = label,
                     FontWeight = FontWeights.SemiBold,
@@ -155,7 +153,7 @@ namespace BookmarkStudio
                 panel.Children.Add(labelText);
             }
 
-            TextBlock shortcutText = new TextBlock
+            var shortcutText = new TextBlock
             {
                 Text = shortcut,
                 Opacity = 0.8,
@@ -163,7 +161,7 @@ namespace BookmarkStudio
             shortcutText.SetResourceReference(TextBlock.ForegroundProperty, EnvironmentColors.ToolTipTextBrushKey);
             panel.Children.Add(shortcutText);
 
-            ToolTip tooltip = new ToolTip
+            var tooltip = new ToolTip
             {
                 Content = panel,
             };

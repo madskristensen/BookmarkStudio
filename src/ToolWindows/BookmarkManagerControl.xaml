@@ -20,7 +20,7 @@
         <local:TreeViewItemToIndentConverter x:Key="IndentConverter" />
         <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
         <local:BoolToVisibilityInverseConverter x:Key="BoolToVisibilityInverseConverter" />
-        <local:SlotNumberToVisibilityConverter x:Key="SlotNumberToVisibilityConverter" />
+        <local:ShortcutNumberToVisibilityConverter x:Key="ShortcutNumberToVisibilityConverter" />
 
         <!-- Subtle selection color like Solution Explorer -->
         <SolidColorBrush x:Key="TreeViewSelectionBrush" Color="#20808080" />
@@ -210,10 +210,14 @@
                                 <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.JSONScript}" />
                             </MenuItem.Icon>
                         </MenuItem>
-                        <MenuItem Header="Rename Folder" Click="RenameFolderMenuItem_Click" InputGestureText="F2"
+                        <MenuItem Header="Rename" Click="RenameFolderMenuItem_Click" InputGestureText="F2"
                                   Style="{StaticResource ThemedMenuItemStyle}"
-                                  Visibility="{Binding IsRoot, Converter={StaticResource BoolToVisibilityInverseConverter}}" />
-                        <MenuItem Header="Delete Folder" Click="DeleteFolderMenuItem_Click" InputGestureText="Del"
+                                  Visibility="{Binding IsRoot, Converter={StaticResource BoolToVisibilityInverseConverter}}">
+                            <MenuItem.Icon>
+                                <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.Rename}" />
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <MenuItem Header="Delete" Click="DeleteFolderMenuItem_Click" InputGestureText="Del"
                                   Style="{StaticResource ThemedMenuItemStyle}"
                                   Visibility="{Binding IsRoot, Converter={StaticResource BoolToVisibilityInverseConverter}}">
                             <MenuItem.Icon>
@@ -269,18 +273,18 @@
                                 <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.Rename}" />
                             </MenuItem.Icon>
                         </MenuItem>
-                        <Separator Style="{StaticResource ThemedSeparatorStyle}" />                        <MenuItem x:Name="AssignSlotSubmenu" Header="Assign Slot" Style="{StaticResource ThemedMenuItemStyle}" SubmenuOpened="AssignSlotSubmenu_Opened">
-                            <MenuItem Header="1" Tag="1" Click="AssignSlotMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" />
-                            <MenuItem Header="2" Tag="2" Click="AssignSlotMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" />
-                            <MenuItem Header="3" Tag="3" Click="AssignSlotMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" />
-                            <MenuItem Header="4" Tag="4" Click="AssignSlotMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" />
-                            <MenuItem Header="5" Tag="5" Click="AssignSlotMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" />
-                            <MenuItem Header="6" Tag="6" Click="AssignSlotMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" />
-                            <MenuItem Header="7" Tag="7" Click="AssignSlotMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" />
-                            <MenuItem Header="8" Tag="8" Click="AssignSlotMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" />
-                            <MenuItem Header="9" Tag="9" Click="AssignSlotMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" />
+                        <Separator Style="{StaticResource ThemedSeparatorStyle}" />                        <MenuItem x:Name="AssignShortcutSubmenu" Header="Assign shortcut" Style="{StaticResource ThemedMenuItemStyle}" SubmenuOpened="AssignShortcutSubmenu_Opened">
+                            <MenuItem Header="1" Tag="1" Click="AssignShortcutMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" />
+                            <MenuItem Header="2" Tag="2" Click="AssignShortcutMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" />
+                            <MenuItem Header="3" Tag="3" Click="AssignShortcutMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" />
+                            <MenuItem Header="4" Tag="4" Click="AssignShortcutMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" />
+                            <MenuItem Header="5" Tag="5" Click="AssignShortcutMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" />
+                            <MenuItem Header="6" Tag="6" Click="AssignShortcutMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" />
+                            <MenuItem Header="7" Tag="7" Click="AssignShortcutMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" />
+                            <MenuItem Header="8" Tag="8" Click="AssignShortcutMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" />
+                            <MenuItem Header="9" Tag="9" Click="AssignShortcutMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" />
                             <Separator Style="{StaticResource ThemedSeparatorStyle}" />
-                            <MenuItem Header="Clear Slot" Click="ClearSlotMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" />
+                            <MenuItem Header="Clear Shortcut" Click="ClearShortcutMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" />
                         </MenuItem>
                         <Separator Style="{StaticResource ThemedSeparatorStyle}" />
                         <MenuItem Header="Set Color" Style="{StaticResource ThemedMenuItemStyle}">
@@ -347,14 +351,14 @@
                           HorizontalAlignment="Left">
                         <Border CornerRadius="3"
                                 Background="{Binding Bookmark.Color, Converter={StaticResource ColorToBrushConverter}}" />
-                        <TextBlock Text="{Binding Bookmark.SlotNumber}"
+                        <TextBlock Text="{Binding Bookmark.ShortcutNumber}"
                                    Foreground="White"
                                    FontSize="10"
                                    FontWeight="Bold"
                                    FontFamily="Segoe UI"
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center"
-                                   Visibility="{Binding Bookmark.SlotNumber, Converter={StaticResource SlotNumberToVisibilityConverter}}">
+                                   Visibility="{Binding Bookmark.ShortcutNumber, Converter={StaticResource ShortcutNumberToVisibilityConverter}}">
                             <TextBlock.Effect>
                                 <DropShadowEffect Color="Black"
                                                   BlurRadius="1"

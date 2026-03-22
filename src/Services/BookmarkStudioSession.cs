@@ -214,7 +214,7 @@ namespace BookmarkStudio
                 else
                 {
                     // Create new bookmark - combine all bookmarks to find next available slot/label
-                    List<BookmarkMetadata> allBookmarks = new List<BookmarkMetadata>();
+                    var allBookmarks = new List<BookmarkMetadata>();
                     allBookmarks.AddRange(dualState.PersonalState.Bookmarks);
                     allBookmarks.AddRange(dualState.SolutionState.Bookmarks);
 
@@ -470,7 +470,7 @@ namespace BookmarkStudio
                 }
 
                 // Resolve slot conflicts - workspace bookmarks take precedence
-                ResolveSlotConflicts(_cachedDualState);
+                ResolveShortcutConflicts(_cachedDualState);
 
                 UpdateCachedStateFromDualState(_cachedDualState);
                 return (_cachedDualState, staleCount);
@@ -630,7 +630,7 @@ namespace BookmarkStudio
                 _cachedDualState = await _metadataStore.LoadDualWorkspaceAsync(solutionPath, cancellationToken);
 
                 // Resolve slot conflicts - workspace bookmarks take precedence
-                ResolveSlotConflicts(_cachedDualState);
+                ResolveShortcutConflicts(_cachedDualState);
 
                 UpdateCachedStateFromDualState(_cachedDualState);
                 return _cachedBookmarks;
@@ -698,18 +698,18 @@ namespace BookmarkStudio
         /// Clears slot numbers from personal bookmarks that conflict with workspace bookmarks.
         /// Workspace bookmarks take precedence when there are duplicate slot assignments.
         /// </summary>
-        private static void ResolveSlotConflicts(DualBookmarkWorkspaceState dualState)
+        private static void ResolveShortcutConflicts(DualBookmarkWorkspaceState dualState)
         {
-            HashSet<int> workspaceSlots = new HashSet<int>(
+            var workspaceShortcuts = new HashSet<int>(
                 dualState.SolutionState.Bookmarks
-                    .Where(b => b.SlotNumber.HasValue)
-                    .Select(b => b.SlotNumber.GetValueOrDefault()));
+                    .Where(b => b.ShortcutNumber.HasValue)
+                    .Select(b => b.ShortcutNumber.GetValueOrDefault()));
 
             foreach (BookmarkMetadata personalBookmark in dualState.PersonalState.Bookmarks)
             {
-                if (personalBookmark.SlotNumber.HasValue && workspaceSlots.Contains(personalBookmark.SlotNumber.Value))
+                if (personalBookmark.ShortcutNumber.HasValue && workspaceShortcuts.Contains(personalBookmark.ShortcutNumber.Value))
                 {
-                    personalBookmark.SlotNumber = null;
+                    personalBookmark.ShortcutNumber = null;
                 }
             }
         }
@@ -742,11 +742,11 @@ namespace BookmarkStudio
         /// </summary>
         private void UpdateCachedStateFromDualState(DualBookmarkWorkspaceState dualState)
         {
-            List<ManagedBookmark> allBookmarks = new List<ManagedBookmark>();
+            var allBookmarks = new List<ManagedBookmark>();
             allBookmarks.AddRange(BookmarkRepositoryService.ToManagedBookmarks(dualState.PersonalState.Bookmarks));
             allBookmarks.AddRange(BookmarkRepositoryService.ToManagedBookmarks(dualState.SolutionState.Bookmarks));
 
-            HashSet<string> allFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var allFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var path in dualState.PersonalState.FolderPaths)
             {
                 allFolders.Add(path);

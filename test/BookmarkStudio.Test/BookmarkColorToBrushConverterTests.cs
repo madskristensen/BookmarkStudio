@@ -19,7 +19,7 @@ public class BookmarkColorToBrushConverterTests
     [TestMethod]
     public void Convert_WhenValueIsNotBookmarkColor_ReturnsTransparentBrush()
     {
-        BookmarkColorToBrushConverter converter = new BookmarkColorToBrushConverter();
+        var converter = new BookmarkColorToBrushConverter();
 
         object result = converter.Convert("not-a-color", typeof(Brush), null, CultureInfo.InvariantCulture);
 

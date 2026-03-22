@@ -41,15 +41,15 @@ namespace BookmarkStudio
         public const int RefreshBookmarkManagerCommand = 0x0101;
         public const int AddFolderCommand = 0x0103;
         public const int ExportBookmarksCommand = 0x0404;
-        public const int GoToSlot1Command = 0x0500;
-        public const int GoToSlot2Command = 0x0501;
-        public const int GoToSlot3Command = 0x0502;
-        public const int GoToSlot4Command = 0x0503;
-        public const int GoToSlot5Command = 0x0504;
-        public const int GoToSlot6Command = 0x0505;
-        public const int GoToSlot7Command = 0x0506;
-        public const int GoToSlot8Command = 0x0507;
-        public const int GoToSlot9Command = 0x0508;
+        public const int GoToShortcut1Command = 0x0500;
+        public const int GoToShortcut2Command = 0x0501;
+        public const int GoToShortcut3Command = 0x0502;
+        public const int GoToShortcut4Command = 0x0503;
+        public const int GoToShortcut5Command = 0x0504;
+        public const int GoToShortcut6Command = 0x0505;
+        public const int GoToShortcut7Command = 0x0506;
+        public const int GoToShortcut8Command = 0x0507;
+        public const int GoToShortcut9Command = 0x0508;
         public const int TogglePromptForNameCommand = 0x0600;
         public const int OpenSettingsCommand = 0x0601;
         public const int BookmarkManagerToolbarFilterGroup = 0x1005;
@@ -66,9 +66,9 @@ namespace BookmarkStudio
         public const int FilterByColorPinkCommand = 0x0707;
         public const int FilterByColorTealCommand = 0x0708;
         public const int StandardToolbarBookmarkGroup = 0x1030;
-        public const int BookmarkSlotsMenu = 0x1031;
-        public const int BookmarkSlotsMenuGroup = 0x1032;
-        public const int BookmarkSlotsMenuGoToGroup = 0x1033;
+        public const int BookmarkShortcutsMenu = 0x1031;
+        public const int BookmarkShortcutsMenuGroup = 0x1032;
+        public const int BookmarkShortcutsMenuGoToGroup = 0x1033;
         public const int LeftMarginContextMenu = 0x0066;
         public const int ToggleBookmark = 0x004C;
     }

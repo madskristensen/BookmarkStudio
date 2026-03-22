@@ -1,8 +1,6 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Tagging;
@@ -109,12 +107,12 @@ namespace BookmarkStudio
 
                 ITextSnapshotLine line = snapshot.GetLineFromLineNumber(lineIndex);
                 var spanLength = line.Length > 0 ? 1 : 0;
-                SnapshotSpan span = new SnapshotSpan(line.Start, spanLength);
-                BookmarkGlyphTag glyphTag = new BookmarkGlyphTag
+                var span = new SnapshotSpan(line.Start, spanLength);
+                var glyphTag = new BookmarkGlyphTag
                 {
                     BookmarkId = bookmark.BookmarkId,
                     Label = bookmark.Label,
-                    SlotNumber = bookmark.SlotNumber,
+                    ShortcutNumber = bookmark.ShortcutNumber,
                     Color = bookmark.Color,
                 };
                 yield return new TagSpan<BookmarkGlyphTag>(span, glyphTag);
@@ -233,7 +231,7 @@ namespace BookmarkStudio
                     }
 
                     ITextSnapshot snapshot = _buffer.CurrentSnapshot;
-                    SnapshotSpan span = new SnapshotSpan(snapshot, 0, snapshot.Length);
+                    var span = new SnapshotSpan(snapshot, 0, snapshot.Length);
                     TagsChanged?.Invoke(this, new SnapshotSpanEventArgs(span));
                 }).FireAndForget();
             }
@@ -249,7 +247,7 @@ namespace BookmarkStudio
             // When buffer changes, the tracking points automatically track to new positions.
             // We just need to notify that tags may have changed so GetTags is called again.
             ITextSnapshot snapshot = e.After;
-            SnapshotSpan fullSpan = new SnapshotSpan(snapshot, 0, snapshot.Length);
+            var fullSpan = new SnapshotSpan(snapshot, 0, snapshot.Length);
             TagsChanged?.Invoke(this, new SnapshotSpanEventArgs(fullSpan));
         }
 
@@ -284,7 +282,7 @@ namespace BookmarkStudio
                 }
 
                 ITextSnapshot snapshot = _buffer.CurrentSnapshot;
-                SnapshotSpan span = new SnapshotSpan(snapshot, 0, snapshot.Length);
+                var span = new SnapshotSpan(snapshot, 0, snapshot.Length);
                 TagsChanged?.Invoke(this, new SnapshotSpanEventArgs(span));
             }).FireAndForget();
         }

@@ -49,7 +49,7 @@ namespace BookmarkStudio
 
         private static Brush CreateBrush(byte r, byte g, byte b)
         {
-            SolidColorBrush brush = new SolidColorBrush(Color.FromRgb(r, g, b));
+            var brush = new SolidColorBrush(Color.FromRgb(r, g, b));
             brush.Freeze();
             return brush;
         }
@@ -71,7 +71,7 @@ namespace BookmarkStudio
             => throw new NotSupportedException();
     }
 
-    internal sealed class SlotNumberToVisibilityConverter : IValueConverter
+    internal sealed class ShortcutNumberToVisibilityConverter : IValueConverter
     {
         public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
         {

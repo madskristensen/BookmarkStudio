@@ -183,7 +183,7 @@ namespace BookmarkStudio
 
         public string LineText { get; set; } = string.Empty;
 
-        public int? SlotNumber { get; set; }
+        public int? ShortcutNumber { get; set; }
 
         public string Label { get; set; } = string.Empty;
 
@@ -224,7 +224,7 @@ namespace BookmarkStudio
                 NormalizedDocumentPath = BookmarkIdentity.NormalizeDocumentPath(DocumentPath),
                 LineNumber = LineNumber,
                 LineText = (LineText ?? string.Empty).Trim(),
-                SlotNumber = SlotNumber,
+                ShortcutNumber = ShortcutNumber,
                 Label = Label,
                 Group = Group,
                 Color = Color,
@@ -245,7 +245,7 @@ namespace BookmarkStudio
 
         public string LineText { get; set; } = string.Empty;
 
-        public int? SlotNumber { get; set; }
+        public int? ShortcutNumber { get; set; }
 
         public string Label { get; set; } = string.Empty;
 
@@ -301,7 +301,7 @@ namespace BookmarkStudio
             {
                 if (_cachedAllBookmarks is null)
                 {
-                    List<BookmarkMetadata> all = new List<BookmarkMetadata>();
+                    var all = new List<BookmarkMetadata>();
                     all.AddRange(PersonalState.Bookmarks);
                     all.AddRange(SolutionState.Bookmarks);
                     _cachedAllBookmarks = all;
@@ -317,7 +317,7 @@ namespace BookmarkStudio
             {
                 if (_cachedAllFolderPaths is null)
                 {
-                    HashSet<string> all = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    var all = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                     foreach (var path in PersonalState.FolderPaths)
                     {
                         all.Add(path);

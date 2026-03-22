@@ -109,10 +109,10 @@ namespace BookmarkStudio
 
         public static BookmarkMetadata CreateBookmarkMetadata(IEnumerable<BookmarkMetadata> existingBookmarks, BookmarkSnapshot snapshot, string? label)
         {
-            BookmarkMetadata bookmark = new BookmarkMetadata
+            var bookmark = new BookmarkMetadata
             {
                 BookmarkId = Guid.NewGuid().ToString("N"),
-                SlotNumber = FindNextAvailableSlot(existingBookmarks),
+                ShortcutNumber = FindNextAvailableShortcut(existingBookmarks),
                 Label = string.IsNullOrWhiteSpace(label) ? FindNextDefaultLabel(existingBookmarks) : label,
                 Color = BookmarkColor.Blue,
             };
@@ -292,8 +292,8 @@ namespace BookmarkStudio
 
         public static IReadOnlyList<ManagedBookmark> ToManagedBookmarks(IEnumerable<BookmarkMetadata> bookmarks)
             => bookmarks.Select(item => item.ToManagedBookmark())
-                .OrderBy(item => item.SlotNumber.HasValue ? 0 : 1)
-                .ThenBy(item => item.SlotNumber ?? int.MaxValue)
+                .OrderBy(item => item.ShortcutNumber.HasValue ? 0 : 1)
+                .ThenBy(item => item.ShortcutNumber ?? int.MaxValue)
                 .ThenBy(item => item.Group, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(item => item.DocumentPath, StringComparer.OrdinalIgnoreCase)
                 .ThenBy(item => item.LineNumber)
@@ -317,17 +317,17 @@ namespace BookmarkStudio
         }
 
         /// <summary>
-        /// Returns the lowest available slot number (1-9), or null if all slots are occupied.
+        /// Returns the lowest available shortcut number (1-9), or null if all shortcuts are occupied.
         /// </summary>
-        internal static int? FindNextAvailableSlot(IEnumerable<BookmarkMetadata> bookmarks)
+        internal static int? FindNextAvailableShortcut(IEnumerable<BookmarkMetadata> bookmarks)
         {
-            HashSet<int> usedSlots = new HashSet<int>(bookmarks.Where(b => b.SlotNumber.HasValue).Select(b => b.SlotNumber.GetValueOrDefault()));
+            var usedShortcuts = new HashSet<int>(bookmarks.Where(b => b.ShortcutNumber.HasValue).Select(b => b.ShortcutNumber.GetValueOrDefault()));
 
-            for (var slot = 1; slot <= 9; slot++)
+            for (var shortcut = 1; shortcut <= 9; shortcut++)
             {
-                if (!usedSlots.Contains(slot))
+                if (!usedShortcuts.Contains(shortcut))
                 {
-                    return slot;
+                    return shortcut;
                 }
             }
 
@@ -340,7 +340,7 @@ namespace BookmarkStudio
         internal static string FindNextDefaultLabel(IEnumerable<BookmarkMetadata> bookmarks)
         {
             const string prefix = "Bookmark";
-            HashSet<int> usedNumbers = new HashSet<int>();
+            var usedNumbers = new HashSet<int>();
 
             foreach (BookmarkMetadata bookmark in bookmarks)
             {

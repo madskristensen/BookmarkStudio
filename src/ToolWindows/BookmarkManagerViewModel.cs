@@ -1,5 +1,5 @@
-using System.Collections.ObjectModel;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -22,7 +22,7 @@ namespace BookmarkStudio
         private BookmarkNodeViewModel? _selectedNode;
         private string _searchText = string.Empty;
         private BookmarkColor? _filterColor;
-        private int? _selectedSlotNumber;
+        private int? _selectedShortcutNumber;
         private string _selectedLabelText = string.Empty;
         private string _statusText = "Loading bookmarks...";
         private BookmarkStorageInfo? _storageInfo;
@@ -33,7 +33,7 @@ namespace BookmarkStudio
 
         public ObservableCollection<BookmarkGridRowViewModel> BookmarkRows { get; } = new ObservableCollection<BookmarkGridRowViewModel>();
 
-        public IReadOnlyList<int> SlotOptions { get; } = Enumerable.Range(1, 9).ToArray();
+        public IReadOnlyList<int> ShortcutOptions { get; } = Enumerable.Range(1, 9).ToArray();
 
         public BookmarkNodeViewModel? SelectedNode
         {
@@ -50,12 +50,12 @@ namespace BookmarkStudio
                 if (_selectedNode is BookmarkItemNodeViewModel bookmarkNode)
                 {
                     SelectedLabelText = bookmarkNode.Bookmark.Label;
-                    SelectedSlotNumber = bookmarkNode.Bookmark.SlotNumber;
+                    SelectedShortcutNumber = bookmarkNode.Bookmark.ShortcutNumber;
                 }
                 else
                 {
                     SelectedLabelText = string.Empty;
-                    SelectedSlotNumber = null;
+                    SelectedShortcutNumber = null;
                 }
 
                 OnPropertyChanged();
@@ -132,17 +132,17 @@ namespace BookmarkStudio
             }
         }
 
-        public int? SelectedSlotNumber
+        public int? SelectedShortcutNumber
         {
-            get => _selectedSlotNumber;
+            get => _selectedShortcutNumber;
             set
             {
-                if (_selectedSlotNumber == value)
+                if (_selectedShortcutNumber == value)
                 {
                     return;
                 }
 
-                _selectedSlotNumber = value;
+                _selectedShortcutNumber = value;
                 OnPropertyChanged();
             }
         }
@@ -251,51 +251,51 @@ namespace BookmarkStudio
             SetStatus("Bookmark metadata updated.");
         }
 
-        public async Task AssignSelectedSlotAsync(CancellationToken cancellationToken)
+        public async Task AssignSelectedShortcutAsync(CancellationToken cancellationToken)
         {
             ManagedBookmark selectedBookmark = GetRequiredSelection();
-            if (!SelectedSlotNumber.HasValue)
+            if (!SelectedShortcutNumber.HasValue)
             {
-                throw new InvalidOperationException("Select a slot before assigning it.");
+                throw new InvalidOperationException("Select a shortcut before assigning it.");
             }
 
-            IReadOnlyList<ManagedBookmark> bookmarks = await _operations.AssignSlotAsync(SelectedSlotNumber.Value, selectedBookmark.BookmarkId, cancellationToken);
+            IReadOnlyList<ManagedBookmark> bookmarks = await _operations.AssignShortcutAsync(SelectedShortcutNumber.Value, selectedBookmark.BookmarkId, cancellationToken);
             ReloadDualBookmarks(bookmarks);
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             RebuildTree();
             SelectBookmark(selectedBookmark.BookmarkId);
-            SetStatus(string.Concat("Slot ", SelectedSlotNumber.Value.ToString(System.Globalization.CultureInfo.InvariantCulture), " assigned."));
+            SetStatus(string.Concat("Shortcut ", SelectedShortcutNumber.Value.ToString(System.Globalization.CultureInfo.InvariantCulture), " assigned."));
         }
 
-        public async Task AssignSelectedSlotAsync(int slotNumber, CancellationToken cancellationToken)
+        public async Task AssignSelectedShortcutAsync(int shortcutNumber, CancellationToken cancellationToken)
         {
-            SelectedSlotNumber = slotNumber;
-            await AssignSelectedSlotAsync(cancellationToken);
+            SelectedShortcutNumber = shortcutNumber;
+            await AssignSelectedShortcutAsync(cancellationToken);
         }
 
-        public async Task ClearSelectedSlotAsync(CancellationToken cancellationToken)
+        public async Task ClearSelectedShortcutAsync(CancellationToken cancellationToken)
         {
             ManagedBookmark selectedBookmark = GetRequiredSelection();
-            IReadOnlyList<ManagedBookmark> bookmarks = await _operations.ClearSlotAsync(selectedBookmark.BookmarkId, cancellationToken);
+            IReadOnlyList<ManagedBookmark> bookmarks = await _operations.ClearShortcutAsync(selectedBookmark.BookmarkId, cancellationToken);
             ReloadDualBookmarks(bookmarks);
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             RebuildTree();
             SelectBookmark(selectedBookmark.BookmarkId);
-            SetStatus("Bookmark slot cleared.");
+            SetStatus("Bookmark shortcut cleared.");
         }
 
-        public Dictionary<int, string> GetSlotAssignments()
+        public Dictionary<int, string> GetShortcutAssignments()
         {
-            Dictionary<int, string> assignments = new Dictionary<int, string>();
+            var assignments = new Dictionary<int, string>();
 
             foreach (ManagedBookmark bookmark in _bookmarks)
             {
-                if (bookmark.SlotNumber.HasValue && bookmark.SlotNumber.Value >= 1 && bookmark.SlotNumber.Value <= 9)
+                if (bookmark.ShortcutNumber.HasValue && bookmark.ShortcutNumber.Value >= 1 && bookmark.ShortcutNumber.Value <= 9)
                 {
-                    var label = string.IsNullOrWhiteSpace(bookmark.Label) 
-                        ? bookmark.FileName 
+                    var label = string.IsNullOrWhiteSpace(bookmark.Label)
+                        ? bookmark.FileName
                         : bookmark.Label;
-                    assignments[bookmark.SlotNumber.Value] = label;
+                    assignments[bookmark.ShortcutNumber.Value] = label;
                 }
             }
 
@@ -620,7 +620,7 @@ namespace BookmarkStudio
             RootNodes.Clear();
             BookmarkRows.Clear();
 
-            FolderBuilderNode root = new FolderBuilderNode(string.Empty, null);
+            var root = new FolderBuilderNode(string.Empty, null);
             foreach (var folderPath in _folderPaths)
             {
                 EnsureFolderBuilderNode(root, folderPath);
@@ -648,7 +648,7 @@ namespace BookmarkStudio
                 folder.Bookmarks.Add(bookmark);
             }
 
-            FolderNodeViewModel rootNode = new FolderNodeViewModel(string.Empty, 0, _storageInfo?.Location);
+            var rootNode = new FolderNodeViewModel(string.Empty, 0, _storageInfo?.Location);
             rootNode.IsExpanded = true;
             rootNode.IsExpandedChanged += OnFolderExpandedChanged;
 
@@ -819,7 +819,7 @@ namespace BookmarkStudio
 
             // Remove all paths from this storage from the global set
             _folderPaths.RemoveWhere(path => targetSet.Contains(path));
-            
+
             // Clear the storage-specific set and add back the root
             targetSet.Clear();
             targetSet.Add(string.Empty);
@@ -976,7 +976,7 @@ namespace BookmarkStudio
             IEnumerable<string> folderPaths,
             string search)
         {
-            FolderBuilderNode root = new FolderBuilderNode(string.Empty, null);
+            var root = new FolderBuilderNode(string.Empty, null);
             foreach (var folderPath in folderPaths)
             {
                 EnsureFolderBuilderNode(root, folderPath);
@@ -1002,7 +1002,7 @@ namespace BookmarkStudio
                 folder.Bookmarks.Add(bookmark);
             }
 
-            FolderNodeViewModel rootNode = new FolderNodeViewModel(string.Empty, 0, storageLocation);
+            var rootNode = new FolderNodeViewModel(string.Empty, 0, storageLocation);
             rootNode.IsExpanded = true;
             rootNode.IsExpandedChanged += OnFolderExpandedChanged;
 
@@ -1055,7 +1055,7 @@ namespace BookmarkStudio
         {
             BookmarkRows.Clear();
 
-            HashSet<string> foldersWithBookmarks = new HashSet<string>(
+            var foldersWithBookmarks = new HashSet<string>(
                 bookmarks.Select(bookmark => BookmarkIdentity.NormalizeFolderPath(bookmark.FolderPath)),
                 StringComparer.OrdinalIgnoreCase);
 
@@ -1084,7 +1084,7 @@ namespace BookmarkStudio
                 || Contains(bookmark.DocumentPath, search)
                 || Contains(bookmark.LineText, search)
                 || Contains(bookmark.Location, search)
-                || Contains(bookmark.SlotNumber?.ToString(System.Globalization.CultureInfo.InvariantCulture), search)
+                || Contains(bookmark.ShortcutNumber?.ToString(System.Globalization.CultureInfo.InvariantCulture), search)
                 || (bookmark.Color != BookmarkColor.None && Contains(bookmark.Color.ToString(), search));
         }
 
@@ -1113,7 +1113,7 @@ namespace BookmarkStudio
 
         private FolderNodeViewModel BuildFolderNode(FolderBuilderNode folderNode, int treeDepth, BookmarkStorageLocation storageLocation)
         {
-            FolderNodeViewModel node = new FolderNodeViewModel(folderNode.Path, treeDepth, storageLocation);
+            var node = new FolderNodeViewModel(folderNode.Path, treeDepth, storageLocation);
             node.IsExpanded = _expandedFolders.Contains(folderNode.Path);
             node.IsExpandedChanged += OnFolderExpandedChanged;
 
@@ -1408,7 +1408,7 @@ namespace BookmarkStudio
 
         public int? Line => Bookmark?.LineNumber;
 
-        public int? Slot => Bookmark?.SlotNumber;
+        public int? Slot => Bookmark?.ShortcutNumber;
 
         public BookmarkColor Color => Bookmark?.Color ?? BookmarkColor.None;
 

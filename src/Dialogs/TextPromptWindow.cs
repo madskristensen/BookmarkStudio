@@ -26,7 +26,7 @@ namespace BookmarkStudio
             SetResourceReference(ForegroundProperty, EnvironmentColors.ToolWindowTextBrushKey);
             Loaded += TextPromptWindow_Loaded;
 
-            Grid grid = new Grid
+            var grid = new Grid
             {
                 Margin = new Thickness(12),
             };
@@ -34,7 +34,7 @@ namespace BookmarkStudio
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
             grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
 
-            Label promptBlock = new Label
+            var promptBlock = new Label
             {
                 Margin = new Thickness(0, 0, 0, 8),
                 Content = prompt,
@@ -53,13 +53,13 @@ namespace BookmarkStudio
             Grid.SetRow(_inputTextBox, 1);
             grid.Children.Add(_inputTextBox);
 
-            StackPanel buttons = new StackPanel
+            var buttons = new StackPanel
             {
                 HorizontalAlignment = HorizontalAlignment.Right,
                 Orientation = Orientation.Horizontal,
             };
 
-            DialogButton okButton = new DialogButton
+            var okButton = new DialogButton
             {
                 Content = "OK",
                 IsDefault = true,
@@ -74,7 +74,7 @@ namespace BookmarkStudio
             okButton.Click += OkButton_Click;
             buttons.Children.Add(okButton);
 
-            DialogButton cancelButton = new DialogButton
+            var cancelButton = new DialogButton
             {
                 Content = "Cancel",
                 IsCancel = true,
@@ -95,7 +95,7 @@ namespace BookmarkStudio
 
         public static string? Show(string title, string prompt, string initialValue, bool selectTextOnLoad = false)
         {
-            TextPromptWindow window = new TextPromptWindow(title, prompt, initialValue, selectTextOnLoad);
+            var window = new TextPromptWindow(title, prompt, initialValue, selectTextOnLoad);
 
             var result = window.ShowDialog();
             return result == true ? window._inputTextBox.Text : null;

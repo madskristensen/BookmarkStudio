@@ -8,7 +8,7 @@ public class RepositoryAndModelTests
     [TestMethod]
     public void GetRequiredBookmark_WhenBookmarkExists_ReturnsBookmark()
     {
-        BookmarkMetadata expected = new BookmarkMetadata { BookmarkId = "abc" };
+        var expected = new BookmarkMetadata { BookmarkId = "abc" };
 
         BookmarkMetadata actual = BookmarkRepositoryService.GetRequiredBookmark(new[] { expected }, "abc");
 
@@ -25,8 +25,8 @@ public class RepositoryAndModelTests
     [TestMethod]
     public void FindBySnapshot_WhenExactMatchKeyMatches_ReturnsBookmark()
     {
-        BookmarkSnapshot snapshot = new BookmarkSnapshot { DocumentPath = @"C:\repo\file.cs", LineNumber = 12 };
-        BookmarkMetadata expected = new BookmarkMetadata { DocumentPath = @"C:\repo\file.cs", LineNumber = 12 };
+        var snapshot = new BookmarkSnapshot { DocumentPath = @"C:\repo\file.cs", LineNumber = 12 };
+        var expected = new BookmarkMetadata { DocumentPath = @"C:\repo\file.cs", LineNumber = 12 };
 
         BookmarkMetadata? actual = BookmarkRepositoryService.FindBySnapshot(new[] { expected }, snapshot);
 
@@ -52,14 +52,14 @@ public class RepositoryAndModelTests
     [TestMethod]
     public void UpdateFromSnapshot_WhenCalled_CopiesSnapshotFields()
     {
-        BookmarkSnapshot snapshot = new BookmarkSnapshot
+        var snapshot = new BookmarkSnapshot
         {
             DocumentPath = @"C:\repo\file.cs",
             LineNumber = 42,
             LineText = "  value  ",
         };
 
-        BookmarkMetadata metadata = new BookmarkMetadata();
+        var metadata = new BookmarkMetadata();
 
         metadata.UpdateFromSnapshot(snapshot);
 
@@ -71,7 +71,7 @@ public class RepositoryAndModelTests
     [TestMethod]
     public void ToManagedBookmark_WhenCalled_MapsFieldsAndTrimsLineText()
     {
-        BookmarkMetadata metadata = new BookmarkMetadata
+        var metadata = new BookmarkMetadata
         {
             BookmarkId = "id-1",
             DocumentPath = @"C:\repo\file.cs",
@@ -83,7 +83,7 @@ public class RepositoryAndModelTests
             Color = BookmarkColor.Teal,
         };
 
-        ManagedBookmark managed = metadata.ToManagedBookmark();
+        var managed = metadata.ToManagedBookmark();
 
         Assert.AreEqual("id-1", managed.BookmarkId);
         Assert.AreEqual(@"C:\repo\file.cs", managed.DocumentPath);
@@ -98,11 +98,11 @@ public class RepositoryAndModelTests
     [TestMethod]
     public async Task MetadataStore_SaveAndLoadWorkspaceAsync_WhenRoundTripped_PreservesFoldersAndBookmarks()
     {
-        BookmarkMetadataStore store = new BookmarkMetadataStore();
+        var store = new BookmarkMetadataStore();
         string solutionPath = CreateTestSolutionPath();
         string solutionDirectory = Path.GetDirectoryName(solutionPath)!;
 
-        BookmarkWorkspaceState workspace = new BookmarkWorkspaceState();
+        var workspace = new BookmarkWorkspaceState();
         workspace.FolderPaths.Add(string.Empty);
         workspace.FolderPaths.Add("FolderA");
         workspace.FolderPaths.Add("FolderA/Sub");
@@ -131,7 +131,7 @@ public class RepositoryAndModelTests
     [TestMethod]
     public async Task MetadataStore_LoadWorkspaceAsync_WhenLegacyBookmarksFormat_LoadsAndNormalizes()
     {
-        BookmarkMetadataStore store = new BookmarkMetadataStore();
+        var store = new BookmarkMetadataStore();
         string solutionPath = CreateTestSolutionPath();
         string solutionDirectory = Path.GetDirectoryName(solutionPath)!;
         string storagePath = store.GetStoragePath(solutionPath);
@@ -151,8 +151,8 @@ public class RepositoryAndModelTests
     [TestMethod]
     public async Task ToggleAsync_WhenSnapshotNotFound_AddsBookmarkWithLowestAvailableSlot()
     {
-        BookmarkMetadataStore store = new BookmarkMetadataStore();
-        BookmarkRepositoryService repository = new BookmarkRepositoryService(store);
+        var store = new BookmarkMetadataStore();
+        var repository = new BookmarkRepositoryService(store);
         string solutionPath = CreateTestSolutionPath();
 
         await store.SaveAsync(solutionPath, new[]
@@ -162,7 +162,7 @@ public class RepositoryAndModelTests
             new BookmarkMetadata { BookmarkId = "c", DocumentPath = @"C:\repo\c.cs", LineNumber = 3, SlotNumber = 4 },
         }, CancellationToken.None);
 
-        BookmarkSnapshot snapshot = new BookmarkSnapshot
+        var snapshot = new BookmarkSnapshot
         {
             DocumentPath = @"C:\repo\new.cs",
             LineNumber = 10,
@@ -179,8 +179,8 @@ public class RepositoryAndModelTests
     [TestMethod]
     public async Task ToggleAsync_WhenDefaultBookmarkLabelsExist_AssignsNextAvailableDefaultLabel()
     {
-        BookmarkMetadataStore store = new BookmarkMetadataStore();
-        BookmarkRepositoryService repository = new BookmarkRepositoryService(store);
+        var store = new BookmarkMetadataStore();
+        var repository = new BookmarkRepositoryService(store);
         string solutionPath = CreateTestSolutionPath();
 
         await store.SaveAsync(solutionPath, new[]
@@ -204,7 +204,7 @@ public class RepositoryAndModelTests
     [TestMethod]
     public void Repository_DeleteFolderRecursive_RemovesNestedFoldersAndBookmarks()
     {
-        BookmarkWorkspaceState workspace = new BookmarkWorkspaceState();
+        var workspace = new BookmarkWorkspaceState();
         workspace.FolderPaths.Add(string.Empty);
         workspace.FolderPaths.Add("A");
         workspace.FolderPaths.Add("A/B");
@@ -227,7 +227,7 @@ public class RepositoryAndModelTests
     [TestMethod]
     public void Repository_EnsureFolderPath_WhenNestedPathProvided_RegistersNormalizedAncestors()
     {
-        BookmarkWorkspaceState workspace = new BookmarkWorkspaceState();
+        var workspace = new BookmarkWorkspaceState();
 
         BookmarkRepositoryService.EnsureFolderPath(workspace, @" Team\\Backlog/Sprint1 ");
 
@@ -239,7 +239,7 @@ public class RepositoryAndModelTests
     [TestMethod]
     public void Repository_RenameFolder_WhenRenamingNestedFolder_UpdatesDescendantsAndBookmarks()
     {
-        BookmarkWorkspaceState workspace = new BookmarkWorkspaceState();
+        var workspace = new BookmarkWorkspaceState();
         workspace.FolderPaths.Add(string.Empty);
         workspace.FolderPaths.Add("Team");
         workspace.FolderPaths.Add("Team/Backlog");
@@ -264,7 +264,7 @@ public class RepositoryAndModelTests
     [TestMethod]
     public void Repository_RenameFolder_WhenTargetMatchesSourceCaseInsensitive_ReturnsFalseAndDoesNotChangeState()
     {
-        BookmarkWorkspaceState workspace = new BookmarkWorkspaceState();
+        var workspace = new BookmarkWorkspaceState();
         workspace.FolderPaths.Add(string.Empty);
         workspace.FolderPaths.Add("Team");
         workspace.FolderPaths.Add("Team/Backlog");
@@ -283,7 +283,7 @@ public class RepositoryAndModelTests
     [DataRow("   ")]
     public void Repository_DeleteFolderRecursive_WhenFolderPathMissing_ReturnsFalseAndPreservesState(string folderPath)
     {
-        BookmarkWorkspaceState workspace = new BookmarkWorkspaceState();
+        var workspace = new BookmarkWorkspaceState();
         workspace.FolderPaths.Add(string.Empty);
         workspace.FolderPaths.Add("A");
         workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "1", Group = "A" });
@@ -298,7 +298,7 @@ public class RepositoryAndModelTests
     [TestMethod]
     public void Repository_MoveBookmarkToFolder_WhenNestedFolderProvided_RegistersAncestors()
     {
-        BookmarkWorkspaceState workspace = new BookmarkWorkspaceState();
+        var workspace = new BookmarkWorkspaceState();
         workspace.FolderPaths.Add(string.Empty);
         workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "1", Group = string.Empty });
 
@@ -313,7 +313,7 @@ public class RepositoryAndModelTests
     [TestMethod]
     public void MetadataStore_GetStoragePath_WhenSolutionPathWhitespace_UsesTransientPath()
     {
-        BookmarkMetadataStore store = new BookmarkMetadataStore();
+        var store = new BookmarkMetadataStore();
 
         string path = store.GetStoragePath(" ");
 
@@ -328,11 +328,11 @@ public class RepositoryAndModelTests
     [TestMethod]
     public async Task MetadataStore_SaveAsync_WhenBookmarkRemovedFromFolder_PreservesEmptyFolder()
     {
-        BookmarkMetadataStore store = new BookmarkMetadataStore();
+        var store = new BookmarkMetadataStore();
         string solutionPath = CreateTestSolutionPath();
 
         // Create initial workspace with a folder containing one bookmark and an empty sibling folder
-        BookmarkWorkspaceState initialWorkspace = new BookmarkWorkspaceState();
+        var initialWorkspace = new BookmarkWorkspaceState();
         initialWorkspace.FolderPaths.Add(string.Empty);
         initialWorkspace.FolderPaths.Add("FolderA");
         initialWorkspace.FolderPaths.Add("EmptyFolder");
@@ -358,7 +358,7 @@ public class RepositoryAndModelTests
     [TestMethod]
     public void Repository_MoveFolder_WhenMovingToNewParent_UpdatesPathsAndBookmarks()
     {
-        BookmarkWorkspaceState workspace = new BookmarkWorkspaceState();
+        var workspace = new BookmarkWorkspaceState();
         workspace.FolderPaths.Add(string.Empty);
         workspace.FolderPaths.Add("Source");
         workspace.FolderPaths.Add("Source/Child");
@@ -381,7 +381,7 @@ public class RepositoryAndModelTests
     [TestMethod]
     public void Repository_MoveFolder_WhenSourceEqualsTarget_DoesNothing()
     {
-        BookmarkWorkspaceState workspace = new BookmarkWorkspaceState();
+        var workspace = new BookmarkWorkspaceState();
         workspace.FolderPaths.Add(string.Empty);
         workspace.FolderPaths.Add("Folder");
         workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "1", Group = "Folder" });
@@ -395,7 +395,7 @@ public class RepositoryAndModelTests
     [TestMethod]
     public void Repository_MoveFolder_WhenSourceIsEmpty_ThrowsArgumentException()
     {
-        BookmarkWorkspaceState workspace = new BookmarkWorkspaceState();
+        var workspace = new BookmarkWorkspaceState();
         workspace.FolderPaths.Add(string.Empty);
 
         Assert.ThrowsExactly<ArgumentException>(() =>
@@ -478,7 +478,7 @@ public class RepositoryAndModelTests
     [TestMethod]
     public void BookmarkSnapshot_ExactMatchKey_ReturnsNormalizedKeyFromPathAndLine()
     {
-        BookmarkSnapshot snapshot = new BookmarkSnapshot
+        var snapshot = new BookmarkSnapshot
         {
             DocumentPath = @"C:\Repo\src\file.cs",
             LineNumber = 42,
@@ -494,8 +494,8 @@ public class RepositoryAndModelTests
     [TestMethod]
     public void BookmarkSnapshot_ExactMatchKey_WhenPathCasingDiffers_ProducesSameKey()
     {
-        BookmarkSnapshot snapshot1 = new BookmarkSnapshot { DocumentPath = @"C:\repo\file.cs", LineNumber = 10 };
-        BookmarkSnapshot snapshot2 = new BookmarkSnapshot { DocumentPath = @"C:\REPO\FILE.CS", LineNumber = 10 };
+        var snapshot1 = new BookmarkSnapshot { DocumentPath = @"C:\repo\file.cs", LineNumber = 10 };
+        var snapshot2 = new BookmarkSnapshot { DocumentPath = @"C:\REPO\FILE.CS", LineNumber = 10 };
 
         Assert.AreEqual(snapshot1.ExactMatchKey, snapshot2.ExactMatchKey);
     }
@@ -503,7 +503,7 @@ public class RepositoryAndModelTests
     [TestMethod]
     public void BookmarkMetadata_FolderPath_WhenSet_NormalizesValue()
     {
-        BookmarkMetadata metadata = new BookmarkMetadata();
+        var metadata = new BookmarkMetadata();
 
         metadata.FolderPath = @"Root\Team\\Backlog/Sprint1 ";
 
@@ -514,7 +514,7 @@ public class RepositoryAndModelTests
     [TestMethod]
     public void BookmarkMetadata_FolderPath_WhenSetToNull_NormalizesToEmptyString()
     {
-        BookmarkMetadata metadata = new BookmarkMetadata { Group = "ExistingGroup" };
+        var metadata = new BookmarkMetadata { Group = "ExistingGroup" };
 
         metadata.FolderPath = null;
 

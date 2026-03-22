@@ -1,7 +1,5 @@
 using System.IO;
 using System.Text;
-using System.Text.Json;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace BookmarkStudio.Test;
 
@@ -11,7 +9,7 @@ public class BookmarkMetadataStoreTests
     [TestMethod]
     public async Task LoadWorkspaceAsync_WhenFileDoesNotExist_ReturnsEmptyState()
     {
-        BookmarkMetadataStore store = new BookmarkMetadataStore();
+        var store = new BookmarkMetadataStore();
         string fakeSolutionPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "fake.sln");
 
         BookmarkWorkspaceState state = await store.LoadWorkspaceAsync(fakeSolutionPath, CancellationToken.None);
@@ -31,8 +29,8 @@ public class BookmarkMetadataStoreTests
 
         try
         {
-            BookmarkMetadataStore store = new BookmarkMetadataStore();
-            BookmarkMetadata original = new BookmarkMetadata
+            var store = new BookmarkMetadataStore();
+            var original = new BookmarkMetadata
             {
                 BookmarkId = "test-id-123",
                 DocumentPath = Path.Combine(tempDir, "src", "Program.cs"),
@@ -74,7 +72,7 @@ public class BookmarkMetadataStoreTests
 
         try
         {
-            BookmarkMetadataStore store = new BookmarkMetadataStore();
+            var store = new BookmarkMetadataStore();
             BookmarkMetadata[] bookmarks =
             [
                 new() { BookmarkId = "root-1", DocumentPath = Path.Combine(tempDir, "a.cs"), LineNumber = 1, Group = string.Empty },
@@ -106,8 +104,8 @@ public class BookmarkMetadataStoreTests
 
         try
         {
-            BookmarkMetadataStore store = new BookmarkMetadataStore();
-            BookmarkWorkspaceState state = new BookmarkWorkspaceState();
+            var store = new BookmarkMetadataStore();
+            var state = new BookmarkWorkspaceState();
             state.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "b1", DocumentPath = Path.Combine(tempDir, "a.cs"), LineNumber = 1, Group = "Folder1" });
             state.FolderPaths.Add("Folder1");
             state.FolderPaths.Add("Folder1/Sub");
@@ -116,7 +114,7 @@ public class BookmarkMetadataStoreTests
             await store.SaveWorkspaceAsync(solutionPath, state, CancellationToken.None);
             BookmarkWorkspaceState loaded = await store.LoadWorkspaceAsync(solutionPath, CancellationToken.None);
 
-            Assert.IsTrue(loaded.ExpandedFolders.Contains("Folder1"));
+            Assert.Contains("Folder1", loaded.ExpandedFolders);
         }
         finally
         {
@@ -127,13 +125,13 @@ public class BookmarkMetadataStoreTests
     [TestMethod]
     public void GetStorageInfo_WhenNoSolutionPath_ReturnsTransientPersonalLocation()
     {
-        BookmarkMetadataStore store = new BookmarkMetadataStore();
+        var store = new BookmarkMetadataStore();
 
         BookmarkStorageInfo info = store.GetStorageInfo(string.Empty);
 
         Assert.AreEqual(BookmarkStorageLocation.Personal, info.Location);
-        Assert.IsTrue(info.AbsolutePath.Contains("BookmarkStudio"));
-        Assert.IsTrue(info.AbsolutePath.Contains("Transient"));
+        Assert.Contains("BookmarkStudio", info.AbsolutePath);
+        Assert.Contains("Transient", info.AbsolutePath);
     }
 
     [TestMethod]
@@ -145,12 +143,12 @@ public class BookmarkMetadataStoreTests
 
         try
         {
-            BookmarkMetadataStore store = new BookmarkMetadataStore();
+            var store = new BookmarkMetadataStore();
 
             BookmarkStorageInfo info = store.GetStorageInfo(solutionPath);
 
             Assert.AreEqual(BookmarkStorageLocation.Personal, info.Location);
-            Assert.IsTrue(info.AbsolutePath.Contains(".vs"));
+            Assert.Contains(".vs", info.AbsolutePath);
         }
         finally
         {
@@ -161,7 +159,7 @@ public class BookmarkMetadataStoreTests
     [TestMethod]
     public void GetSolutionStoragePath_WhenNoSolutionPath_Throws()
     {
-        BookmarkMetadataStore store = new BookmarkMetadataStore();
+        var store = new BookmarkMetadataStore();
 
         Assert.ThrowsExactly<InvalidOperationException>(() => store.GetSolutionStoragePath(string.Empty));
     }
@@ -169,11 +167,11 @@ public class BookmarkMetadataStoreTests
     [TestMethod]
     public void GetPersonalStoragePath_WhenNoSolutionPath_ReturnsLocalAppDataPath()
     {
-        BookmarkMetadataStore store = new BookmarkMetadataStore();
+        var store = new BookmarkMetadataStore();
 
         string path = store.GetPersonalStoragePath(string.Empty);
 
-        Assert.IsTrue(path.Contains(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)));
+        Assert.Contains(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), path);
         Assert.IsTrue(path.EndsWith(".bookmarks.json", StringComparison.OrdinalIgnoreCase));
     }
 
@@ -206,7 +204,7 @@ public class BookmarkMetadataStoreTests
 
         try
         {
-            BookmarkMetadataStore store = new BookmarkMetadataStore();
+            var store = new BookmarkMetadataStore();
 
             IReadOnlyList<BookmarkMetadata> loaded = await store.LoadAsync(solutionPath, CancellationToken.None);
 
@@ -246,7 +244,7 @@ public class BookmarkMetadataStoreTests
 
         try
         {
-            BookmarkMetadataStore store = new BookmarkMetadataStore();
+            var store = new BookmarkMetadataStore();
 
             IReadOnlyList<BookmarkMetadata> loaded = await store.LoadAsync(solutionPath, CancellationToken.None);
 
@@ -271,10 +269,10 @@ public class BookmarkMetadataStoreTests
 
         try
         {
-            BookmarkMetadataStore store = new BookmarkMetadataStore();
+            var store = new BookmarkMetadataStore();
 
             // Create a bookmark in Solution storage at root folder
-            BookmarkWorkspaceState solutionState = new BookmarkWorkspaceState();
+            var solutionState = new BookmarkWorkspaceState();
             solutionState.Bookmarks.Add(new BookmarkMetadata
             {
                 BookmarkId = "bookmark-1",
@@ -287,7 +285,7 @@ public class BookmarkMetadataStoreTests
             await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Workspace, solutionState, CancellationToken.None);
 
             // Create Personal storage with a target folder
-            BookmarkWorkspaceState personalState = new BookmarkWorkspaceState();
+            var personalState = new BookmarkWorkspaceState();
             personalState.FolderPaths.Add(string.Empty);
             personalState.FolderPaths.Add("TargetFolder");
             await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Personal, personalState, CancellationToken.None);
@@ -327,10 +325,10 @@ public class BookmarkMetadataStoreTests
 
         try
         {
-            BookmarkMetadataStore store = new BookmarkMetadataStore();
+            var store = new BookmarkMetadataStore();
 
             // Create a bookmark in Solution storage
-            BookmarkWorkspaceState solutionState = new BookmarkWorkspaceState();
+            var solutionState = new BookmarkWorkspaceState();
             solutionState.Bookmarks.Add(new BookmarkMetadata
             {
                 BookmarkId = "bookmark-1",
@@ -344,7 +342,7 @@ public class BookmarkMetadataStoreTests
             await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Workspace, solutionState, CancellationToken.None);
 
             // Create empty Personal storage
-            BookmarkWorkspaceState personalState = new BookmarkWorkspaceState();
+            var personalState = new BookmarkWorkspaceState();
             personalState.FolderPaths.Add(string.Empty);
             await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Personal, personalState, CancellationToken.None);
 
@@ -382,10 +380,10 @@ public class BookmarkMetadataStoreTests
 
         try
         {
-            BookmarkMetadataStore store = new BookmarkMetadataStore();
+            var store = new BookmarkMetadataStore();
 
             // Create Solution storage with a folder containing bookmarks
-            BookmarkWorkspaceState solutionState = new BookmarkWorkspaceState();
+            var solutionState = new BookmarkWorkspaceState();
             solutionState.Bookmarks.Add(new BookmarkMetadata
             {
                 BookmarkId = "bookmark-1",
@@ -407,7 +405,7 @@ public class BookmarkMetadataStoreTests
             await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Workspace, solutionState, CancellationToken.None);
 
             // Create empty Personal storage
-            BookmarkWorkspaceState personalState = new BookmarkWorkspaceState();
+            var personalState = new BookmarkWorkspaceState();
             personalState.FolderPaths.Add(string.Empty);
             await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Personal, personalState, CancellationToken.None);
 
@@ -451,10 +449,10 @@ public class BookmarkMetadataStoreTests
 
         try
         {
-            BookmarkMetadataStore store = new BookmarkMetadataStore();
+            var store = new BookmarkMetadataStore();
 
             // Create Solution storage with nested folder structure
-            BookmarkWorkspaceState solutionState = new BookmarkWorkspaceState();
+            var solutionState = new BookmarkWorkspaceState();
             solutionState.Bookmarks.Add(new BookmarkMetadata
             {
                 BookmarkId = "root-bookmark",
@@ -486,7 +484,7 @@ public class BookmarkMetadataStoreTests
             await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Workspace, solutionState, CancellationToken.None);
 
             // Create empty Personal storage
-            BookmarkWorkspaceState personalState = new BookmarkWorkspaceState();
+            var personalState = new BookmarkWorkspaceState();
             personalState.FolderPaths.Add(string.Empty);
             await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Personal, personalState, CancellationToken.None);
 
@@ -529,10 +527,10 @@ public class BookmarkMetadataStoreTests
 
         try
         {
-            BookmarkMetadataStore store = new BookmarkMetadataStore();
+            var store = new BookmarkMetadataStore();
 
             // Create Solution storage with folder and bookmark
-            BookmarkWorkspaceState solutionState = new BookmarkWorkspaceState();
+            var solutionState = new BookmarkWorkspaceState();
             solutionState.Bookmarks.Add(new BookmarkMetadata
             {
                 BookmarkId = "bookmark-1",
@@ -547,7 +545,7 @@ public class BookmarkMetadataStoreTests
             await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Workspace, solutionState, CancellationToken.None);
 
             // Create Personal storage with target parent folder
-            BookmarkWorkspaceState personalState = new BookmarkWorkspaceState();
+            var personalState = new BookmarkWorkspaceState();
             personalState.FolderPaths.Add(string.Empty);
             personalState.FolderPaths.Add("TargetParent");
             await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Personal, personalState, CancellationToken.None);

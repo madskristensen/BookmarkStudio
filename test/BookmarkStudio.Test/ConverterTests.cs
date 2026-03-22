@@ -11,7 +11,7 @@ public class ConverterTests
     [TestMethod]
     public void TreeViewItemToIndentConverter_ConvertBack_ThrowsNotSupportedException()
     {
-        TreeViewItemToIndentConverter converter = new TreeViewItemToIndentConverter();
+        var converter = new TreeViewItemToIndentConverter();
 
         Assert.ThrowsExactly<NotSupportedException>(() =>
             converter.ConvertBack(new Thickness(10, 0, 0, 0), typeof(object), null, CultureInfo.InvariantCulture));
@@ -20,7 +20,7 @@ public class ConverterTests
     [TestMethod]
     public void TreeViewItemToIndentConverter_Convert_WhenValueIsNotTreeViewItem_ReturnsZeroThickness()
     {
-        TreeViewItemToIndentConverter converter = new TreeViewItemToIndentConverter();
+        var converter = new TreeViewItemToIndentConverter();
 
         object result = converter.Convert("not a TreeViewItem", typeof(Thickness), null, CultureInfo.InvariantCulture);
 
@@ -30,7 +30,7 @@ public class ConverterTests
     [TestMethod]
     public void TreeViewItemToIndentConverter_Convert_WhenValueIsNull_ReturnsZeroThickness()
     {
-        TreeViewItemToIndentConverter converter = new TreeViewItemToIndentConverter();
+        var converter = new TreeViewItemToIndentConverter();
 
         object result = converter.Convert(null, typeof(Thickness), null, CultureInfo.InvariantCulture);
 
@@ -40,7 +40,7 @@ public class ConverterTests
     [TestMethod]
     public void BookmarkColorToBrushConverter_ConvertBack_ThrowsNotSupportedException()
     {
-        BookmarkColorToBrushConverter converter = new BookmarkColorToBrushConverter();
+        var converter = new BookmarkColorToBrushConverter();
 
         Assert.ThrowsExactly<NotSupportedException>(() =>
             converter.ConvertBack(Brushes.Blue, typeof(BookmarkColor), null, CultureInfo.InvariantCulture));

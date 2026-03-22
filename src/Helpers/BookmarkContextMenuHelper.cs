@@ -1,12 +1,9 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Media;
 using Microsoft.VisualStudio.Imaging;
-using Microsoft.VisualStudio.Shell;
 
 namespace BookmarkStudio
 {
@@ -17,48 +14,48 @@ namespace BookmarkStudio
     internal static class BookmarkContextMenuHelper
     {
         /// <summary>
-        /// Creates a complete "Assign Slot" submenu with slots 1-9 and a "Clear Slot" option.
+        /// Creates a complete "Assign Shortcut" submenu with shortcuts 1-9 and a "Clear Shortcut" option.
         /// </summary>
         /// <param name="bookmarkId">The bookmark ID to operate on.</param>
-        /// <param name="refreshCallback">Optional callback to invoke after slot operations complete.</param>
-        public static MenuItem CreateAssignSlotSubmenu(string bookmarkId, Func<string, CancellationToken, Task>? refreshCallback = null)
+        /// <param name="refreshCallback">Optional callback to invoke after shortcut operations complete.</param>
+        public static MenuItem CreateAssignShortcutSubmenu(string bookmarkId, Func<string, CancellationToken, Task>? refreshCallback = null)
         {
-            MenuItem submenu = new MenuItem { Header = "Assign Slot" };
-            submenu.SubmenuOpened += (sender, e) => PopulateSlotHeaders(submenu);
+            var submenu = new MenuItem { Header = "Assign shortcut" };
+            submenu.SubmenuOpened += (sender, e) => PopulateShortcutHeaders(submenu);
 
             for (var i = 1; i <= 9; i++)
             {
-                MenuItem slotItem = new MenuItem { Header = i.ToString(), Tag = i };
-                var slotNumber = i;
-                slotItem.Click += (sender, e) =>
+                var shortcutItem = new MenuItem { Header = i.ToString(), Tag = i };
+                var shortcutNumber = i;
+                shortcutItem.Click += (sender, e) =>
                 {
                     ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
                     {
-                        await BookmarkOperationsService.Current.AssignSlotAsync(slotNumber, bookmarkId, CancellationToken.None);
+                        await BookmarkOperationsService.Current.AssignShortcutAsync(shortcutNumber, bookmarkId, CancellationToken.None);
                         if (refreshCallback is not null)
                         {
                             await refreshCallback(bookmarkId, CancellationToken.None);
                         }
                     }).FireAndForget();
                 };
-                submenu.Items.Add(slotItem);
+                submenu.Items.Add(shortcutItem);
             }
 
-            // Add separator and Clear Slot inside the submenu
+            // Add separator and Clear Shortcut inside the submenu
             submenu.Items.Add(new Separator());
-            MenuItem clearSlotItem = new MenuItem { Header = "Clear Slot" };
-            clearSlotItem.Click += (sender, e) =>
+            var clearShortcutItem = new MenuItem { Header = "Clear Shortcut" };
+            clearShortcutItem.Click += (sender, e) =>
             {
                 ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
                 {
-                    await BookmarkOperationsService.Current.ClearSlotAsync(bookmarkId, CancellationToken.None);
+                    await BookmarkOperationsService.Current.ClearShortcutAsync(bookmarkId, CancellationToken.None);
                     if (refreshCallback is not null)
                     {
                         await refreshCallback(bookmarkId, CancellationToken.None);
                     }
                 }).FireAndForget();
             };
-            submenu.Items.Add(clearSlotItem);
+            submenu.Items.Add(clearShortcutItem);
 
             return submenu;
         }
@@ -70,7 +67,7 @@ namespace BookmarkStudio
         /// <param name="refreshCallback">Optional callback to invoke after color operations complete.</param>
         public static MenuItem CreateSetColorSubmenu(string bookmarkId, Func<string, CancellationToken, Task>? refreshCallback = null)
         {
-            MenuItem submenu = new MenuItem { Header = "Set Color" };
+            var submenu = new MenuItem { Header = "Set Color" };
 
             AddColorMenuItem(submenu, "Blue (default)", BookmarkColor.Blue, bookmarkId, refreshCallback);
             AddColorMenuItem(submenu, "Red", BookmarkColor.Red, bookmarkId, refreshCallback);
@@ -91,14 +88,14 @@ namespace BookmarkStudio
         /// <param name="refreshCallback">Optional callback to invoke after rename completes.</param>
         public static MenuItem CreateRenameMenuItem(string bookmarkId, Func<string, CancellationToken, Task>? refreshCallback = null)
         {
-            CrispImage icon = new CrispImage
+            var icon = new CrispImage
             {
                 Moniker = KnownMonikers.Rename,
                 Width = 16,
                 Height = 16,
             };
 
-            MenuItem item = new MenuItem { Header = "Rename", Icon = icon };
+            var item = new MenuItem { Header = "Rename", Icon = icon };
             item.Click += (sender, e) =>
             {
                 ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
@@ -124,36 +121,36 @@ namespace BookmarkStudio
         }
 
         /// <summary>
-        /// Updates slot menu item headers to show current bookmark assignments.
+        /// Updates shortcut menu item headers to show current bookmark assignments.
         /// Call this from the SubmenuOpened event handler.
         /// </summary>
-        /// <param name="submenu">The Assign Slot submenu.</param>
-        public static void PopulateSlotHeaders(MenuItem submenu)
+        /// <param name="submenu">The Assign Shortcut submenu.</param>
+        public static void PopulateShortcutHeaders(MenuItem submenu)
         {
-            Dictionary<int, string> slotAssignments = GetSlotAssignments();
+            Dictionary<int, string> shortcutAssignments = GetShortcutAssignments();
 
             foreach (var item in submenu.Items)
             {
-                if (item is MenuItem slotMenuItem && slotMenuItem.Tag is int slotNumber)
+                if (item is MenuItem shortcutMenuItem && shortcutMenuItem.Tag is int shortcutNumber)
                 {
-                    if (slotAssignments.TryGetValue(slotNumber, out var bookmarkLabel))
+                    if (shortcutAssignments.TryGetValue(shortcutNumber, out var bookmarkLabel))
                     {
-                        slotMenuItem.Header = string.Concat(slotNumber.ToString(System.Globalization.CultureInfo.InvariantCulture), " - ", bookmarkLabel);
+                        shortcutMenuItem.Header = string.Concat(shortcutNumber.ToString(System.Globalization.CultureInfo.InvariantCulture), " - ", bookmarkLabel);
                     }
                     else
                     {
-                        slotMenuItem.Header = string.Concat(slotNumber.ToString(System.Globalization.CultureInfo.InvariantCulture), " - Unassigned");
+                        shortcutMenuItem.Header = string.Concat(shortcutNumber.ToString(System.Globalization.CultureInfo.InvariantCulture), " - Unassigned");
                     }
                 }
             }
         }
 
         /// <summary>
-        /// Gets a dictionary mapping slot numbers to bookmark labels.
+        /// Gets a dictionary mapping shortcut numbers to bookmark labels.
         /// </summary>
-        public static Dictionary<int, string> GetSlotAssignments()
+        public static Dictionary<int, string> GetShortcutAssignments()
         {
-            Dictionary<int, string> assignments = new Dictionary<int, string>();
+            var assignments = new Dictionary<int, string>();
 
             try
             {
@@ -167,12 +164,12 @@ namespace BookmarkStudio
 
                 foreach (ManagedBookmark bookmark in allBookmarks)
                 {
-                    if (bookmark.SlotNumber.HasValue && bookmark.SlotNumber.Value >= 1 && bookmark.SlotNumber.Value <= 9)
+                    if (bookmark.ShortcutNumber.HasValue && bookmark.ShortcutNumber.Value >= 1 && bookmark.ShortcutNumber.Value <= 9)
                     {
                         var label = string.IsNullOrWhiteSpace(bookmark.Label)
                             ? bookmark.FileName
                             : bookmark.Label;
-                        assignments[bookmark.SlotNumber.Value] = label;
+                        assignments[bookmark.ShortcutNumber.Value] = label;
                     }
                 }
             }
@@ -186,7 +183,7 @@ namespace BookmarkStudio
 
         private static void AddColorMenuItem(MenuItem submenu, string header, BookmarkColor color, string bookmarkId, Func<string, CancellationToken, Task>? refreshCallback)
         {
-            Border icon = new Border
+            var icon = new Border
             {
                 Width = 10,
                 Height = 10,
@@ -194,7 +191,7 @@ namespace BookmarkStudio
                 CornerRadius = new CornerRadius(2),
             };
 
-            MenuItem item = new MenuItem { Header = header, Icon = icon };
+            var item = new MenuItem { Header = header, Icon = icon };
             item.Click += (sender, e) =>
             {
                 ThreadHelper.JoinableTaskFactory.RunAsync(async () =>

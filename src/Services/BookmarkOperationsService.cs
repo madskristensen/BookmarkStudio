@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using EnvDTE;
 using EnvDTE80;
@@ -75,7 +74,7 @@ namespace BookmarkStudio
                 return null;
             }
 
-            TextDocument? textDocument = activeDocument.Object("TextDocument") as TextDocument;
+            var textDocument = activeDocument.Object("TextDocument") as TextDocument;
             if (textDocument is null)
             {
                 return null;
@@ -107,14 +106,14 @@ namespace BookmarkStudio
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            DTE2? dte = Package.GetGlobalService(typeof(DTE)) as DTE2;
+            var dte = Package.GetGlobalService(typeof(DTE)) as DTE2;
             Document? activeDocument = dte?.ActiveDocument;
             if (activeDocument is null || string.IsNullOrWhiteSpace(activeDocument.FullName))
             {
                 return false;
             }
 
-            TextDocument? textDocument = activeDocument.Object("TextDocument") as TextDocument;
+            var textDocument = activeDocument.Object("TextDocument") as TextDocument;
             return textDocument is not null;
         }
 
@@ -122,13 +121,13 @@ namespace BookmarkStudio
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            DTE2? dte = Package.GetGlobalService(typeof(DTE)) as DTE2;
+            var dte = Package.GetGlobalService(typeof(DTE)) as DTE2;
             if (dte?.Solution?.IsOpen == true)
             {
                 return true;
             }
 
-            IVsSolution? solutionService = Package.GetGlobalService(typeof(SVsSolution)) as IVsSolution;
+            var solutionService = Package.GetGlobalService(typeof(SVsSolution)) as IVsSolution;
             if (solutionService is null)
             {
                 return false;
@@ -150,11 +149,11 @@ namespace BookmarkStudio
         public Task<ManagedBookmark> GoToPreviousBookmarkInDocumentAsync(CancellationToken cancellationToken)
             => NavigateRelativeInDocumentAsync(-1, cancellationToken);
 
-        public async Task<IReadOnlyList<ManagedBookmark>> AssignSlotAsync(int slotNumber, string? bookmarkId, CancellationToken cancellationToken)
+        public async Task<IReadOnlyList<ManagedBookmark>> AssignShortcutAsync(int shortcutNumber, string? bookmarkId, CancellationToken cancellationToken)
         {
-            if (slotNumber < 1 || slotNumber > 9)
+            if (shortcutNumber < 1 || shortcutNumber > 9)
             {
-                throw new ArgumentOutOfRangeException(nameof(slotNumber), "Bookmark slots must be in the range 1..9.");
+                throw new ArgumentOutOfRangeException(nameof(shortcutNumber), "Bookmark shortcuts must be in the range 1..9.");
             }
 
             ManagedBookmark targetBookmark = await GetRequiredBookmarkAsync(bookmarkId, cancellationToken);
@@ -162,12 +161,12 @@ namespace BookmarkStudio
             {
                 BookmarkMetadata targetMetadata = BookmarkRepositoryService.GetRequiredBookmark(metadata, targetBookmark.BookmarkId);
 
-                foreach (BookmarkMetadata item in metadata.Where(item => item.SlotNumber == slotNumber && !string.Equals(item.BookmarkId, targetBookmark.BookmarkId, StringComparison.Ordinal)))
+                foreach (BookmarkMetadata item in metadata.Where(item => item.ShortcutNumber == shortcutNumber && !string.Equals(item.BookmarkId, targetBookmark.BookmarkId, StringComparison.Ordinal)))
                 {
-                    item.SlotNumber = null;
+                    item.ShortcutNumber = null;
                 }
 
-                targetMetadata.SlotNumber = slotNumber;
+                targetMetadata.ShortcutNumber = shortcutNumber;
             }, cancellationToken);
         }
 
@@ -181,13 +180,13 @@ namespace BookmarkStudio
             }, cancellationToken);
         }
 
-        public async Task<IReadOnlyList<ManagedBookmark>> ClearSlotAsync(string? bookmarkId, CancellationToken cancellationToken)
+        public async Task<IReadOnlyList<ManagedBookmark>> ClearShortcutAsync(string? bookmarkId, CancellationToken cancellationToken)
         {
             ManagedBookmark targetBookmark = await GetRequiredBookmarkAsync(bookmarkId, cancellationToken);
             return await _session.UpdateBookmarksAsync(metadata =>
             {
                 BookmarkMetadata targetMetadata = BookmarkRepositoryService.GetRequiredBookmark(metadata, targetBookmark.BookmarkId);
-                targetMetadata.SlotNumber = null;
+                targetMetadata.ShortcutNumber = null;
             }, cancellationToken);
         }
 
@@ -472,22 +471,22 @@ namespace BookmarkStudio
                 cancellationToken);
         }
 
-        public Task<ManagedBookmark?> GetBookmarkBySlotAsync(int slotNumber, CancellationToken cancellationToken)
+        public Task<ManagedBookmark?> GetBookmarkByShortcutAsync(int shortcutNumber, CancellationToken cancellationToken)
         {
-            if (slotNumber < 1 || slotNumber > 9)
+            if (shortcutNumber < 1 || shortcutNumber > 9)
             {
-                throw new ArgumentOutOfRangeException(nameof(slotNumber), "Bookmark slots must be in the range 1..9.");
+                throw new ArgumentOutOfRangeException(nameof(shortcutNumber), "Bookmark shortcuts must be in the range 1..9.");
             }
 
             cancellationToken.ThrowIfCancellationRequested();
             IReadOnlyList<ManagedBookmark> bookmarks = _session.CachedBookmarks;
-            return Task.FromResult(bookmarks.FirstOrDefault(item => item.SlotNumber == slotNumber));
+            return Task.FromResult(bookmarks.FirstOrDefault(item => item.ShortcutNumber == shortcutNumber));
         }
 
-        public async Task<ManagedBookmark> GoToSlotAsync(int slotNumber, CancellationToken cancellationToken)
+        public async Task<ManagedBookmark> GoToShortcutAsync(int shortcutNumber, CancellationToken cancellationToken)
         {
-            ManagedBookmark bookmark = await GetBookmarkBySlotAsync(slotNumber, cancellationToken)
-                ?? throw new InvalidOperationException(string.Concat("No bookmark is assigned to slot ", slotNumber.ToString(System.Globalization.CultureInfo.InvariantCulture), "."));
+            ManagedBookmark bookmark = await GetBookmarkByShortcutAsync(shortcutNumber, cancellationToken)
+                ?? throw new InvalidOperationException(string.Concat("No bookmark is assigned to shortcut ", shortcutNumber.ToString(System.Globalization.CultureInfo.InvariantCulture), "."));
 
             await NavigateToBookmarkCoreAsync(bookmark, cancellationToken);
             return bookmark;
@@ -527,7 +526,7 @@ namespace BookmarkStudio
                 return null;
             }
 
-            TextDocument? textDocument = activeDocument.Object("TextDocument") as TextDocument;
+            var textDocument = activeDocument.Object("TextDocument") as TextDocument;
             if (textDocument is null)
             {
                 return null;
@@ -568,7 +567,7 @@ namespace BookmarkStudio
 
             Window window = dte.ItemOperations.OpenFile(bookmark.DocumentPath, EnvDTE.Constants.vsViewKindTextView);
             Document? document = window.Document ?? dte.ActiveDocument;
-            TextDocument? textDocument = document?.Object("TextDocument") as TextDocument;
+            var textDocument = document?.Object("TextDocument") as TextDocument;
             if (textDocument is null)
             {
                 throw new InvalidOperationException("The selected bookmark could not be opened as a text document.");
@@ -667,7 +666,7 @@ namespace BookmarkStudio
                 throw new InvalidOperationException("Open a text document before toggling a bookmark.");
             }
 
-            TextDocument? textDocument = activeDocument.Object("TextDocument") as TextDocument;
+            var textDocument = activeDocument.Object("TextDocument") as TextDocument;
             if (textDocument is null)
             {
                 throw new InvalidOperationException("The active document does not support BookmarkStudio bookmarks.");
@@ -698,7 +697,7 @@ namespace BookmarkStudio
                 return null;
             }
 
-            TextDocument? textDocument = activeDocument.Object("TextDocument") as TextDocument;
+            var textDocument = activeDocument.Object("TextDocument") as TextDocument;
             if (textDocument is null)
             {
                 return null;

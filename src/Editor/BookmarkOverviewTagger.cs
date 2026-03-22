@@ -122,7 +122,7 @@ namespace BookmarkStudio
 
                 ITextSnapshotLine line = snapshot.GetLineFromLineNumber(lineIndex);
                 var spanLength = line.Length > 0 ? 1 : 0;
-                SnapshotSpan span = new SnapshotSpan(line.Start, spanLength);
+                var span = new SnapshotSpan(line.Start, spanLength);
 
                 var formatName = BookmarkOverviewMarkFormatNames.GetFormatName(bookmark.Color);
                 yield return new TagSpan<OverviewMarkTag>(span, new OverviewMarkTag(formatName));
@@ -185,7 +185,7 @@ namespace BookmarkStudio
                     }
 
                     ITextSnapshot snapshot = _buffer.CurrentSnapshot;
-                    SnapshotSpan span = new SnapshotSpan(snapshot, 0, snapshot.Length);
+                    var span = new SnapshotSpan(snapshot, 0, snapshot.Length);
                     TagsChanged?.Invoke(this, new SnapshotSpanEventArgs(span));
                 }).FireAndForget();
             }
@@ -222,7 +222,7 @@ namespace BookmarkStudio
                 }
 
                 ITextSnapshot snapshot = _buffer.CurrentSnapshot;
-                SnapshotSpan fullSpan = new SnapshotSpan(snapshot, 0, snapshot.Length);
+                var fullSpan = new SnapshotSpan(snapshot, 0, snapshot.Length);
                 TagsChanged?.Invoke(this, new SnapshotSpanEventArgs(fullSpan));
             }).FireAndForget();
         }

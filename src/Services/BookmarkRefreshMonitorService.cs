@@ -149,7 +149,7 @@ namespace BookmarkStudio
                 return;
             }
 
-            HashSet<string> normalizedPaths = new HashSet<string>(
+            var normalizedPaths = new HashSet<string>(
                 filePaths.Select(BookmarkIdentity.NormalizeDocumentPath),
                 StringComparer.Ordinal);
 
@@ -196,7 +196,7 @@ namespace BookmarkStudio
             }
 
             // Build a mapping of old paths to new paths
-            Dictionary<string, string> pathMapping = new Dictionary<string, string>(StringComparer.Ordinal);
+            var pathMapping = new Dictionary<string, string>(StringComparer.Ordinal);
             for (var i = 0; i < oldPaths.Length; i++)
             {
                 var normalizedOld = BookmarkIdentity.NormalizeDocumentPath(oldPaths[i]);

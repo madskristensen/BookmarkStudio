@@ -11,7 +11,7 @@ or get the latest CI build from [Open VSIX Gallery][vsixgallery].
 
 --------------------------------------
 
-**Bookmark Studio helps you manage bookmarks across your entire solution, not just the current file.**
+**Bookmark Studio helps you manage bookmarks across your entire solution, with quick keyboard access.**
 
 **Zero learning curve** - Bookmark Studio uses the same keyboard shortcuts as Visual Studio's built-in bookmark features. Your existing muscle memory works perfectly, so you can start using enhanced bookmarks immediately without changing how you work.
 
@@ -19,21 +19,30 @@ or get the latest CI build from [Open VSIX Gallery][vsixgallery].
 
 ## Key Features at a Glance
 
-- **Solution-wide Bookmark Manager** - View all bookmarks in one place
+- **Shortcuts** - Auto-assign, reassign, clear, and jump directly to bookmarks using **Ctrl+Alt+1-9**
+- **Toolbar access** - Easily navigate to bookmarks from the Standard toolbar
 - **Folder organization** - Group bookmarks into folders with drag-and-drop support
 - **Color-coded bookmarks** - Assign Blue, Red, Orange, Yellow, Green, Purple, Pink, or Teal
-- **Quick slots (1-9)** - Auto-assign, reassign, clear, and jump directly to slot bookmarks
-- **Built-in command interception** - Existing VS bookmark shortcuts work with Bookmark Studio
 - **Fast navigation** - Go to next/previous bookmark and jump from the manager
 - **Search and filtering** - Filter bookmarks by name, file, preview text, location, slot, or color
 - **Editor glyphs** - Colored glyphs in the margin with contextual actions and drag-and-drop functionality
-- **Persistent metadata** - Saves labels, colors, slots, folders, and history per solution
+- **Persistent bookmarks** - Saves labels, colors, slots, folders, and history per solution
+
+![Glyphs](art/glyphs.png)
 
 ## Why Bookmark Studio?
 
-Visual Studio bookmarks are useful, but they can be hard to manage across larger solutions. Bookmark Studio adds a dedicated workflow for organizing and navigating bookmarks with richer metadata, folder organization, and color support.
+Visual Studio bookmarks are useful, but lack modern features to keep up with complex codebases and workflows. Bookmark Studio aims to correct that by providing a powerful, yet familiar bookmark management experience that integrates seamlessly with your existing habits and workflows.
 
 ## Features
+
+### Toggle bookmarks
+
+Toggle bookmarks with the familiar **Ctrl+K, Ctrl+K** shortcut. Bookmark Studio will automatically assign the first available shortcut (1-9) to new bookmarks when possible, so you can quickly jump to them with **Ctrl+Alt+1-9**.
+
+You can also drag the bookmark glyph in the margin to a new line to move the bookmark.
+
+![Drag and drop of glyph](art/glyph-drag-drop.gif)
 
 ### Bookmark Manager Tool Window
 
@@ -45,6 +54,12 @@ Open **View > Bookmark Manager** to manage bookmarks in a dedicated tree view.
 - Organize bookmarks into folders
 - Navigate by double-click or context menu
 - Edit label, assign/clear slot, set color, copy location, and delete bookmarks
+
+### Toolbar Access
+
+Bookmark Studio adds a new dropdown to the Standard toolbar for quick access to your numbered bookmarks.
+
+![Toolbar](art/toolbar.png)
 
 ### Folder Organization
 
@@ -72,15 +87,15 @@ You can change color from:
 - Bookmark Manager context menu (**Set Color**)
 - Glyph context menu in the editor margin
 
-### Slot-based Navigation (1-9)
+### Shortcut-based Navigation (1-9)
 
-Bookmark Studio supports quick-access slots:
+Bookmark Studio supports quick-access shortcuts:
 
-- New bookmarks are auto-assigned the first available slot when possible
-- Assign a bookmark to any slot from 1 to 9
-- Reassigning a slot moves it to the selected bookmark
-- Clear slot assignment without removing the bookmark
-- Navigate directly with **Go To Bookmark Slot 1-9** commands
+- New bookmarks are auto-assigned the first available shortcut when possible
+- Assign a bookmark to any shortcut from 1 to 9
+- Reassigning a shortcut moves it to the selected bookmark
+- Clear shortcut assignment without removing the bookmark
+- Navigate directly with **Go To Bookmark Shortcut 1-9** commands
 
 Default keybindings:
 
@@ -89,8 +104,6 @@ Default keybindings:
 ### Built-in Bookmark Command Integration
 
 Bookmark Studio intercepts Visual Studio built-in bookmark commands so existing workflows continue to work while using Bookmark Studio metadata and UI.
-
-![Glyphs](art/glyphs.png)
 
 The following built-in commands are intercepted:
 

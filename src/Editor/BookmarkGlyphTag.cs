@@ -8,7 +8,7 @@ namespace BookmarkStudio
 
         public string Label { get; set; } = string.Empty;
 
-        public int? SlotNumber { get; set; }
+        public int? ShortcutNumber { get; set; }
 
         public BookmarkColor Color { get; set; }
     }

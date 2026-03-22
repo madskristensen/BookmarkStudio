@@ -88,7 +88,7 @@ namespace BookmarkStudio
 
                 case Key.Delete:
                     e.Handled = true;
-                    
+
                     // Check if it's a root node - require confirmation for clearing all bookmarks
                     if (_viewModel.SelectedNode is FolderNodeViewModel folderNode && folderNode.IsRoot)
                     {
@@ -228,7 +228,7 @@ namespace BookmarkStudio
                 return;
             }
 
-            DataObject data = new DataObject();
+            var data = new DataObject();
             if (!string.IsNullOrWhiteSpace(_dragBookmarkId))
             {
                 data.SetData(BookmarkDragFormat, _dragBookmarkId, false);
@@ -422,47 +422,47 @@ namespace BookmarkStudio
             await RunAsync(cancellationToken => _viewModel.SaveSelectionAsync(cancellationToken));
         }
 
-        private async void AssignSlotMenuItem_Click(object sender, RoutedEventArgs e)
+        private async void AssignShortcutMenuItem_Click(object sender, RoutedEventArgs e)
         {
             SelectNodeFromContextMenu(sender);
 
-            if (sender is not MenuItem menuItem || menuItem.Tag is null || !int.TryParse(menuItem.Tag.ToString(), out var slotNumber))
+            if (sender is not MenuItem menuItem || menuItem.Tag is null || !int.TryParse(menuItem.Tag.ToString(), out var shortcutNumber))
             {
                 return;
             }
 
-            await RunAsync(cancellationToken => _viewModel.AssignSelectedSlotAsync(slotNumber, cancellationToken));
+            await RunAsync(cancellationToken => _viewModel.AssignSelectedShortcutAsync(shortcutNumber, cancellationToken));
         }
 
-        private void AssignSlotSubmenu_Opened(object sender, RoutedEventArgs e)
+        private void AssignShortcutSubmenu_Opened(object sender, RoutedEventArgs e)
         {
             if (sender is not MenuItem submenu)
             {
                 return;
             }
 
-            Dictionary<int, string> slotAssignments = _viewModel.GetSlotAssignments();
+            Dictionary<int, string> shortcutAssignments = _viewModel.GetShortcutAssignments();
 
             foreach (var item in submenu.Items)
             {
-                if (item is MenuItem slotMenuItem && slotMenuItem.Tag is not null && int.TryParse(slotMenuItem.Tag.ToString(), out var slotNumber))
+                if (item is MenuItem shortcutMenuItem && shortcutMenuItem.Tag is not null && int.TryParse(shortcutMenuItem.Tag.ToString(), out var shortcutNumber))
                 {
-                    if (slotAssignments.TryGetValue(slotNumber, out var bookmarkLabel))
+                    if (shortcutAssignments.TryGetValue(shortcutNumber, out var bookmarkLabel))
                     {
-                        slotMenuItem.Header = string.Concat(slotNumber.ToString(System.Globalization.CultureInfo.InvariantCulture), " - ", bookmarkLabel);
+                        shortcutMenuItem.Header = string.Concat(shortcutNumber.ToString(System.Globalization.CultureInfo.InvariantCulture), " - ", bookmarkLabel);
                     }
                     else
                     {
-                        slotMenuItem.Header = string.Concat(slotNumber.ToString(System.Globalization.CultureInfo.InvariantCulture), " - Unassigned");
+                        shortcutMenuItem.Header = string.Concat(shortcutNumber.ToString(System.Globalization.CultureInfo.InvariantCulture), " - Unassigned");
                     }
                 }
             }
         }
 
-        private async void ClearSlotMenuItem_Click(object sender, RoutedEventArgs e)
+        private async void ClearShortcutMenuItem_Click(object sender, RoutedEventArgs e)
         {
             SelectNodeFromContextMenu(sender);
-            await RunAsync(cancellationToken => _viewModel.ClearSelectedSlotAsync(cancellationToken));
+            await RunAsync(cancellationToken => _viewModel.ClearSelectedShortcutAsync(cancellationToken));
         }
 
         private async void SetColorMenuItem_Click(object sender, RoutedEventArgs e)
@@ -474,7 +474,7 @@ namespace BookmarkStudio
                 return;
             }
 
-            BookmarkColor color = (BookmarkColor)colorValue;
+            var color = (BookmarkColor)colorValue;
             await RunAsync(cancellationToken => _viewModel.SetSelectedColorAsync(color, cancellationToken));
         }
 
@@ -606,273 +606,273 @@ namespace BookmarkStudio
 
         private void ViewModel_PropertyChanged(object sender, PropertyChangedEventArgs e)
         {
-        if (string.Equals(e.PropertyName, nameof(BookmarkManagerViewModel.SelectedNode), StringComparison.Ordinal))
-        {
-            SelectTreeNode(_viewModel.SelectedNode);
-        }
-    }
-
-    private async Task PromptCreateFolderInternalAsync()
-    {
-        var folderName = TextPromptWindow.Show("Add Folder", "Enter a folder name:", string.Empty);
-        if (folderName is null)
-        {
-            return;
-        }
-
-        await RunAsync(cancellationToken => _viewModel.CreateFolderAsync(folderName, cancellationToken));
-    }
-
-    private async Task PromptRenameFolderInternalAsync()
-    {
-        if (_viewModel.SelectedNode is not FolderNodeViewModel folderNode)
-        {
-            _viewModel.SetStatus("Select a folder first.");
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(folderNode.FolderPath))
-        {
-            _viewModel.SetStatus("The Root folder cannot be renamed.");
-            return;
-        }
-
-        var folderName = TextPromptWindow.Show("Rename Folder", "Enter a new folder name:", folderNode.FolderName, selectTextOnLoad: true);
-        if (folderName is null)
-        {
-            return;
-        }
-
-        await RunAsync(cancellationToken => _viewModel.RenameSelectedFolderAsync(folderName, cancellationToken));
-    }
-
-    private async Task PromptRenameBookmarkInternalAsync()
-    {
-        ManagedBookmark? bookmark = _viewModel.SelectedBookmark;
-        if (bookmark is null)
-        {
-            _viewModel.SetStatus("Select a bookmark first.");
-            return;
-        }
-
-        var newLabel = TextPromptWindow.Show("Edit Label", "Enter a label for the bookmark:", bookmark.Label, selectTextOnLoad: true);
-        if (newLabel is null)
-        {
-            return;
-        }
-
-        _viewModel.SelectedLabelText = newLabel;
-        await RunAsync(cancellationToken => _viewModel.SaveSelectionAsync(cancellationToken));
-    }
-
-    private async Task RunAsync(Func<CancellationToken, Task> action)
-    {
-        try
-        {
-            await action(CancellationToken.None);
-        }
-        catch (OperationCanceledException ex)
-        {
-            await ex.LogAsync();
-            _viewModel.SetStatus("The operation was canceled.");
-        }
-        catch (ArgumentException ex)
-        {
-            await ex.LogAsync();
-            _viewModel.SetStatus(ex.Message);
-        }
-        catch (InvalidOperationException ex)
-        {
-            await ex.LogAsync();
-            _viewModel.SetStatus(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            await ex.LogAsync();
-            _viewModel.SetStatus("An unexpected error occurred.");
-        }
-    }
-
-    private async Task CopyLocationAsync()
-    {
-        try
-        {
-            var location = await _viewModel.GetSelectedLocationAsync(CancellationToken.None);
-            Clipboard.SetText(location);
-            _viewModel.SetStatus("Bookmark location copied to the clipboard.");
-        }
-        catch (OperationCanceledException ex)
-        {
-            await ex.LogAsync();
-            _viewModel.SetStatus("The operation was canceled.");
-        }
-        catch (ArgumentException ex)
-        {
-            await ex.LogAsync();
-            _viewModel.SetStatus(ex.Message);
-        }
-        catch (InvalidOperationException ex)
-        {
-            await ex.LogAsync();
-            _viewModel.SetStatus(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            await ex.LogAsync();
-            _viewModel.SetStatus("An unexpected error occurred.");
-        }
-    }
-
-    private void SelectTreeNode(BookmarkNodeViewModel? node)
-    {
-        if (node is null)
-        {
-            return;
-        }
-
-        TreeViewItem? treeViewItem = FindTreeViewItem(BookmarkTreeView, node);
-        if (treeViewItem is null || treeViewItem.IsSelected)
-        {
-            return;
-        }
-
-        treeViewItem.IsSelected = true;
-        treeViewItem.BringIntoView();
-    }
-
-    private bool SelectFolderFromContextMenu(object sender)
-    {
-        if (sender is not MenuItem menuItem
-            || GetOwningContextMenu(menuItem) is not ContextMenu contextMenu
-            || contextMenu.PlacementTarget is not FrameworkElement placementTarget
-            || placementTarget.DataContext is not FolderNodeViewModel folderNode)
-        {
-            return false;
-        }
-
-        _viewModel.SelectedNode = folderNode;
-        return true;
-    }
-
-    private void SelectNodeFromContextMenu(object sender)
-    {
-        if (sender is not MenuItem menuItem
-            || GetOwningContextMenu(menuItem) is not ContextMenu contextMenu
-            || contextMenu.PlacementTarget is not FrameworkElement placementTarget
-            || placementTarget.DataContext is not BookmarkNodeViewModel node)
-        {
-            return;
-        }
-
-        _viewModel.SelectedNode = node;
-    }
-
-    private static ContextMenu? GetOwningContextMenu(DependencyObject? source)
-    {
-        DependencyObject? current = source;
-        while (current is not null)
-        {
-            if (current is ContextMenu contextMenu)
+            if (string.Equals(e.PropertyName, nameof(BookmarkManagerViewModel.SelectedNode), StringComparison.Ordinal))
             {
-                return contextMenu;
+                SelectTreeNode(_viewModel.SelectedNode);
+            }
+        }
+
+        private async Task PromptCreateFolderInternalAsync()
+        {
+            var folderName = TextPromptWindow.Show("Add Folder", "Enter a folder name:", string.Empty);
+            if (folderName is null)
+            {
+                return;
             }
 
-            current = LogicalTreeHelper.GetParent(current);
+            await RunAsync(cancellationToken => _viewModel.CreateFolderAsync(folderName, cancellationToken));
         }
 
-        return null;
-    }
-
-    private static TreeViewItem? FindTreeViewItem(ItemsControl parent, object item)
-    {
-        if (parent.ItemContainerGenerator.ContainerFromItem(item) is TreeViewItem directMatch)
+        private async Task PromptRenameFolderInternalAsync()
         {
-            return directMatch;
+            if (_viewModel.SelectedNode is not FolderNodeViewModel folderNode)
+            {
+                _viewModel.SetStatus("Select a folder first.");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(folderNode.FolderPath))
+            {
+                _viewModel.SetStatus("The Root folder cannot be renamed.");
+                return;
+            }
+
+            var folderName = TextPromptWindow.Show("Rename Folder", "Enter a new folder name:", folderNode.FolderName, selectTextOnLoad: true);
+            if (folderName is null)
+            {
+                return;
+            }
+
+            await RunAsync(cancellationToken => _viewModel.RenameSelectedFolderAsync(folderName, cancellationToken));
         }
 
-        foreach (var child in parent.Items)
+        private async Task PromptRenameBookmarkInternalAsync()
         {
-            if (parent.ItemContainerGenerator.ContainerFromItem(child) is not TreeViewItem childContainer)
+            ManagedBookmark? bookmark = _viewModel.SelectedBookmark;
+            if (bookmark is null)
             {
-                continue;
+                _viewModel.SetStatus("Select a bookmark first.");
+                return;
             }
 
-            var wasExpanded = childContainer.IsExpanded;
-            childContainer.IsExpanded = true;
-            childContainer.UpdateLayout();
-
-            TreeViewItem? match = FindTreeViewItem(childContainer, item);
-            if (match is not null)
+            var newLabel = TextPromptWindow.Show("Edit Label", "Enter a label for the bookmark:", bookmark.Label, selectTextOnLoad: true);
+            if (newLabel is null)
             {
-                return match;
+                return;
             }
 
-            childContainer.IsExpanded = wasExpanded;
+            _viewModel.SelectedLabelText = newLabel;
+            await RunAsync(cancellationToken => _viewModel.SaveSelectionAsync(cancellationToken));
         }
 
-        return null;
-    }
-
-    private static BookmarkNodeViewModel? GetNodeFromVisual(DependencyObject? source)
-    {
-        DependencyObject? current = source;
-        while (current is not null)
+        private async Task RunAsync(Func<CancellationToken, Task> action)
         {
-            if (current is TreeViewItem item && item.DataContext is BookmarkNodeViewModel node)
+            try
             {
-                return node;
+                await action(CancellationToken.None);
             }
-
-            current = VisualTreeHelper.GetParent(current);
+            catch (OperationCanceledException ex)
+            {
+                await ex.LogAsync();
+                _viewModel.SetStatus("The operation was canceled.");
+            }
+            catch (ArgumentException ex)
+            {
+                await ex.LogAsync();
+                _viewModel.SetStatus(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                await ex.LogAsync();
+                _viewModel.SetStatus(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                await ex.LogAsync();
+                _viewModel.SetStatus("An unexpected error occurred.");
+            }
         }
 
-        return null;
-    }
-
-    private static string GetDropTargetFolderPath(DependencyObject? source)
-    {
-        BookmarkNodeViewModel? targetNode = GetNodeFromVisual(source);
-        if (targetNode is FolderNodeViewModel folderNode)
+        private async Task CopyLocationAsync()
         {
-            return folderNode.FolderPath;
+            try
+            {
+                var location = await _viewModel.GetSelectedLocationAsync(CancellationToken.None);
+                Clipboard.SetText(location);
+                _viewModel.SetStatus("Bookmark location copied to the clipboard.");
+            }
+            catch (OperationCanceledException ex)
+            {
+                await ex.LogAsync();
+                _viewModel.SetStatus("The operation was canceled.");
+            }
+            catch (ArgumentException ex)
+            {
+                await ex.LogAsync();
+                _viewModel.SetStatus(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                await ex.LogAsync();
+                _viewModel.SetStatus(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                await ex.LogAsync();
+                _viewModel.SetStatus("An unexpected error occurred.");
+            }
         }
 
-        return (targetNode as BookmarkItemNodeViewModel)?.Bookmark.FolderPath ?? string.Empty;
-    }
-
-    private static BookmarkStorageLocation? GetDropTargetStorageLocation(DependencyObject? source)
-    {
-        BookmarkNodeViewModel? targetNode = GetNodeFromVisual(source);
-
-        // Walk up to find the root storage node
-        while (targetNode is not null)
+        private void SelectTreeNode(BookmarkNodeViewModel? node)
         {
-            if (targetNode is FolderNodeViewModel folderNode && folderNode.IsRoot)
+            if (node is null)
             {
-                return folderNode.StorageLocation;
+                return;
             }
 
-            if (targetNode is BookmarkItemNodeViewModel bookmarkNode)
+            TreeViewItem? treeViewItem = FindTreeViewItem(BookmarkTreeView, node);
+            if (treeViewItem is null || treeViewItem.IsSelected)
             {
-                return bookmarkNode.Bookmark.StorageLocation;
+                return;
             }
 
-            // Try to find parent through visual tree
-            DependencyObject? visual = source;
-            while (visual is not null)
+            treeViewItem.IsSelected = true;
+            treeViewItem.BringIntoView();
+        }
+
+        private bool SelectFolderFromContextMenu(object sender)
+        {
+            if (sender is not MenuItem menuItem
+                || GetOwningContextMenu(menuItem) is not ContextMenu contextMenu
+                || contextMenu.PlacementTarget is not FrameworkElement placementTarget
+                || placementTarget.DataContext is not FolderNodeViewModel folderNode)
             {
-                if (visual is TreeViewItem tvi && tvi.DataContext is FolderNodeViewModel parentFolder && parentFolder.IsRoot)
+                return false;
+            }
+
+            _viewModel.SelectedNode = folderNode;
+            return true;
+        }
+
+        private void SelectNodeFromContextMenu(object sender)
+        {
+            if (sender is not MenuItem menuItem
+                || GetOwningContextMenu(menuItem) is not ContextMenu contextMenu
+                || contextMenu.PlacementTarget is not FrameworkElement placementTarget
+                || placementTarget.DataContext is not BookmarkNodeViewModel node)
+            {
+                return;
+            }
+
+            _viewModel.SelectedNode = node;
+        }
+
+        private static ContextMenu? GetOwningContextMenu(DependencyObject? source)
+        {
+            DependencyObject? current = source;
+            while (current is not null)
+            {
+                if (current is ContextMenu contextMenu)
                 {
-                    return parentFolder.StorageLocation;
+                    return contextMenu;
                 }
 
-                visual = VisualTreeHelper.GetParent(visual);
+                current = LogicalTreeHelper.GetParent(current);
             }
 
-            break;
+            return null;
         }
 
-        return null;
-    }
+        private static TreeViewItem? FindTreeViewItem(ItemsControl parent, object item)
+        {
+            if (parent.ItemContainerGenerator.ContainerFromItem(item) is TreeViewItem directMatch)
+            {
+                return directMatch;
+            }
+
+            foreach (var child in parent.Items)
+            {
+                if (parent.ItemContainerGenerator.ContainerFromItem(child) is not TreeViewItem childContainer)
+                {
+                    continue;
+                }
+
+                var wasExpanded = childContainer.IsExpanded;
+                childContainer.IsExpanded = true;
+                childContainer.UpdateLayout();
+
+                TreeViewItem? match = FindTreeViewItem(childContainer, item);
+                if (match is not null)
+                {
+                    return match;
+                }
+
+                childContainer.IsExpanded = wasExpanded;
+            }
+
+            return null;
+        }
+
+        private static BookmarkNodeViewModel? GetNodeFromVisual(DependencyObject? source)
+        {
+            DependencyObject? current = source;
+            while (current is not null)
+            {
+                if (current is TreeViewItem item && item.DataContext is BookmarkNodeViewModel node)
+                {
+                    return node;
+                }
+
+                current = VisualTreeHelper.GetParent(current);
+            }
+
+            return null;
+        }
+
+        private static string GetDropTargetFolderPath(DependencyObject? source)
+        {
+            BookmarkNodeViewModel? targetNode = GetNodeFromVisual(source);
+            if (targetNode is FolderNodeViewModel folderNode)
+            {
+                return folderNode.FolderPath;
+            }
+
+            return (targetNode as BookmarkItemNodeViewModel)?.Bookmark.FolderPath ?? string.Empty;
+        }
+
+        private static BookmarkStorageLocation? GetDropTargetStorageLocation(DependencyObject? source)
+        {
+            BookmarkNodeViewModel? targetNode = GetNodeFromVisual(source);
+
+            // Walk up to find the root storage node
+            while (targetNode is not null)
+            {
+                if (targetNode is FolderNodeViewModel folderNode && folderNode.IsRoot)
+                {
+                    return folderNode.StorageLocation;
+                }
+
+                if (targetNode is BookmarkItemNodeViewModel bookmarkNode)
+                {
+                    return bookmarkNode.Bookmark.StorageLocation;
+                }
+
+                // Try to find parent through visual tree
+                DependencyObject? visual = source;
+                while (visual is not null)
+                {
+                    if (visual is TreeViewItem tvi && tvi.DataContext is FolderNodeViewModel parentFolder && parentFolder.IsRoot)
+                    {
+                        return parentFolder.StorageLocation;
+                    }
+
+                    visual = VisualTreeHelper.GetParent(visual);
+                }
+
+                break;
+            }
+
+            return null;
+        }
     }
 }
