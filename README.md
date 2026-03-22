@@ -29,7 +29,7 @@ Stop losing your place in large codebases. Bookmark Studio lets you mark, organi
 
 ### Mark Important Code
 
-Press **Ctrl+K, Ctrl+K** on any line to create a bookmark. A colored glyph appears in the margin, and the bookmark is automatically assigned the next available shortcut (1-9).
+Press **Ctrl+K, Ctrl+K** or **Alt+Shift+Space** on any line to create a bookmark. A colored glyph appears in the margin, and the bookmark is automatically assigned the next available shortcut (1-9).
 
 ![Glyphs](art/glyphs.png)
 
@@ -40,8 +40,8 @@ Already using Visual Studio's built-in bookmarks? No migration needed. When you 
 ### Jump to Bookmarks Instantly
 
 - **Alt+Shift+1** through **Alt+Shift+9** - Jump directly to numbered bookmarks
-- **Ctrl+K, Ctrl+N** - Go to next bookmark
-- **Ctrl+K, Ctrl+P** - Go to previous bookmark
+- **Ctrl+K, Ctrl+N / Shift+Alt+N** - Go to next bookmark
+- **Ctrl+K, Ctrl+P / Shift+Alt+H** - Go to previous bookmark
 
 ### Organize Your Bookmarks
 
