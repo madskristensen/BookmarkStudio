@@ -25,10 +25,11 @@ namespace BookmarkStudio
     [Guid(PackageGuids.BookmarkStudioString)]
     public sealed class BookmarkStudioPackage : ToolkitPackage
     {
+        private bool _initialRefreshDone;
+
         protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
         {
             this.RegisterToolWindows();
-            await BookmarkStudioSession.Current.RefreshAsync(cancellationToken);
             await BookmarkRefreshMonitorService.Instance.InitializeAsync(cancellationToken);
             await this.RegisterCommandsAsync();
             await BookmarkBuiltInCommandInterceptor.InitializeAsync();
@@ -38,10 +39,24 @@ namespace BookmarkStudio
             VS.Events.SolutionEvents.OnAfterCloseSolution += OnAfterCloseSolution;
             VS.Events.SolutionEvents.OnAfterOpenFolder += OnAfterOpenFolder;
             VS.Events.SolutionEvents.OnAfterCloseFolder += OnAfterCloseFolder;
+
+            // Defer initial refresh to run on idle after main thread is available
+            // This prevents deadlock when RefreshAsync needs the UI thread
+            JoinableTaskFactory.StartOnIdle(async () =>
+            {
+                if (_initialRefreshDone)
+                {
+                    return;
+                }
+
+                _initialRefreshDone = true;
+                await BookmarkStudioSession.Current.RefreshAsync(CancellationToken.None);
+            }).FireAndForget();
         }
 
         private void OnAfterOpenSolution(Solution? obj)
         {
+            _initialRefreshDone = true;
             BookmarkStudioSession.Current.InvalidateSolutionPath();
             ThreadHelper.JoinableTaskFactory.StartOnIdle(async () =>
             {
@@ -61,6 +76,7 @@ namespace BookmarkStudio
 
         private void OnAfterOpenFolder(string? folderPath)
         {
+            _initialRefreshDone = true;
             BookmarkStudioSession.Current.InvalidateSolutionPath();
             ThreadHelper.JoinableTaskFactory.StartOnIdle(async () =>
             {

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Threading;
 
 namespace BookmarkStudio
@@ -9,6 +10,21 @@ namespace BookmarkStudio
         /// Gets the 1-based slot number this command navigates to.
         /// </summary>
         protected abstract int SlotNumber { get; }
+
+        protected override void BeforeQueryStatus(EventArgs e)
+        {
+            ThreadHelper.JoinableTaskFactory.Run(async () =>
+            {
+                ManagedBookmark bookmark = await BookmarkOperationsService.Current.GetBookmarkBySlotAsync(SlotNumber, CancellationToken.None);
+
+                Command.Visible = bookmark is not null;
+                Command.Enabled = bookmark is not null;
+                if (bookmark is not null)
+                {
+                    Command.Text = string.Format(CultureInfo.CurrentCulture, "Go to {0}", bookmark.Label);
+                }
+            });
+        }
 
         protected override async Task ExecuteAsync(OleMenuCmdEventArgs e)
         {

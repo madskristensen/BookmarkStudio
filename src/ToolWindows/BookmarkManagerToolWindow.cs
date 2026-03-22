@@ -65,9 +65,10 @@ namespace BookmarkStudio
                 return;
             }
 
-            // Don't perform cleanup on automatic refresh (solution open, etc.)
-            // Cleanup only happens on explicit user refresh action
-            await _currentControl.RefreshWithoutCleanupAsync(cancellationToken);
+            // Refresh from the session's cached data without reloading from disk.
+            // The session cache should already be up-to-date from the preceding RefreshAsync call.
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+            _currentControl.RefreshFromCache();
             _currentControl.SelectBookmark(bookmarkId);
         }
 

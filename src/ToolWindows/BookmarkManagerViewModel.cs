@@ -175,6 +175,26 @@ namespace BookmarkStudio
             SetStatus(string.Concat(_bookmarks.Count.ToString(System.Globalization.CultureInfo.InvariantCulture), " bookmarks loaded."));
         }
 
+        /// <summary>
+        /// Rebuilds the tree view from the session's cached data without reloading from disk.
+        /// Use this when the session cache has already been updated and you just need to refresh the UI.
+        /// </summary>
+        public void RefreshFromCache()
+        {
+            string? selectedBookmarkId = SelectedBookmark?.BookmarkId;
+            string? selectedFolderPath = SelectedNode is FolderNodeViewModel folderNode ? folderNode.FolderPath : null;
+
+            IReadOnlyList<ManagedBookmark> cachedBookmarks = BookmarkStudioSession.Current.CachedBookmarks;
+            IReadOnlyList<string> cachedFolderPaths = BookmarkStudioSession.Current.CachedFolderPaths;
+
+            ReloadData(cachedBookmarks, cachedFolderPaths, _expandedFolders);
+            RebuildTree();
+            RestoreSelection(selectedBookmarkId, selectedFolderPath);
+
+            int totalBookmarks = _bookmarks.Count;
+            SetStatus(string.Concat(totalBookmarks.ToString(System.Globalization.CultureInfo.InvariantCulture), " bookmarks loaded."));
+        }
+
         public Task RefreshAsync(CancellationToken cancellationToken)
             => RefreshAsync(performCleanup: true, cancellationToken);
 
@@ -724,6 +744,13 @@ namespace BookmarkStudio
             _bookmarks.Clear();
             _personalBookmarks.Clear();
             _solutionBookmarks.Clear();
+            _folderPaths.Clear();
+            _personalFolderPaths.Clear();
+            _solutionFolderPaths.Clear();
+
+            _folderPaths.Add(string.Empty);
+            _personalFolderPaths.Add(string.Empty);
+            _solutionFolderPaths.Add(string.Empty);
 
             foreach (ManagedBookmark bookmark in bookmarks)
             {

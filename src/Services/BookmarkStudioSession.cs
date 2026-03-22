@@ -54,39 +54,10 @@ namespace BookmarkStudio
 
         private async Task<IReadOnlyList<ManagedBookmark>> RefreshAsync(bool removeStaleBookmarks, CancellationToken cancellationToken)
         {
-            await _repositoryGate.WaitAsync(cancellationToken);
-            try
-            {
-                _lastStaleBookmarkCount = 0;
-                string solutionPath = await GetSolutionPathAsync(cancellationToken);
-                BookmarkWorkspaceState workspace = await _repositoryService.LoadWorkspaceAsync(solutionPath, cancellationToken);
-
-                if (removeStaleBookmarks && !string.IsNullOrEmpty(solutionPath))
-                {
-                    List<BookmarkMetadata> staleBookmarks = workspace.Bookmarks
-                        .Where(bookmark => !string.IsNullOrWhiteSpace(bookmark.DocumentPath) && !System.IO.File.Exists(bookmark.DocumentPath))
-                        .ToList();
-
-                    if (staleBookmarks.Count > 0)
-                    {
-                        foreach (BookmarkMetadata stale in staleBookmarks)
-                        {
-                            workspace.Bookmarks.Remove(stale);
-                        }
-
-                        _lastStaleBookmarkCount = staleBookmarks.Count;
-                        await _repositoryService.SaveWorkspaceAsync(solutionPath, workspace, cancellationToken);
-                    }
-                }
-
-                BookmarkRepositoryService.NormalizeWorkspaceState(workspace);
-                SetCachedState(BookmarkRepositoryService.ToManagedBookmarks(workspace.Bookmarks), workspace.FolderPaths);
-                return _cachedBookmarks;
-            }
-            finally
-            {
-                _repositoryGate.Release();
-            }
+            // Use RefreshDualAsync to load from both Personal and Solution storage locations
+            (DualBookmarkWorkspaceState _, int staleCount) = await RefreshDualAsync(removeStaleBookmarks, cancellationToken);
+            _lastStaleBookmarkCount = staleCount;
+            return _cachedBookmarks;
         }
 
 
@@ -127,16 +98,61 @@ namespace BookmarkStudio
             try
             {
                 string solutionPath = await GetSolutionPathAsync(cancellationToken);
-                BookmarkWorkspaceState workspace = await _repositoryService.LoadWorkspaceAsync(solutionPath, cancellationToken);
-                updateAction(workspace.Bookmarks);
-                BookmarkRepositoryService.NormalizeWorkspaceState(workspace);
-                await _repositoryService.SaveWorkspaceAsync(solutionPath, workspace, cancellationToken);
-                SetCachedState(BookmarkRepositoryService.ToManagedBookmarks(workspace.Bookmarks), workspace.FolderPaths);
+                DualBookmarkWorkspaceState dualState = await _metadataStore.LoadDualWorkspaceAsync(solutionPath, cancellationToken);
+
+                // Try to apply update to each workspace - catch exceptions if bookmark not found in that workspace
+                bool personalChanged = TryApplyUpdate(dualState.PersonalState.Bookmarks, updateAction);
+                bool solutionChanged = TryApplyUpdate(dualState.SolutionState.Bookmarks, updateAction);
+
+                // Save changed workspaces
+                if (personalChanged)
+                {
+                    BookmarkRepositoryService.NormalizeWorkspaceState(dualState.PersonalState);
+                    await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Personal, dualState.PersonalState, cancellationToken);
+                }
+
+                if (solutionChanged)
+                {
+                    BookmarkRepositoryService.NormalizeWorkspaceState(dualState.SolutionState);
+                    await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Solution, dualState.SolutionState, cancellationToken);
+                }
+
+                // Combine and cache all bookmarks from both locations
+                List<ManagedBookmark> allBookmarks = new List<ManagedBookmark>();
+                allBookmarks.AddRange(BookmarkRepositoryService.ToManagedBookmarks(dualState.PersonalState.Bookmarks));
+                allBookmarks.AddRange(BookmarkRepositoryService.ToManagedBookmarks(dualState.SolutionState.Bookmarks));
+
+                HashSet<string> allFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (string path in dualState.PersonalState.FolderPaths)
+                {
+                    allFolders.Add(path);
+                }
+
+                foreach (string path in dualState.SolutionState.FolderPaths)
+                {
+                    allFolders.Add(path);
+                }
+
+                SetCachedState(allBookmarks, allFolders);
                 return _cachedBookmarks;
             }
             finally
             {
                 _repositoryGate.Release();
+            }
+        }
+
+        private static bool TryApplyUpdate(List<BookmarkMetadata> bookmarks, Action<List<BookmarkMetadata>> updateAction)
+        {
+            try
+            {
+                updateAction(bookmarks);
+                return true;
+            }
+            catch (InvalidOperationException)
+            {
+                // Bookmark not found in this list - that's expected when using dual storage
+                return false;
             }
         }
 
@@ -146,14 +162,41 @@ namespace BookmarkStudio
             try
             {
                 string solutionPath = await GetSolutionPathAsync(cancellationToken);
-                BookmarkWorkspaceState workspace = await _repositoryService.LoadWorkspaceAsync(solutionPath, cancellationToken);
-                if (updateAction(workspace.Bookmarks))
+                DualBookmarkWorkspaceState dualState = await _metadataStore.LoadDualWorkspaceAsync(solutionPath, cancellationToken);
+
+                // Try to apply update to both workspaces
+                bool personalChanged = updateAction(dualState.PersonalState.Bookmarks);
+                bool solutionChanged = updateAction(dualState.SolutionState.Bookmarks);
+
+                if (personalChanged)
                 {
-                    BookmarkRepositoryService.NormalizeWorkspaceState(workspace);
-                    await _repositoryService.SaveWorkspaceAsync(solutionPath, workspace, cancellationToken);
+                    BookmarkRepositoryService.NormalizeWorkspaceState(dualState.PersonalState);
+                    await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Personal, dualState.PersonalState, cancellationToken);
                 }
 
-                SetCachedState(BookmarkRepositoryService.ToManagedBookmarks(workspace.Bookmarks), workspace.FolderPaths);
+                if (solutionChanged)
+                {
+                    BookmarkRepositoryService.NormalizeWorkspaceState(dualState.SolutionState);
+                    await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Solution, dualState.SolutionState, cancellationToken);
+                }
+
+                // Combine and cache all bookmarks from both locations
+                List<ManagedBookmark> allBookmarks = new List<ManagedBookmark>();
+                allBookmarks.AddRange(BookmarkRepositoryService.ToManagedBookmarks(dualState.PersonalState.Bookmarks));
+                allBookmarks.AddRange(BookmarkRepositoryService.ToManagedBookmarks(dualState.SolutionState.Bookmarks));
+
+                HashSet<string> allFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (string path in dualState.PersonalState.FolderPaths)
+                {
+                    allFolders.Add(path);
+                }
+
+                foreach (string path in dualState.SolutionState.FolderPaths)
+                {
+                    allFolders.Add(path);
+                }
+
+                SetCachedState(allBookmarks, allFolders);
                 return _cachedBookmarks;
             }
             finally
@@ -176,26 +219,73 @@ namespace BookmarkStudio
             try
             {
                 string solutionPath = await GetSolutionPathAsync(cancellationToken);
-                BookmarkWorkspaceState workspace = await _repositoryService.LoadWorkspaceAsync(solutionPath, cancellationToken);
+                DualBookmarkWorkspaceState dualState = await _metadataStore.LoadDualWorkspaceAsync(solutionPath, cancellationToken);
 
-                BookmarkMetadata existingBookmark = BookmarkRepositoryService.FindBySnapshot(workspace.Bookmarks, snapshot);
+                // Check both locations for existing bookmark
+                BookmarkMetadata existingPersonal = BookmarkRepositoryService.FindBySnapshot(dualState.PersonalState.Bookmarks, snapshot);
+                BookmarkMetadata existingSolution = BookmarkRepositoryService.FindBySnapshot(dualState.SolutionState.Bookmarks, snapshot);
                 ManagedBookmark? result;
+                bool personalChanged = false;
+                bool solutionChanged = false;
 
-                if (existingBookmark is not null)
+                if (existingPersonal is not null)
                 {
-                    workspace.Bookmarks.Remove(existingBookmark);
+                    dualState.PersonalState.Bookmarks.Remove(existingPersonal);
+                    personalChanged = true;
+                    result = null;
+                }
+                else if (existingSolution is not null)
+                {
+                    dualState.SolutionState.Bookmarks.Remove(existingSolution);
+                    solutionChanged = true;
                     result = null;
                 }
                 else
                 {
-                    BookmarkMetadata createdBookmark = BookmarkRepositoryService.CreateBookmarkMetadata(workspace.Bookmarks, snapshot, label);
-                    workspace.Bookmarks.Add(createdBookmark);
+                    // Create new bookmark - combine all bookmarks to find next available slot/label
+                    List<BookmarkMetadata> allBookmarks = new List<BookmarkMetadata>();
+                    allBookmarks.AddRange(dualState.PersonalState.Bookmarks);
+                    allBookmarks.AddRange(dualState.SolutionState.Bookmarks);
+
+                    BookmarkMetadata createdBookmark = BookmarkRepositoryService.CreateBookmarkMetadata(allBookmarks, snapshot, label);
+
+                    // New bookmarks go to Solution storage by default (team-shared)
+                    createdBookmark.StorageLocation = BookmarkStorageLocation.Solution;
+                    dualState.SolutionState.Bookmarks.Add(createdBookmark);
+                    solutionChanged = true;
                     result = createdBookmark.ToManagedBookmark();
                 }
 
-                BookmarkRepositoryService.NormalizeWorkspaceState(workspace);
-                await _repositoryService.SaveWorkspaceAsync(solutionPath, workspace, cancellationToken);
-                SetCachedState(BookmarkRepositoryService.ToManagedBookmarks(workspace.Bookmarks), workspace.FolderPaths);
+                // Save changed workspaces
+                if (personalChanged)
+                {
+                    BookmarkRepositoryService.NormalizeWorkspaceState(dualState.PersonalState);
+                    await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Personal, dualState.PersonalState, cancellationToken);
+                }
+
+                if (solutionChanged)
+                {
+                    BookmarkRepositoryService.NormalizeWorkspaceState(dualState.SolutionState);
+                    await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Solution, dualState.SolutionState, cancellationToken);
+                }
+
+                // Combine and cache all bookmarks from both locations
+                List<ManagedBookmark> allManagedBookmarks = new List<ManagedBookmark>();
+                allManagedBookmarks.AddRange(BookmarkRepositoryService.ToManagedBookmarks(dualState.PersonalState.Bookmarks));
+                allManagedBookmarks.AddRange(BookmarkRepositoryService.ToManagedBookmarks(dualState.SolutionState.Bookmarks));
+
+                HashSet<string> allFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (string path in dualState.PersonalState.FolderPaths)
+                {
+                    allFolders.Add(path);
+                }
+
+                foreach (string path in dualState.SolutionState.FolderPaths)
+                {
+                    allFolders.Add(path);
+                }
+
+                SetCachedState(allManagedBookmarks, allFolders);
                 return result;
             }
             finally
@@ -437,6 +527,9 @@ namespace BookmarkStudio
                     staleCount = await RemoveStaleFromDualStateAsync(solutionPath, dualState, cancellationToken);
                 }
 
+                // Resolve slot conflicts - workspace bookmarks take precedence
+                ResolveSlotConflicts(dualState);
+
                 // Combine and cache all bookmarks
                 List<ManagedBookmark> allBookmarks = new List<ManagedBookmark>();
                 allBookmarks.AddRange(BookmarkRepositoryService.ToManagedBookmarks(dualState.PersonalState.Bookmarks));
@@ -553,6 +646,9 @@ namespace BookmarkStudio
                 // Refresh dual state to update cache
                 DualBookmarkWorkspaceState dualState = await _metadataStore.LoadDualWorkspaceAsync(solutionPath, cancellationToken);
 
+                // Resolve slot conflicts - workspace bookmarks take precedence
+                ResolveSlotConflicts(dualState);
+
                 List<ManagedBookmark> allBookmarks = new List<ManagedBookmark>();
                 allBookmarks.AddRange(BookmarkRepositoryService.ToManagedBookmarks(dualState.PersonalState.Bookmarks));
                 allBookmarks.AddRange(BookmarkRepositoryService.ToManagedBookmarks(dualState.SolutionState.Bookmarks));
@@ -612,6 +708,26 @@ namespace BookmarkStudio
 
             _cachedSolutionPath = string.Empty;
             return _cachedSolutionPath;
+        }
+
+        /// <summary>
+        /// Clears slot numbers from personal bookmarks that conflict with workspace bookmarks.
+        /// Workspace bookmarks take precedence when there are duplicate slot assignments.
+        /// </summary>
+        private static void ResolveSlotConflicts(DualBookmarkWorkspaceState dualState)
+        {
+            HashSet<int> workspaceSlots = new HashSet<int>(
+                dualState.SolutionState.Bookmarks
+                    .Where(b => b.SlotNumber.HasValue)
+                    .Select(b => b.SlotNumber.GetValueOrDefault()));
+
+            foreach (BookmarkMetadata personalBookmark in dualState.PersonalState.Bookmarks)
+            {
+                if (personalBookmark.SlotNumber.HasValue && workspaceSlots.Contains(personalBookmark.SlotNumber.Value))
+                {
+                    personalBookmark.SlotNumber = null;
+                }
+            }
         }
 
         private void SetCachedBookmarks(IReadOnlyList<ManagedBookmark> bookmarks)

@@ -12,7 +12,7 @@ namespace BookmarkStudio
         public const string Name = "Bookmark Studio";
         public const string Description = @"Manage color-coded code bookmarks across your solution with slots, search, and fast navigation.";
         public const string Language = "en-US";
-        public const string Version = "1.0.900";
+        public const string Version = "1.0.901";
         public const string Author = "Mads Kristensen";
         public const string Tags = "";
         public const bool IsPreview = false;

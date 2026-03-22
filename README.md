@@ -67,17 +67,6 @@ Each bookmark has a color and shows as a colored square in both:
 
 ![Glyphs](art/set-color.png)
 
-Available colors:
-
-- Blue (default)
-- Red
-- Orange
-- Yellow
-- Green
-- Purple
-- Pink
-- Teal
-
 You can change color from:
 
 - Bookmark Manager context menu (**Set Color**)
@@ -156,12 +145,6 @@ To share bookmarks with your team via source control:
 3. Team members will automatically use the shared bookmarks file
 
 This is useful for marking important code locations, onboarding landmarks, or review checkpoints that the whole team should see.
-
-## Compatibility
-
-- Visual Studio 2022
-- x64 and Arm64 installations
-- Requires the Visual Studio core editor component
 
 ## Contribute
 

@@ -32,6 +32,12 @@
       <Group guid="BookmarkStudio" id="MarginContextMenuBookmarkGroup" priority="0x0100">
         <Parent guid="guidEditorCommands" id="LeftMarginContextMenu"/>
       </Group>
+      <Group guid="BookmarkStudio" id="StandardToolbarBookmarkGroup" priority="0x0900">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_TOOL_STANDARD"/>
+      </Group>
+      <Group guid="BookmarkStudio" id="BookmarkSlotsMenuGroup" priority="0x0000">
+        <Parent guid="BookmarkStudio" id="BookmarkSlotsMenu"/>
+      </Group>
     </Groups>
 
     <Menus>
@@ -59,6 +65,13 @@
           <CommandName>Filter by Color</CommandName>
         </Strings>
       </Menu>
+      <Menu guid="BookmarkStudio" id="BookmarkSlotsMenu" priority="0x0100" type="MenuControllerLatched">
+        <Parent guid="BookmarkStudio" id="StandardToolbarBookmarkGroup"/>
+        <CommandFlag>TextChanges</CommandFlag>
+        <Strings>
+          <CommandName>Bookmark Slots</CommandName>
+        </Strings>
+      </Menu>
     </Menus>
 
     <Buttons>
@@ -66,6 +79,7 @@
         <Parent guid="VSMainMenu" id="View.NavigationWindowsGroup" />
         <Icon guid="ImageCatalogGuid" id="Bookmark" />
         <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>FixMenuController</CommandFlag>
         <Strings>
           <ButtonText>Bookmark Manager</ButtonText>
           <LocCanonicalName>.BookmarkStudio.OpenBookmarkManager</LocCanonicalName>
@@ -103,6 +117,8 @@
 
       <Button guid="BookmarkStudio" id="GoToSlot1Command" priority="0x0500" type="Button">
         <CommandFlag>CommandWellOnly</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>TextChanges</CommandFlag>
         <Strings>
           <ButtonText>Go To Bookmark Slot 1</ButtonText>
           <LocCanonicalName>.BookmarkStudio.GoToSlot1</LocCanonicalName>
@@ -110,6 +126,8 @@
       </Button>
       <Button guid="BookmarkStudio" id="GoToSlot2Command" priority="0x0501" type="Button">
         <CommandFlag>CommandWellOnly</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>TextChanges</CommandFlag>
         <Strings>
           <ButtonText>Go To Bookmark Slot 2</ButtonText>
           <LocCanonicalName>.BookmarkStudio.GoToSlot2</LocCanonicalName>
@@ -117,6 +135,8 @@
       </Button>
       <Button guid="BookmarkStudio" id="GoToSlot3Command" priority="0x0502" type="Button">
         <CommandFlag>CommandWellOnly</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>TextChanges</CommandFlag>
         <Strings>
           <ButtonText>Go To Bookmark Slot 3</ButtonText>
           <LocCanonicalName>.BookmarkStudio.GoToSlot3</LocCanonicalName>
@@ -124,6 +144,8 @@
       </Button>
       <Button guid="BookmarkStudio" id="GoToSlot4Command" priority="0x0503" type="Button">
         <CommandFlag>CommandWellOnly</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>TextChanges</CommandFlag>
         <Strings>
           <ButtonText>Go To Bookmark Slot 4</ButtonText>
           <LocCanonicalName>.BookmarkStudio.GoToSlot4</LocCanonicalName>
@@ -131,6 +153,8 @@
       </Button>
       <Button guid="BookmarkStudio" id="GoToSlot5Command" priority="0x0504" type="Button">
         <CommandFlag>CommandWellOnly</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>TextChanges</CommandFlag>
         <Strings>
           <ButtonText>Go To Bookmark Slot 5</ButtonText>
           <LocCanonicalName>.BookmarkStudio.GoToSlot5</LocCanonicalName>
@@ -138,6 +162,8 @@
       </Button>
       <Button guid="BookmarkStudio" id="GoToSlot6Command" priority="0x0505" type="Button">
         <CommandFlag>CommandWellOnly</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>TextChanges</CommandFlag>
         <Strings>
           <ButtonText>Go To Bookmark Slot 6</ButtonText>
           <LocCanonicalName>.BookmarkStudio.GoToSlot6</LocCanonicalName>
@@ -145,6 +171,8 @@
       </Button>
       <Button guid="BookmarkStudio" id="GoToSlot7Command" priority="0x0506" type="Button">
         <CommandFlag>CommandWellOnly</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>TextChanges</CommandFlag>
         <Strings>
           <ButtonText>Go To Bookmark Slot 7</ButtonText>
           <LocCanonicalName>.BookmarkStudio.GoToSlot7</LocCanonicalName>
@@ -152,6 +180,8 @@
       </Button>
       <Button guid="BookmarkStudio" id="GoToSlot8Command" priority="0x0507" type="Button">
         <CommandFlag>CommandWellOnly</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>TextChanges</CommandFlag>
         <Strings>
           <ButtonText>Go To Bookmark Slot 8</ButtonText>
           <LocCanonicalName>.BookmarkStudio.GoToSlot8</LocCanonicalName>
@@ -159,6 +189,8 @@
       </Button>
       <Button guid="BookmarkStudio" id="GoToSlot9Command" priority="0x0508" type="Button">
         <CommandFlag>CommandWellOnly</CommandFlag>
+        <CommandFlag>DynamicVisibility</CommandFlag>
+        <CommandFlag>TextChanges</CommandFlag>
         <Strings>
           <ButtonText>Go To Bookmark Slot 9</ButtonText>
           <LocCanonicalName>.BookmarkStudio.GoToSlot9</LocCanonicalName>
@@ -267,6 +299,36 @@
     <CommandPlacement guid="VSStd2KCmdID" id="ToggleBookmark">
       <Parent guid="BookmarkStudio" id="MarginContextMenuBookmarkGroup"/>
     </CommandPlacement>
+    <CommandPlacement guid="BookmarkStudio" id="OpenBookmarkManagerCommand" priority="0x0100">
+      <Parent guid="BookmarkStudio" id="BookmarkSlotsMenuGroup"/>
+    </CommandPlacement>
+    <CommandPlacement guid="BookmarkStudio" id="GoToSlot1Command" priority="0x0200">
+      <Parent guid="BookmarkStudio" id="BookmarkSlotsMenuGroup"/>
+    </CommandPlacement>
+    <CommandPlacement guid="BookmarkStudio" id="GoToSlot2Command" priority="0x0201">
+      <Parent guid="BookmarkStudio" id="BookmarkSlotsMenuGroup"/>
+    </CommandPlacement>
+    <CommandPlacement guid="BookmarkStudio" id="GoToSlot3Command" priority="0x0202">
+      <Parent guid="BookmarkStudio" id="BookmarkSlotsMenuGroup"/>
+    </CommandPlacement>
+    <CommandPlacement guid="BookmarkStudio" id="GoToSlot4Command" priority="0x0203">
+      <Parent guid="BookmarkStudio" id="BookmarkSlotsMenuGroup"/>
+    </CommandPlacement>
+    <CommandPlacement guid="BookmarkStudio" id="GoToSlot5Command" priority="0x0204">
+      <Parent guid="BookmarkStudio" id="BookmarkSlotsMenuGroup"/>
+    </CommandPlacement>
+    <CommandPlacement guid="BookmarkStudio" id="GoToSlot6Command" priority="0x0205">
+      <Parent guid="BookmarkStudio" id="BookmarkSlotsMenuGroup"/>
+    </CommandPlacement>
+    <CommandPlacement guid="BookmarkStudio" id="GoToSlot7Command" priority="0x0206">
+      <Parent guid="BookmarkStudio" id="BookmarkSlotsMenuGroup"/>
+    </CommandPlacement>
+    <CommandPlacement guid="BookmarkStudio" id="GoToSlot8Command" priority="0x0207">
+      <Parent guid="BookmarkStudio" id="BookmarkSlotsMenuGroup"/>
+    </CommandPlacement>
+    <CommandPlacement guid="BookmarkStudio" id="GoToSlot9Command" priority="0x0208">
+      <Parent guid="BookmarkStudio" id="BookmarkSlotsMenuGroup"/>
+    </CommandPlacement>
   </CommandPlacements>
 
   <UsedCommands>
@@ -310,6 +372,9 @@
       <IDSymbol name="FilterByColorPurpleCommand" value="0x0706" />
       <IDSymbol name="FilterByColorPinkCommand" value="0x0707" />
       <IDSymbol name="FilterByColorTealCommand" value="0x0708" />
+      <IDSymbol name="StandardToolbarBookmarkGroup" value="0x1030" />
+      <IDSymbol name="BookmarkSlotsMenu" value="0x1031" />
+      <IDSymbol name="BookmarkSlotsMenuGroup" value="0x1032" />
     </GuidSymbol>
 
     <!-- Editor margin context menu -->

@@ -474,15 +474,21 @@ namespace BookmarkStudio
                 cancellationToken);
         }
 
-        public async Task<ManagedBookmark> GoToSlotAsync(int slotNumber, CancellationToken cancellationToken)
+        public Task<ManagedBookmark?> GetBookmarkBySlotAsync(int slotNumber, CancellationToken cancellationToken)
         {
             if (slotNumber < 1 || slotNumber > 9)
             {
                 throw new ArgumentOutOfRangeException(nameof(slotNumber), "Bookmark slots must be in the range 1..9.");
             }
 
-            IReadOnlyList<ManagedBookmark> bookmarks = await _session.RefreshAsync(cancellationToken);
-            ManagedBookmark bookmark = bookmarks.FirstOrDefault(item => item.SlotNumber == slotNumber)
+            cancellationToken.ThrowIfCancellationRequested();
+            IReadOnlyList<ManagedBookmark> bookmarks = _session.CachedBookmarks;
+            return Task.FromResult(bookmarks.FirstOrDefault(item => item.SlotNumber == slotNumber));
+        }
+
+        public async Task<ManagedBookmark> GoToSlotAsync(int slotNumber, CancellationToken cancellationToken)
+        {
+            ManagedBookmark bookmark = await GetBookmarkBySlotAsync(slotNumber, cancellationToken)
                 ?? throw new InvalidOperationException(string.Concat("No bookmark is assigned to slot ", slotNumber.ToString(System.Globalization.CultureInfo.InvariantCulture), "."));
 
             await NavigateToBookmarkCoreAsync(bookmark, cancellationToken);
