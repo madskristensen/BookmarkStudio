@@ -215,7 +215,11 @@
                                   Visibility="{Binding IsRoot, Converter={StaticResource BoolToVisibilityInverseConverter}}" />
                         <MenuItem Header="Delete Folder" Click="DeleteFolderMenuItem_Click" InputGestureText="Del"
                                   Style="{StaticResource ThemedMenuItemStyle}"
-                                  Visibility="{Binding IsRoot, Converter={StaticResource BoolToVisibilityInverseConverter}}" />
+                                  Visibility="{Binding IsRoot, Converter={StaticResource BoolToVisibilityInverseConverter}}">
+                            <MenuItem.Icon>
+                                <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.Cancel}" />
+                            </MenuItem.Icon>
+                        </MenuItem>
                     </ContextMenu>
                 </Border.ContextMenu>
                 <StackPanel Orientation="Horizontal">
@@ -253,7 +257,11 @@
             <Border Padding="0,2" HorizontalAlignment="Stretch" Background="Transparent">
                 <Border.ContextMenu>
                     <ContextMenu Style="{StaticResource ThemedContextMenuStyle}">
-                        <MenuItem Header="Navigate" Click="NavigateMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" InputGestureText="Enter" />
+                        <MenuItem Header="Navigate" Click="NavigateMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" InputGestureText="Enter">
+                            <MenuItem.Icon>
+                                <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.GoToLast}" />
+                            </MenuItem.Icon>
+                        </MenuItem>
                         <MenuItem Header="Copy Location" Click="CopyLocationMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" InputGestureText="Ctrl+C" />
                         <Separator Style="{StaticResource ThemedSeparatorStyle}" />
                         <MenuItem Header="Rename" Click="EditLabelMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" InputGestureText="F2">
@@ -318,7 +326,11 @@
                             </MenuItem>
                         </MenuItem>
                         <Separator Style="{StaticResource ThemedSeparatorStyle}" />
-                        <MenuItem Header="Delete" Click="DeleteBookmarkMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" InputGestureText="Del" />
+                        <MenuItem Header="Delete" Click="DeleteBookmarkMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" InputGestureText="Del">
+                            <MenuItem.Icon>
+                                <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.Cancel}" />
+                            </MenuItem.Icon>
+                        </MenuItem>
                     </ContextMenu>
                 </Border.ContextMenu>
                 <Grid>

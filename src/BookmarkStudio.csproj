@@ -49,6 +49,7 @@
     <Compile Include="Commands\AddFolderCommand.cs" />
     <Compile Include="Commands\FilterByColorCommands.cs" />
     <Compile Include="Commands\GoToSlotCommands.cs" />
+    <Compile Include="Commands\OpenSettingsCommand.cs" />
     <Compile Include="Commands\TogglePromptForNameCommand.cs" />
     <Compile Include="Editor\BookmarkGlyphMouseProcessor.cs" />
     <Compile Include="Editor\BookmarkGlyphMouseProcessorProvider.cs" />

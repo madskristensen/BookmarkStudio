@@ -16,5 +16,12 @@ namespace BookmarkStudio
         [Description("When enabled, a dialog will prompt for a name when creating a new bookmark.")]
         [DefaultValue(false)]
         public bool PromptForBookmarkName { get; set; }
+
+        [Category("Bookmarks")]
+        [DisplayName("Default storage location")]
+        [Description("Determines where new bookmarks are stored by default. 'Workspace' stores bookmarks in the solution/repository folder for team sharing. 'Personal' stores bookmarks in your local user profile.")]
+        [DefaultValue(BookmarkStorageLocation.Workspace)]
+        [TypeConverter(typeof(EnumConverter))]
+        public BookmarkStorageLocation DefaultStorageLocation { get; set; } = BookmarkStorageLocation.Workspace;
     }
 }

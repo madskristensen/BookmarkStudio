@@ -95,7 +95,7 @@ namespace BookmarkStudio
                         var storageName = folderNode.StorageLocation switch
                         {
                             BookmarkStorageLocation.Personal => "User",
-                            BookmarkStorageLocation.Solution => "Workspace",
+                            BookmarkStorageLocation.Workspace => "Workspace",
                             _ => "this storage"
                         };
 
@@ -547,7 +547,7 @@ namespace BookmarkStudio
             var storageName = folderNode.StorageLocation switch
             {
                 BookmarkStorageLocation.Personal => "User",
-                BookmarkStorageLocation.Solution => "Workspace",
+                BookmarkStorageLocation.Workspace => "Workspace",
                 _ => "this storage"
             };
 

@@ -117,7 +117,7 @@ namespace BookmarkStudio
                 if (solutionChanged)
                 {
                     BookmarkRepositoryService.NormalizeWorkspaceState(dualState.SolutionState);
-                    await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Solution, dualState.SolutionState, cancellationToken);
+                    await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Workspace, dualState.SolutionState, cancellationToken);
                 }
 
                 UpdateCachedStateFromDualState(dualState);
@@ -164,7 +164,7 @@ namespace BookmarkStudio
                 if (solutionChanged)
                 {
                     BookmarkRepositoryService.NormalizeWorkspaceState(dualState.SolutionState);
-                    await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Solution, dualState.SolutionState, cancellationToken);
+                    await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Workspace, dualState.SolutionState, cancellationToken);
                 }
 
                 UpdateCachedStateFromDualState(dualState);
@@ -220,10 +220,21 @@ namespace BookmarkStudio
 
                     BookmarkMetadata createdBookmark = BookmarkRepositoryService.CreateBookmarkMetadata(allBookmarks, snapshot, label);
 
-                    // New bookmarks go to Solution storage by default (team-shared)
-                    createdBookmark.StorageLocation = BookmarkStorageLocation.Solution;
-                    dualState.SolutionState.Bookmarks.Add(createdBookmark);
-                    solutionChanged = true;
+                    // Use the configured default storage location
+                    BookmarkStorageLocation defaultLocation = General.Instance.DefaultStorageLocation;
+                    createdBookmark.StorageLocation = defaultLocation;
+
+                    if (defaultLocation == BookmarkStorageLocation.Personal)
+                    {
+                        dualState.PersonalState.Bookmarks.Add(createdBookmark);
+                        personalChanged = true;
+                    }
+                    else
+                    {
+                        dualState.SolutionState.Bookmarks.Add(createdBookmark);
+                        solutionChanged = true;
+                    }
+
                     result = createdBookmark.ToManagedBookmark();
                 }
 
@@ -237,7 +248,7 @@ namespace BookmarkStudio
                 if (solutionChanged)
                 {
                     BookmarkRepositoryService.NormalizeWorkspaceState(dualState.SolutionState);
-                    await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Solution, dualState.SolutionState, cancellationToken);
+                    await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Workspace, dualState.SolutionState, cancellationToken);
                 }
 
                 UpdateCachedStateFromDualState(dualState);
@@ -388,7 +399,7 @@ namespace BookmarkStudio
                 BookmarkRepositoryService.NormalizeWorkspaceState(dualState.PersonalState);
                 BookmarkRepositoryService.NormalizeWorkspaceState(dualState.SolutionState);
                 await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Personal, dualState.PersonalState, cancellationToken);
-                await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Solution, dualState.SolutionState, cancellationToken);
+                await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Workspace, dualState.SolutionState, cancellationToken);
 
                 UpdateCachedStateFromDualState(dualState);
                 return true;
@@ -501,7 +512,7 @@ namespace BookmarkStudio
 
                 totalRemoved += staleSolution.Count;
                 BookmarkRepositoryService.NormalizeWorkspaceState(dualState.SolutionState);
-                await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Solution, dualState.SolutionState, cancellationToken);
+                await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Workspace, dualState.SolutionState, cancellationToken);
             }
 
             return totalRemoved;
@@ -515,9 +526,9 @@ namespace BookmarkStudio
                 var solutionPath = await GetSolutionPathAsync(cancellationToken);
                 DualBookmarkWorkspaceState dualState = await EnsureDualStateLoadedAsync(cancellationToken);
 
-                BookmarkStorageLocation sourceLocation = targetLocation == BookmarkStorageLocation.Solution
+                BookmarkStorageLocation sourceLocation = targetLocation == BookmarkStorageLocation.Workspace
                     ? BookmarkStorageLocation.Personal
-                    : BookmarkStorageLocation.Solution;
+                    : BookmarkStorageLocation.Workspace;
 
                 BookmarkWorkspaceState sourceState = sourceLocation == BookmarkStorageLocation.Personal
                     ? dualState.PersonalState
@@ -558,9 +569,9 @@ namespace BookmarkStudio
                 var normalizedTargetFolder = BookmarkIdentity.NormalizeFolderPath(targetFolderPath);
                 DualBookmarkWorkspaceState dualState = await EnsureDualStateLoadedAsync(cancellationToken);
 
-                BookmarkStorageLocation sourceLocation = targetLocation == BookmarkStorageLocation.Solution
+                BookmarkStorageLocation sourceLocation = targetLocation == BookmarkStorageLocation.Workspace
                     ? BookmarkStorageLocation.Personal
-                    : BookmarkStorageLocation.Solution;
+                    : BookmarkStorageLocation.Workspace;
 
                 BookmarkWorkspaceState sourceState = sourceLocation == BookmarkStorageLocation.Personal
                     ? dualState.PersonalState

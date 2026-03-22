@@ -281,10 +281,10 @@ public class BookmarkMetadataStoreTests
                 DocumentPath = Path.Combine(tempDir, "file.cs"),
                 LineNumber = 10,
                 Group = string.Empty,
-                StorageLocation = BookmarkStorageLocation.Solution
+                StorageLocation = BookmarkStorageLocation.Workspace
             });
             solutionState.FolderPaths.Add(string.Empty);
-            await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Solution, solutionState, CancellationToken.None);
+            await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Workspace, solutionState, CancellationToken.None);
 
             // Create Personal storage with a target folder
             BookmarkWorkspaceState personalState = new BookmarkWorkspaceState();
@@ -337,11 +337,11 @@ public class BookmarkMetadataStoreTests
                 DocumentPath = Path.Combine(tempDir, "file.cs"),
                 LineNumber = 10,
                 Group = "OriginalFolder",
-                StorageLocation = BookmarkStorageLocation.Solution
+                StorageLocation = BookmarkStorageLocation.Workspace
             });
             solutionState.FolderPaths.Add(string.Empty);
             solutionState.FolderPaths.Add("OriginalFolder");
-            await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Solution, solutionState, CancellationToken.None);
+            await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Workspace, solutionState, CancellationToken.None);
 
             // Create empty Personal storage
             BookmarkWorkspaceState personalState = new BookmarkWorkspaceState();
@@ -392,7 +392,7 @@ public class BookmarkMetadataStoreTests
                 DocumentPath = Path.Combine(tempDir, "a.cs"),
                 LineNumber = 10,
                 Group = "SourceFolder",
-                StorageLocation = BookmarkStorageLocation.Solution
+                StorageLocation = BookmarkStorageLocation.Workspace
             });
             solutionState.Bookmarks.Add(new BookmarkMetadata
             {
@@ -400,11 +400,11 @@ public class BookmarkMetadataStoreTests
                 DocumentPath = Path.Combine(tempDir, "b.cs"),
                 LineNumber = 20,
                 Group = "SourceFolder",
-                StorageLocation = BookmarkStorageLocation.Solution
+                StorageLocation = BookmarkStorageLocation.Workspace
             });
             solutionState.FolderPaths.Add(string.Empty);
             solutionState.FolderPaths.Add("SourceFolder");
-            await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Solution, solutionState, CancellationToken.None);
+            await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Workspace, solutionState, CancellationToken.None);
 
             // Create empty Personal storage
             BookmarkWorkspaceState personalState = new BookmarkWorkspaceState();
@@ -415,7 +415,7 @@ public class BookmarkMetadataStoreTests
             await store.MoveFolderBetweenLocationsAsync(
                 solutionPath,
                 "SourceFolder",
-                BookmarkStorageLocation.Solution,
+                BookmarkStorageLocation.Workspace,
                 "SourceFolder",
                 BookmarkStorageLocation.Personal,
                 CancellationToken.None);
@@ -461,7 +461,7 @@ public class BookmarkMetadataStoreTests
                 DocumentPath = Path.Combine(tempDir, "a.cs"),
                 LineNumber = 10,
                 Group = "Parent",
-                StorageLocation = BookmarkStorageLocation.Solution
+                StorageLocation = BookmarkStorageLocation.Workspace
             });
             solutionState.Bookmarks.Add(new BookmarkMetadata
             {
@@ -469,7 +469,7 @@ public class BookmarkMetadataStoreTests
                 DocumentPath = Path.Combine(tempDir, "b.cs"),
                 LineNumber = 20,
                 Group = "Parent/Child",
-                StorageLocation = BookmarkStorageLocation.Solution
+                StorageLocation = BookmarkStorageLocation.Workspace
             });
             solutionState.Bookmarks.Add(new BookmarkMetadata
             {
@@ -477,13 +477,13 @@ public class BookmarkMetadataStoreTests
                 DocumentPath = Path.Combine(tempDir, "c.cs"),
                 LineNumber = 30,
                 Group = "Parent/Child/Grandchild",
-                StorageLocation = BookmarkStorageLocation.Solution
+                StorageLocation = BookmarkStorageLocation.Workspace
             });
             solutionState.FolderPaths.Add(string.Empty);
             solutionState.FolderPaths.Add("Parent");
             solutionState.FolderPaths.Add("Parent/Child");
             solutionState.FolderPaths.Add("Parent/Child/Grandchild");
-            await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Solution, solutionState, CancellationToken.None);
+            await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Workspace, solutionState, CancellationToken.None);
 
             // Create empty Personal storage
             BookmarkWorkspaceState personalState = new BookmarkWorkspaceState();
@@ -494,7 +494,7 @@ public class BookmarkMetadataStoreTests
             await store.MoveFolderBetweenLocationsAsync(
                 solutionPath,
                 "Parent",
-                BookmarkStorageLocation.Solution,
+                BookmarkStorageLocation.Workspace,
                 "Parent",
                 BookmarkStorageLocation.Personal,
                 CancellationToken.None);
@@ -539,12 +539,12 @@ public class BookmarkMetadataStoreTests
                 DocumentPath = Path.Combine(tempDir, "a.cs"),
                 LineNumber = 10,
                 Group = "OldFolder/Nested",
-                StorageLocation = BookmarkStorageLocation.Solution
+                StorageLocation = BookmarkStorageLocation.Workspace
             });
             solutionState.FolderPaths.Add(string.Empty);
             solutionState.FolderPaths.Add("OldFolder");
             solutionState.FolderPaths.Add("OldFolder/Nested");
-            await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Solution, solutionState, CancellationToken.None);
+            await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Workspace, solutionState, CancellationToken.None);
 
             // Create Personal storage with target parent folder
             BookmarkWorkspaceState personalState = new BookmarkWorkspaceState();
@@ -556,7 +556,7 @@ public class BookmarkMetadataStoreTests
             await store.MoveFolderBetweenLocationsAsync(
                 solutionPath,
                 "OldFolder",
-                BookmarkStorageLocation.Solution,
+                BookmarkStorageLocation.Workspace,
                 "TargetParent/NewFolder",
                 BookmarkStorageLocation.Personal,
                 CancellationToken.None);

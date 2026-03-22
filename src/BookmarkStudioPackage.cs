@@ -20,8 +20,7 @@ namespace BookmarkStudio
     [ProvideToolWindowVisibility(typeof(BookmarkManagerToolWindow.Pane), VSConstants.UICONTEXT.Debugging_string)]
     [ProvideToolWindowVisibility(typeof(BookmarkManagerToolWindow.Pane), VSConstants.UICONTEXT.EmptySolution_string)]
     [ProvideToolWindowVisibility(typeof(BookmarkManagerToolWindow.Pane), VSConstants.UICONTEXT.FolderOpened_string)]
-    //[ProvideOptionPage(typeof(OptionsProvider.GeneralOptions), "Bookmark Studio", "General", 0, 0, true, ProvidesLocalizedCategoryName = false)]
-    [ProvideProfile(typeof(OptionsProvider.GeneralOptions), Vsix.Name, "General", 0, 0, false)]
+    [ProvideOptionPage(typeof(OptionsProvider.GeneralOptions), Vsix.Name, "General", 0, 0, true, ProvidesLocalizedCategoryName = false, SupportsProfiles = true)]
     [Guid(PackageGuids.BookmarkStudioString)]
     public sealed class BookmarkStudioPackage : ToolkitPackage
     {

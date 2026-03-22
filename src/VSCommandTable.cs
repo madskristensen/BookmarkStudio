@@ -35,6 +35,7 @@ namespace BookmarkStudio
         public const int BookmarkManagerToolbarSettingsGroup = 0x1004;
         public const int SettingsMenu = 0x1010;
         public const int SettingsMenuGroup = 0x1011;
+        public const int SettingsMenuOptionsGroup = 0x1012;
         public const int OpenBookmarkManagerCommand = 0x0100;
         public const int AddBookmarkCommand = 0x0102;
         public const int RefreshBookmarkManagerCommand = 0x0101;
@@ -50,6 +51,7 @@ namespace BookmarkStudio
         public const int GoToSlot8Command = 0x0507;
         public const int GoToSlot9Command = 0x0508;
         public const int TogglePromptForNameCommand = 0x0600;
+        public const int OpenSettingsCommand = 0x0601;
         public const int BookmarkManagerToolbarFilterGroup = 0x1005;
         public const int FilterByColorMenu = 0x1020;
         public const int FilterByColorMenuGroup = 0x1021;
@@ -66,6 +68,7 @@ namespace BookmarkStudio
         public const int StandardToolbarBookmarkGroup = 0x1030;
         public const int BookmarkSlotsMenu = 0x1031;
         public const int BookmarkSlotsMenuGroup = 0x1032;
+        public const int BookmarkSlotsMenuGoToGroup = 0x1033;
         public const int LeftMarginContextMenu = 0x0066;
         public const int ToggleBookmark = 0x004C;
     }

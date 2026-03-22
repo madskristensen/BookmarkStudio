@@ -26,6 +26,9 @@
       <Group guid="BookmarkStudio" id="SettingsMenuGroup" priority="0x0000">
         <Parent guid="BookmarkStudio" id="SettingsMenu"/>
       </Group>
+      <Group guid="BookmarkStudio" id="SettingsMenuOptionsGroup" priority="0x0100">
+        <Parent guid="BookmarkStudio" id="SettingsMenu"/>
+      </Group>
       <Group guid="BookmarkStudio" id="FilterByColorMenuGroup" priority="0x0000">
         <Parent guid="BookmarkStudio" id="FilterByColorMenu"/>
       </Group>
@@ -109,9 +112,9 @@
         </Strings>
       </Button>
       <Button guid="BookmarkStudio" id="AddFolderCommand" priority="0x0110" type="Button">
-        <Parent guid="BookmarkStudio" id="BookmarkManagerToolbarNewItemsGroup" />
         <Icon guid="ImageCatalogGuid" id="NewFolder" />
         <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>CommandWellOnly</CommandFlag>
         <Strings>
           <ButtonText>Add Folder</ButtonText>
           <LocCanonicalName>.BookmarkStudio.AddFolder</LocCanonicalName>
@@ -119,7 +122,7 @@
       </Button>
 
       <Button guid="BookmarkStudio" id="GoToSlot1Command" priority="0x0500" type="Button">
-        <Icon guid="ImageCatalogGuid" id="NextBookmark" />
+        <Icon guid="ImageCatalogGuid" id="GoToLast" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>CommandWellOnly</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
@@ -130,7 +133,7 @@
         </Strings>
       </Button>
       <Button guid="BookmarkStudio" id="GoToSlot2Command" priority="0x0501" type="Button">
-        <Icon guid="ImageCatalogGuid" id="NextBookmark" />
+        <Icon guid="ImageCatalogGuid" id="GoToLast" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>CommandWellOnly</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
@@ -141,7 +144,7 @@
         </Strings>
       </Button>
       <Button guid="BookmarkStudio" id="GoToSlot3Command" priority="0x0502" type="Button">
-        <Icon guid="ImageCatalogGuid" id="NextBookmark" />
+        <Icon guid="ImageCatalogGuid" id="GoToLast" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>CommandWellOnly</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
@@ -152,7 +155,7 @@
         </Strings>
       </Button>
       <Button guid="BookmarkStudio" id="GoToSlot4Command" priority="0x0503" type="Button">
-        <Icon guid="ImageCatalogGuid" id="NextBookmark" />
+        <Icon guid="ImageCatalogGuid" id="GoToLast" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>CommandWellOnly</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
@@ -163,7 +166,7 @@
         </Strings>
       </Button>
       <Button guid="BookmarkStudio" id="GoToSlot5Command" priority="0x0504" type="Button">
-        <Icon guid="ImageCatalogGuid" id="NextBookmark" />
+        <Icon guid="ImageCatalogGuid" id="GoToLast" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>CommandWellOnly</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
@@ -174,7 +177,7 @@
         </Strings>
       </Button>
       <Button guid="BookmarkStudio" id="GoToSlot6Command" priority="0x0505" type="Button">
-        <Icon guid="ImageCatalogGuid" id="NextBookmark" />
+        <Icon guid="ImageCatalogGuid" id="GoToLast" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>CommandWellOnly</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
@@ -185,7 +188,7 @@
         </Strings>
       </Button>
       <Button guid="BookmarkStudio" id="GoToSlot7Command" priority="0x0506" type="Button">
-        <Icon guid="ImageCatalogGuid" id="NextBookmark" />
+        <Icon guid="ImageCatalogGuid" id="GoToLast" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>CommandWellOnly</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
@@ -196,7 +199,7 @@
         </Strings>
       </Button>
       <Button guid="BookmarkStudio" id="GoToSlot8Command" priority="0x0507" type="Button">
-        <Icon guid="ImageCatalogGuid" id="NextBookmark" />
+        <Icon guid="ImageCatalogGuid" id="GoToLast" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>CommandWellOnly</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
@@ -207,7 +210,7 @@
         </Strings>
       </Button>
       <Button guid="BookmarkStudio" id="GoToSlot9Command" priority="0x0508" type="Button">
-        <Icon guid="ImageCatalogGuid" id="NextBookmark" />
+        <Icon guid="ImageCatalogGuid" id="GoToLast" />
         <CommandFlag>IconIsMoniker</CommandFlag>
         <CommandFlag>CommandWellOnly</CommandFlag>
         <CommandFlag>DynamicVisibility</CommandFlag>
@@ -223,6 +226,17 @@
         <Strings>
           <ButtonText>Always prompt for name</ButtonText>
           <LocCanonicalName>.BookmarkStudio.TogglePromptForName</LocCanonicalName>
+        </Strings>
+      </Button>
+
+      <Button guid="BookmarkStudio" id="OpenSettingsCommand" priority="0x0100" type="Button">
+        <Parent guid="BookmarkStudio" id="SettingsMenuOptionsGroup"/>
+        <Icon guid="ImageCatalogGuid" id="Settings" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>FixMenuController</CommandFlag>
+        <Strings>
+          <ButtonText>Settings...</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.OpenSettings</LocCanonicalName>
         </Strings>
       </Button>
 
@@ -365,6 +379,7 @@
       <IDSymbol name="BookmarkManagerToolbarSettingsGroup" value="0x1004" />
       <IDSymbol name="SettingsMenu" value="0x1010" />
       <IDSymbol name="SettingsMenuGroup" value="0x1011" />
+      <IDSymbol name="SettingsMenuOptionsGroup" value="0x1012" />
       <IDSymbol name="OpenBookmarkManagerCommand" value="0x0100" />
       <IDSymbol name="AddBookmarkCommand" value="0x0102" />
       <IDSymbol name="RefreshBookmarkManagerCommand" value="0x0101" />
@@ -380,6 +395,7 @@
       <IDSymbol name="GoToSlot8Command" value="0x0507" />
       <IDSymbol name="GoToSlot9Command" value="0x0508" />
       <IDSymbol name="TogglePromptForNameCommand" value="0x0600" />
+      <IDSymbol name="OpenSettingsCommand" value="0x0601" />
       <IDSymbol name="BookmarkManagerToolbarFilterGroup" value="0x1005" />
       <IDSymbol name="FilterByColorMenu" value="0x1020" />
       <IDSymbol name="FilterByColorMenuGroup" value="0x1021" />

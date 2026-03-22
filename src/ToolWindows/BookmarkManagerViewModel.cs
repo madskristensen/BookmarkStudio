@@ -363,7 +363,7 @@ namespace BookmarkStudio
 
         public async Task MoveToSolutionAsync(CancellationToken cancellationToken)
         {
-            BookmarkStorageInfo newInfo = await _operations.MoveToLocationAsync(BookmarkStorageLocation.Solution, cancellationToken);
+            BookmarkStorageInfo newInfo = await _operations.MoveToLocationAsync(BookmarkStorageLocation.Workspace, cancellationToken);
             _storageInfo = newInfo;
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             UpdateRootNodeStorageLocation();
@@ -385,7 +385,7 @@ namespace BookmarkStudio
 
         public bool CanMoveToSolution => _storageInfo?.Location == BookmarkStorageLocation.Personal;
 
-        public bool CanMoveToPersonal => _storageInfo?.Location == BookmarkStorageLocation.Solution;
+        public bool CanMoveToPersonal => _storageInfo?.Location == BookmarkStorageLocation.Workspace;
 
         private void UpdateRootNodeStorageLocation()
         {
@@ -407,7 +407,7 @@ namespace BookmarkStudio
             {
                 case FolderNodeViewModel folderNode:
                     parentPath = folderNode.FolderPath;
-                    storageLocation = folderNode.StorageLocation ?? BookmarkStorageLocation.Solution;
+                    storageLocation = folderNode.StorageLocation ?? BookmarkStorageLocation.Workspace;
                     break;
                 case BookmarkItemNodeViewModel bookmarkNode:
                     parentPath = bookmarkNode.Bookmark.FolderPath;
@@ -415,7 +415,7 @@ namespace BookmarkStudio
                     break;
                 default:
                     parentPath = string.Empty;
-                    storageLocation = BookmarkStorageLocation.Solution;
+                    storageLocation = BookmarkStorageLocation.Workspace;
                     break;
             }
 
@@ -436,7 +436,7 @@ namespace BookmarkStudio
         public async Task RenameSelectedFolderAsync(string folderName, CancellationToken cancellationToken)
         {
             FolderNodeViewModel folderNode = GetRequiredSelectedFolder();
-            BookmarkStorageLocation storageLocation = folderNode.StorageLocation ?? BookmarkStorageLocation.Solution;
+            BookmarkStorageLocation storageLocation = folderNode.StorageLocation ?? BookmarkStorageLocation.Workspace;
 
             IReadOnlyList<ManagedBookmark> bookmarks = await _operations.RenameFolderAsync(folderNode.FolderPath, folderName, storageLocation, cancellationToken);
             ReloadDualBookmarks(bookmarks);
@@ -772,7 +772,7 @@ namespace BookmarkStudio
                     _personalBookmarks.Add(bookmark);
                     _personalFolderPaths.Add(bookmark.FolderPath);
                 }
-                else if (bookmark.StorageLocation == BookmarkStorageLocation.Solution)
+                else if (bookmark.StorageLocation == BookmarkStorageLocation.Workspace)
                 {
                     _solutionBookmarks.Add(bookmark);
                     _solutionFolderPaths.Add(bookmark.FolderPath);
@@ -961,7 +961,7 @@ namespace BookmarkStudio
 
             // Build Solution storage root node
             FolderNodeViewModel solutionRoot = BuildStorageRootNode(
-                BookmarkStorageLocation.Solution,
+                BookmarkStorageLocation.Workspace,
                 _solutionBookmarks,
                 _solutionFolderPaths,
                 search);
@@ -1299,11 +1299,11 @@ namespace BookmarkStudio
 
         public bool IsPersonalRoot => IsRoot && _storageLocation == BookmarkStorageLocation.Personal;
 
-        public bool IsSolutionRoot => IsRoot && _storageLocation == BookmarkStorageLocation.Solution;
+        public bool IsSolutionRoot => IsRoot && _storageLocation == BookmarkStorageLocation.Workspace;
 
         public bool CanMoveToSolution => IsRoot && _storageLocation == BookmarkStorageLocation.Personal;
 
-        public bool CanMoveToPersonal => IsRoot && _storageLocation == BookmarkStorageLocation.Solution;
+        public bool CanMoveToPersonal => IsRoot && _storageLocation == BookmarkStorageLocation.Workspace;
 
         public string FolderName
         {
@@ -1317,7 +1317,7 @@ namespace BookmarkStudio
                 return _storageLocation switch
                 {
                     BookmarkStorageLocation.Personal => "User",
-                    BookmarkStorageLocation.Solution => "Workspace",
+                    BookmarkStorageLocation.Workspace => "Workspace",
                     _ => "Root",
                 };
             }
