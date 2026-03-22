@@ -28,7 +28,7 @@ namespace BookmarkStudio
 
         private static void ApplyThemeToMenuItems(ItemCollection items)
         {
-            foreach (object item in items)
+            foreach (var item in items)
             {
                 if (item is MenuItem menuItem)
                 {

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -21,8 +20,8 @@ namespace BookmarkStudio
     internal static class BookmarkIdentity
     {
         private const int MaxRepositoryRootCacheSize = 100;
-        private static readonly object RepositoryRootCacheGate = new object();
-        private static readonly Dictionary<string, string?> RepositoryRootCache = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+        private static readonly object RepositoryRootCacheGate = new();
+        private static readonly Dictionary<string, string?> RepositoryRootCache = new(StringComparer.OrdinalIgnoreCase);
 
         public static string NormalizeDocumentPath(string? path)
         {
@@ -47,10 +46,10 @@ namespace BookmarkStudio
                 return string.Empty;
             }
 
-            string normalized = folderPath!.Trim()
+            var normalized = folderPath!.Trim()
                 .Replace('\\', '/');
 
-            string[] segments = normalized.Split(new[] { '/' }, StringSplitOptions.RemoveEmptyEntries);
+            var segments = normalized.Split(['/'], StringSplitOptions.RemoveEmptyEntries);
             if (segments.Length == 0)
             {
                 return string.Empty;
@@ -58,7 +57,7 @@ namespace BookmarkStudio
 
             if (string.Equals(segments[0], "Root", StringComparison.OrdinalIgnoreCase))
             {
-                segments = segments.Skip(1).ToArray();
+                segments = [.. segments.Skip(1)];
             }
 
             if (segments.Length == 0)
@@ -90,19 +89,19 @@ namespace BookmarkStudio
                 return documentPath!;
             }
 
-            string? directoryPath = Path.GetDirectoryName(fullPath);
+            var directoryPath = Path.GetDirectoryName(fullPath);
             if (string.IsNullOrWhiteSpace(directoryPath))
             {
                 return Path.GetFileName(fullPath);
             }
 
-            string? repositoryRoot = GetRepositoryRoot(directoryPath);
+            var repositoryRoot = GetRepositoryRoot(directoryPath);
             if (string.IsNullOrWhiteSpace(repositoryRoot))
             {
                 return Path.GetFileName(fullPath);
             }
 
-            string rootWithSeparator = repositoryRoot!.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+            var rootWithSeparator = repositoryRoot!.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
                 + Path.DirectorySeparatorChar;
 
             if (!fullPath.StartsWith(rootWithSeparator, StringComparison.OrdinalIgnoreCase))
@@ -110,24 +109,24 @@ namespace BookmarkStudio
                 return Path.GetFileName(fullPath);
             }
 
-            string relativePath = fullPath.Substring(rootWithSeparator.Length);
+            var relativePath = fullPath.Substring(rootWithSeparator.Length);
             return string.Join("/", relativePath.Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar).Where(segment => !string.IsNullOrWhiteSpace(segment)));
         }
 
         private static string? GetRepositoryRoot(string directoryPath)
         {
-            string normalizedDirectoryPath = Path.GetFullPath(directoryPath)
+            var normalizedDirectoryPath = Path.GetFullPath(directoryPath)
                 .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
 
             lock (RepositoryRootCacheGate)
             {
-                if (RepositoryRootCache.TryGetValue(normalizedDirectoryPath, out string? cachedRoot))
+                if (RepositoryRootCache.TryGetValue(normalizedDirectoryPath, out var cachedRoot))
                 {
                     return cachedRoot;
                 }
             }
 
-            string? current = normalizedDirectoryPath;
+            var current = normalizedDirectoryPath;
             string? foundRoot = null;
 
             while (!string.IsNullOrWhiteSpace(current))
@@ -147,8 +146,8 @@ namespace BookmarkStudio
                 if (RepositoryRootCache.Count >= MaxRepositoryRootCacheSize)
                 {
                     // Remove approximately half of the entries to avoid frequent evictions
-                    int entriesToRemove = RepositoryRootCache.Count / 2;
-                    foreach (string key in RepositoryRootCache.Keys.Take(entriesToRemove).ToList())
+                    var entriesToRemove = RepositoryRootCache.Count / 2;
+                    foreach (var key in RepositoryRootCache.Keys.Take(entriesToRemove).ToList())
                     {
                         RepositoryRootCache.Remove(key);
                     }
@@ -319,12 +318,12 @@ namespace BookmarkStudio
                 if (_cachedAllFolderPaths is null)
                 {
                     HashSet<string> all = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                    foreach (string path in PersonalState.FolderPaths)
+                    foreach (var path in PersonalState.FolderPaths)
                     {
                         all.Add(path);
                     }
 
-                    foreach (string path in SolutionState.FolderPaths)
+                    foreach (var path in SolutionState.FolderPaths)
                     {
                         all.Add(path);
                     }

@@ -26,10 +26,10 @@ namespace BookmarkStudio
             MenuItem submenu = new MenuItem { Header = "Assign Slot" };
             submenu.SubmenuOpened += (sender, e) => PopulateSlotHeaders(submenu);
 
-            for (int i = 1; i <= 9; i++)
+            for (var i = 1; i <= 9; i++)
             {
                 MenuItem slotItem = new MenuItem { Header = i.ToString(), Tag = i };
-                int slotNumber = i;
+                var slotNumber = i;
                 slotItem.Click += (sender, e) =>
                 {
                     ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
@@ -106,7 +106,7 @@ namespace BookmarkStudio
                     ManagedBookmark bookmark = await BookmarkOperationsService.Current.GetBookmarkAsync(bookmarkId, CancellationToken.None);
 
                     await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancellationToken.None);
-                    string? newLabel = TextPromptWindow.Show("Edit Label", "Enter a label for the bookmark:", bookmark.Label, selectTextOnLoad: true);
+                    var newLabel = TextPromptWindow.Show("Edit Label", "Enter a label for the bookmark:", bookmark.Label, selectTextOnLoad: true);
                     if (newLabel is null)
                     {
                         return;
@@ -132,11 +132,11 @@ namespace BookmarkStudio
         {
             Dictionary<int, string> slotAssignments = GetSlotAssignments();
 
-            foreach (object item in submenu.Items)
+            foreach (var item in submenu.Items)
             {
                 if (item is MenuItem slotMenuItem && slotMenuItem.Tag is int slotNumber)
                 {
-                    if (slotAssignments.TryGetValue(slotNumber, out string bookmarkLabel))
+                    if (slotAssignments.TryGetValue(slotNumber, out var bookmarkLabel))
                     {
                         slotMenuItem.Header = string.Concat(slotNumber.ToString(System.Globalization.CultureInfo.InvariantCulture), " - ", bookmarkLabel);
                     }
@@ -169,7 +169,7 @@ namespace BookmarkStudio
                 {
                     if (bookmark.SlotNumber.HasValue && bookmark.SlotNumber.Value >= 1 && bookmark.SlotNumber.Value <= 9)
                     {
-                        string label = string.IsNullOrWhiteSpace(bookmark.Label)
+                        var label = string.IsNullOrWhiteSpace(bookmark.Label)
                             ? bookmark.FileName
                             : bookmark.Label;
                         assignments[bookmark.SlotNumber.Value] = label;

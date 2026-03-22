@@ -76,11 +76,11 @@ public class BookmarkMetadataStoreTests
         {
             BookmarkMetadataStore store = new BookmarkMetadataStore();
             BookmarkMetadata[] bookmarks =
-            {
-                new BookmarkMetadata { BookmarkId = "root-1", DocumentPath = Path.Combine(tempDir, "a.cs"), LineNumber = 1, Group = string.Empty },
-                new BookmarkMetadata { BookmarkId = "folder-1", DocumentPath = Path.Combine(tempDir, "b.cs"), LineNumber = 2, Group = "Features" },
-                new BookmarkMetadata { BookmarkId = "nested-1", DocumentPath = Path.Combine(tempDir, "c.cs"), LineNumber = 3, Group = "Features/Auth" },
-            };
+            [
+                new() { BookmarkId = "root-1", DocumentPath = Path.Combine(tempDir, "a.cs"), LineNumber = 1, Group = string.Empty },
+                new() { BookmarkId = "folder-1", DocumentPath = Path.Combine(tempDir, "b.cs"), LineNumber = 2, Group = "Features" },
+                new() { BookmarkId = "nested-1", DocumentPath = Path.Combine(tempDir, "c.cs"), LineNumber = 3, Group = "Features/Auth" },
+            ];
 
             await store.SaveAsync(solutionPath, bookmarks, CancellationToken.None);
             IReadOnlyList<BookmarkMetadata> loaded = await store.LoadAsync(solutionPath, CancellationToken.None);

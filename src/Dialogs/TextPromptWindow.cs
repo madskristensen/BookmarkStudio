@@ -97,7 +97,7 @@ namespace BookmarkStudio
         {
             TextPromptWindow window = new TextPromptWindow(title, prompt, initialValue, selectTextOnLoad);
 
-            bool? result = window.ShowDialog();
+            var result = window.ShowDialog();
             return result == true ? window._inputTextBox.Text : null;
         }
 

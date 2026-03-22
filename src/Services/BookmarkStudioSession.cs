@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -7,13 +6,13 @@ namespace BookmarkStudio
 {
     internal sealed class BookmarkStudioSession
     {
-        private static readonly Lazy<BookmarkStudioSession> _instance = new Lazy<BookmarkStudioSession>(() => new BookmarkStudioSession());
+        private static readonly Lazy<BookmarkStudioSession> _instance = new(() => new BookmarkStudioSession());
 
-        private readonly BookmarkMetadataStore _metadataStore = new BookmarkMetadataStore();
+        private readonly BookmarkMetadataStore _metadataStore = new();
         private readonly BookmarkRepositoryService _repositoryService;
-        private readonly SemaphoreSlim _repositoryGate = new SemaphoreSlim(1, 1);
-        private IReadOnlyList<ManagedBookmark> _cachedBookmarks = Array.Empty<ManagedBookmark>();
-        private IReadOnlyList<string> _cachedFolderPaths = new[] { string.Empty };
+        private readonly SemaphoreSlim _repositoryGate = new(1, 1);
+        private IReadOnlyList<ManagedBookmark> _cachedBookmarks = [];
+        private IReadOnlyList<string> _cachedFolderPaths = [string.Empty];
         private string? _cachedSolutionPath;
         private DualBookmarkWorkspaceState? _cachedDualState;
 
@@ -59,7 +58,7 @@ namespace BookmarkStudio
         private async Task<IReadOnlyList<ManagedBookmark>> RefreshAsync(bool removeStaleBookmarks, CancellationToken cancellationToken)
         {
             // Use RefreshDualAsync to load from both Personal and Solution storage locations
-            (DualBookmarkWorkspaceState _, int staleCount) = await RefreshDualAsync(removeStaleBookmarks, cancellationToken);
+            (DualBookmarkWorkspaceState _, var staleCount) = await RefreshDualAsync(removeStaleBookmarks, cancellationToken);
             _lastStaleBookmarkCount = staleCount;
             return _cachedBookmarks;
         }
@@ -70,7 +69,7 @@ namespace BookmarkStudio
             await _repositoryGate.WaitAsync(cancellationToken);
             try
             {
-                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                var solutionPath = await GetSolutionPathAsync(cancellationToken);
                 return await _repositoryService.LoadAsync(solutionPath, cancellationToken);
             }
             finally
@@ -84,7 +83,7 @@ namespace BookmarkStudio
             await _repositoryGate.WaitAsync(cancellationToken);
             try
             {
-                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                var solutionPath = await GetSolutionPathAsync(cancellationToken);
                 await _repositoryService.SaveAsync(solutionPath, metadata, cancellationToken);
                 BookmarkWorkspaceState workspace = await _repositoryService.LoadWorkspaceAsync(solutionPath, cancellationToken);
                 BookmarkRepositoryService.NormalizeWorkspaceState(workspace);
@@ -101,12 +100,12 @@ namespace BookmarkStudio
             await _repositoryGate.WaitAsync(cancellationToken);
             try
             {
-                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                var solutionPath = await GetSolutionPathAsync(cancellationToken);
                 DualBookmarkWorkspaceState dualState = await EnsureDualStateLoadedAsync(cancellationToken);
 
                 // Try to apply update to each workspace - catch exceptions if bookmark not found in that workspace
-                bool personalChanged = TryApplyUpdate(dualState.PersonalState.Bookmarks, updateAction);
-                bool solutionChanged = TryApplyUpdate(dualState.SolutionState.Bookmarks, updateAction);
+                var personalChanged = TryApplyUpdate(dualState.PersonalState.Bookmarks, updateAction);
+                var solutionChanged = TryApplyUpdate(dualState.SolutionState.Bookmarks, updateAction);
 
                 // Save changed workspaces
                 if (personalChanged)
@@ -149,12 +148,12 @@ namespace BookmarkStudio
             await _repositoryGate.WaitAsync(cancellationToken);
             try
             {
-                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                var solutionPath = await GetSolutionPathAsync(cancellationToken);
                 DualBookmarkWorkspaceState dualState = await EnsureDualStateLoadedAsync(cancellationToken);
 
                 // Try to apply update to both workspaces
-                bool personalChanged = updateAction(dualState.PersonalState.Bookmarks);
-                bool solutionChanged = updateAction(dualState.SolutionState.Bookmarks);
+                var personalChanged = updateAction(dualState.PersonalState.Bookmarks);
+                var solutionChanged = updateAction(dualState.SolutionState.Bookmarks);
 
                 if (personalChanged)
                 {
@@ -190,15 +189,15 @@ namespace BookmarkStudio
             await _repositoryGate.WaitAsync(cancellationToken);
             try
             {
-                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                var solutionPath = await GetSolutionPathAsync(cancellationToken);
                 DualBookmarkWorkspaceState dualState = await EnsureDualStateLoadedAsync(cancellationToken);
 
                 // Check both locations for existing bookmark
                 BookmarkMetadata existingPersonal = BookmarkRepositoryService.FindBySnapshot(dualState.PersonalState.Bookmarks, snapshot);
                 BookmarkMetadata existingSolution = BookmarkRepositoryService.FindBySnapshot(dualState.SolutionState.Bookmarks, snapshot);
                 ManagedBookmark? result;
-                bool personalChanged = false;
-                bool solutionChanged = false;
+                var personalChanged = false;
+                var solutionChanged = false;
 
                 if (existingPersonal is not null)
                 {
@@ -254,7 +253,7 @@ namespace BookmarkStudio
         {
             InvalidateSolutionPath();
             _cachedDualState = null;
-            SetCachedState(Array.Empty<ManagedBookmark>(), new[] { string.Empty });
+            SetCachedState([], [string.Empty]);
         }
 
         /// <summary>
@@ -266,7 +265,7 @@ namespace BookmarkStudio
             await _repositoryGate.WaitAsync(cancellationToken);
             try
             {
-                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                var solutionPath = await GetSolutionPathAsync(cancellationToken);
                 if (string.IsNullOrEmpty(solutionPath))
                 {
                     return 0;
@@ -274,9 +273,7 @@ namespace BookmarkStudio
 
                 BookmarkWorkspaceState workspace = await _repositoryService.LoadWorkspaceAsync(solutionPath, cancellationToken);
 
-                List<BookmarkMetadata> staleBookmarks = workspace.Bookmarks
-                    .Where(bookmark => !string.IsNullOrWhiteSpace(bookmark.DocumentPath) && !System.IO.File.Exists(bookmark.DocumentPath))
-                    .ToList();
+                List<BookmarkMetadata> staleBookmarks = [.. workspace.Bookmarks.Where(bookmark => !string.IsNullOrWhiteSpace(bookmark.DocumentPath) && !System.IO.File.Exists(bookmark.DocumentPath))];
 
                 if (staleBookmarks.Count == 0)
                 {
@@ -305,7 +302,7 @@ namespace BookmarkStudio
             await _repositoryGate.WaitAsync(cancellationToken);
             try
             {
-                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                var solutionPath = await GetSolutionPathAsync(cancellationToken);
                 BookmarkWorkspaceState workspace = await _repositoryService.LoadWorkspaceAsync(solutionPath, cancellationToken);
                 BookmarkRepositoryService.NormalizeWorkspaceState(workspace);
                 return workspace;
@@ -321,7 +318,7 @@ namespace BookmarkStudio
             await _repositoryGate.WaitAsync(cancellationToken);
             try
             {
-                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                var solutionPath = await GetSolutionPathAsync(cancellationToken);
                 BookmarkWorkspaceState workspace = await _repositoryService.LoadWorkspaceAsync(solutionPath, cancellationToken);
                 updateAction(workspace);
                 BookmarkRepositoryService.NormalizeWorkspaceState(workspace);
@@ -343,7 +340,7 @@ namespace BookmarkStudio
             await _repositoryGate.WaitAsync(cancellationToken);
             try
             {
-                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                var solutionPath = await GetSolutionPathAsync(cancellationToken);
                 DualBookmarkWorkspaceState dualState = await EnsureDualStateLoadedAsync(cancellationToken);
 
                 // Apply update to the appropriate workspace
@@ -374,7 +371,7 @@ namespace BookmarkStudio
             await _repositoryGate.WaitAsync(cancellationToken);
             try
             {
-                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                var solutionPath = await GetSolutionPathAsync(cancellationToken);
                 if (string.IsNullOrEmpty(solutionPath))
                 {
                     return false;
@@ -407,7 +404,7 @@ namespace BookmarkStudio
             await _repositoryGate.WaitAsync(cancellationToken);
             try
             {
-                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                var solutionPath = await GetSolutionPathAsync(cancellationToken);
                 return _metadataStore.GetStoragePath(solutionPath);
             }
             finally
@@ -418,7 +415,7 @@ namespace BookmarkStudio
 
         public async Task<BookmarkStorageInfo> GetStorageInfoAsync(CancellationToken cancellationToken)
         {
-            string solutionPath = await GetSolutionPathAsync(cancellationToken);
+            var solutionPath = await GetSolutionPathAsync(cancellationToken);
             return _metadataStore.GetStorageInfo(solutionPath);
         }
 
@@ -427,7 +424,7 @@ namespace BookmarkStudio
             await _repositoryGate.WaitAsync(cancellationToken);
             try
             {
-                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                var solutionPath = await GetSolutionPathAsync(cancellationToken);
                 return await _metadataStore.MoveToLocationAsync(solutionPath, targetLocation, cancellationToken);
             }
             finally
@@ -450,12 +447,12 @@ namespace BookmarkStudio
             await _repositoryGate.WaitAsync(cancellationToken);
             try
             {
-                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                var solutionPath = await GetSolutionPathAsync(cancellationToken);
 
                 // Force reload from disk to get fresh state
                 _cachedDualState = await _metadataStore.LoadDualWorkspaceAsync(solutionPath, cancellationToken);
 
-                int staleCount = 0;
+                var staleCount = 0;
                 if (removeStaleBookmarks && !string.IsNullOrEmpty(solutionPath))
                 {
                     staleCount = await RemoveStaleFromDualStateAsync(solutionPath, _cachedDualState, cancellationToken);
@@ -475,12 +472,10 @@ namespace BookmarkStudio
 
         private async Task<int> RemoveStaleFromDualStateAsync(string solutionPath, DualBookmarkWorkspaceState dualState, CancellationToken cancellationToken)
         {
-            int totalRemoved = 0;
+            var totalRemoved = 0;
 
             // Remove stale from personal bookmarks
-            List<BookmarkMetadata> stalePersonal = dualState.PersonalState.Bookmarks
-                .Where(bookmark => !string.IsNullOrWhiteSpace(bookmark.DocumentPath) && !System.IO.File.Exists(bookmark.DocumentPath))
-                .ToList();
+            List<BookmarkMetadata> stalePersonal = [.. dualState.PersonalState.Bookmarks.Where(bookmark => !string.IsNullOrWhiteSpace(bookmark.DocumentPath) && !System.IO.File.Exists(bookmark.DocumentPath))];
 
             if (stalePersonal.Count > 0)
             {
@@ -495,9 +490,7 @@ namespace BookmarkStudio
             }
 
             // Remove stale from solution bookmarks
-            List<BookmarkMetadata> staleSolution = dualState.SolutionState.Bookmarks
-                .Where(bookmark => !string.IsNullOrWhiteSpace(bookmark.DocumentPath) && !System.IO.File.Exists(bookmark.DocumentPath))
-                .ToList();
+            List<BookmarkMetadata> staleSolution = [.. dualState.SolutionState.Bookmarks.Where(bookmark => !string.IsNullOrWhiteSpace(bookmark.DocumentPath) && !System.IO.File.Exists(bookmark.DocumentPath))];
 
             if (staleSolution.Count > 0)
             {
@@ -519,7 +512,7 @@ namespace BookmarkStudio
             await _repositoryGate.WaitAsync(cancellationToken);
             try
             {
-                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                var solutionPath = await GetSolutionPathAsync(cancellationToken);
                 DualBookmarkWorkspaceState dualState = await EnsureDualStateLoadedAsync(cancellationToken);
 
                 BookmarkStorageLocation sourceLocation = targetLocation == BookmarkStorageLocation.Solution
@@ -561,8 +554,8 @@ namespace BookmarkStudio
             await _repositoryGate.WaitAsync(cancellationToken);
             try
             {
-                string solutionPath = await GetSolutionPathAsync(cancellationToken);
-                string normalizedTargetFolder = BookmarkIdentity.NormalizeFolderPath(targetFolderPath);
+                var solutionPath = await GetSolutionPathAsync(cancellationToken);
+                var normalizedTargetFolder = BookmarkIdentity.NormalizeFolderPath(targetFolderPath);
                 DualBookmarkWorkspaceState dualState = await EnsureDualStateLoadedAsync(cancellationToken);
 
                 BookmarkStorageLocation sourceLocation = targetLocation == BookmarkStorageLocation.Solution
@@ -610,7 +603,7 @@ namespace BookmarkStudio
             await _repositoryGate.WaitAsync(cancellationToken);
             try
             {
-                string solutionPath = await GetSolutionPathAsync(cancellationToken);
+                var solutionPath = await GetSolutionPathAsync(cancellationToken);
 
                 // This operation is complex - delegate to metadata store
                 // which handles moving all bookmarks in the folder
@@ -648,7 +641,7 @@ namespace BookmarkStudio
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
             EnvDTE80.DTE2? dte = await VS.GetServiceAsync<EnvDTE.DTE, EnvDTE80.DTE2>();
-            string? solutionFullName = dte?.Solution?.FullName;
+            var solutionFullName = dte?.Solution?.FullName;
 
             // If a solution is open, use its path
             if (!string.IsNullOrEmpty(solutionFullName))
@@ -660,7 +653,7 @@ namespace BookmarkStudio
             // Check for Open Folder mode - get the solution directory which works for both solution and folder modes
             Microsoft.VisualStudio.Shell.Interop.IVsSolution? solution = await VS.GetServiceAsync<Microsoft.VisualStudio.Shell.Interop.SVsSolution, Microsoft.VisualStudio.Shell.Interop.IVsSolution>();
             if (solution is not null &&
-                solution.GetProperty((int)Microsoft.VisualStudio.Shell.Interop.__VSPROPID.VSPROPID_SolutionDirectory, out object directoryObj) == Microsoft.VisualStudio.VSConstants.S_OK &&
+                solution.GetProperty((int)Microsoft.VisualStudio.Shell.Interop.__VSPROPID.VSPROPID_SolutionDirectory, out var directoryObj) == Microsoft.VisualStudio.VSConstants.S_OK &&
                 directoryObj is string directory &&
                 !string.IsNullOrEmpty(directory))
             {
@@ -685,7 +678,7 @@ namespace BookmarkStudio
                 return _cachedDualState;
             }
 
-            string solutionPath = await GetSolutionPathAsync(cancellationToken);
+            var solutionPath = await GetSolutionPathAsync(cancellationToken);
             _cachedDualState = await _metadataStore.LoadDualWorkspaceAsync(solutionPath, cancellationToken);
             return _cachedDualState;
         }
@@ -712,14 +705,14 @@ namespace BookmarkStudio
 
         private void SetCachedBookmarks(IReadOnlyList<ManagedBookmark> bookmarks)
         {
-            _cachedBookmarks = bookmarks ?? Array.Empty<ManagedBookmark>();
+            _cachedBookmarks = bookmarks ?? [];
             BookmarksChanged?.Invoke(this, EventArgs.Empty);
         }
 
         private void SetCachedState(IReadOnlyList<ManagedBookmark> bookmarks, IEnumerable<string> folderPaths)
         {
-            _cachedBookmarks = bookmarks ?? Array.Empty<ManagedBookmark>();
-            _cachedFolderPaths = (folderPaths ?? Array.Empty<string>())
+            _cachedBookmarks = bookmarks ?? [];
+            _cachedFolderPaths = (folderPaths ?? [])
                 .Select(BookmarkIdentity.NormalizeFolderPath)
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
@@ -727,7 +720,7 @@ namespace BookmarkStudio
 
             if (!_cachedFolderPaths.Contains(string.Empty, StringComparer.OrdinalIgnoreCase))
             {
-                _cachedFolderPaths = _cachedFolderPaths.Concat(new[] { string.Empty }).ToArray();
+                _cachedFolderPaths = _cachedFolderPaths.Concat([string.Empty]).ToArray();
             }
 
             BookmarksChanged?.Invoke(this, EventArgs.Empty);
@@ -743,12 +736,12 @@ namespace BookmarkStudio
             allBookmarks.AddRange(BookmarkRepositoryService.ToManagedBookmarks(dualState.SolutionState.Bookmarks));
 
             HashSet<string> allFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (string path in dualState.PersonalState.FolderPaths)
+            foreach (var path in dualState.PersonalState.FolderPaths)
             {
                 allFolders.Add(path);
             }
 
-            foreach (string path in dualState.SolutionState.FolderPaths)
+            foreach (var path in dualState.SolutionState.FolderPaths)
             {
                 allFolders.Add(path);
             }

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -156,11 +155,9 @@ namespace BookmarkStudio
 
             await _session.TryUpdateDualWorkspaceAsync((personal, solution) =>
             {
-                bool changed = false;
+                var changed = false;
 
-                List<BookmarkMetadata> personalToRemove = personal.Bookmarks
-                    .Where(b => normalizedPaths.Contains(BookmarkIdentity.NormalizeDocumentPath(b.DocumentPath)))
-                    .ToList();
+                List<BookmarkMetadata> personalToRemove = [.. personal.Bookmarks.Where(b => normalizedPaths.Contains(BookmarkIdentity.NormalizeDocumentPath(b.DocumentPath)))];
 
                 if (personalToRemove.Count > 0)
                 {
@@ -172,9 +169,7 @@ namespace BookmarkStudio
                     changed = true;
                 }
 
-                List<BookmarkMetadata> solutionToRemove = solution.Bookmarks
-                    .Where(b => normalizedPaths.Contains(BookmarkIdentity.NormalizeDocumentPath(b.DocumentPath)))
-                    .ToList();
+                List<BookmarkMetadata> solutionToRemove = [.. solution.Bookmarks.Where(b => normalizedPaths.Contains(BookmarkIdentity.NormalizeDocumentPath(b.DocumentPath)))];
 
                 if (solutionToRemove.Count > 0)
                 {
@@ -202,9 +197,9 @@ namespace BookmarkStudio
 
             // Build a mapping of old paths to new paths
             Dictionary<string, string> pathMapping = new Dictionary<string, string>(StringComparer.Ordinal);
-            for (int i = 0; i < oldPaths.Length; i++)
+            for (var i = 0; i < oldPaths.Length; i++)
             {
-                string normalizedOld = BookmarkIdentity.NormalizeDocumentPath(oldPaths[i]);
+                var normalizedOld = BookmarkIdentity.NormalizeDocumentPath(oldPaths[i]);
                 if (!string.IsNullOrEmpty(normalizedOld))
                 {
                     pathMapping[normalizedOld] = newPaths[i];
@@ -213,12 +208,12 @@ namespace BookmarkStudio
 
             await _session.TryUpdateDualWorkspaceAsync((personal, solution) =>
             {
-                bool changed = false;
+                var changed = false;
 
                 foreach (BookmarkMetadata bookmark in personal.Bookmarks)
                 {
-                    string normalizedPath = BookmarkIdentity.NormalizeDocumentPath(bookmark.DocumentPath);
-                    if (pathMapping.TryGetValue(normalizedPath, out string? newPath))
+                    var normalizedPath = BookmarkIdentity.NormalizeDocumentPath(bookmark.DocumentPath);
+                    if (pathMapping.TryGetValue(normalizedPath, out var newPath))
                     {
                         bookmark.DocumentPath = newPath;
                         changed = true;
@@ -227,8 +222,8 @@ namespace BookmarkStudio
 
                 foreach (BookmarkMetadata bookmark in solution.Bookmarks)
                 {
-                    string normalizedPath = BookmarkIdentity.NormalizeDocumentPath(bookmark.DocumentPath);
-                    if (pathMapping.TryGetValue(normalizedPath, out string? newPath))
+                    var normalizedPath = BookmarkIdentity.NormalizeDocumentPath(bookmark.DocumentPath);
+                    if (pathMapping.TryGetValue(normalizedPath, out var newPath))
                     {
                         bookmark.DocumentPath = newPath;
                         changed = true;
@@ -246,7 +241,7 @@ namespace BookmarkStudio
 
         private static class BookmarkRefreshMonitorServiceHolder
         {
-            internal static readonly BookmarkRefreshMonitorService Instance = new BookmarkRefreshMonitorService();
+            internal static readonly BookmarkRefreshMonitorService Instance = new();
         }
 
         internal static BookmarkRefreshMonitorService Instance => BookmarkRefreshMonitorServiceHolder.Instance;

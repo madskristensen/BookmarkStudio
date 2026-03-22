@@ -10,13 +10,13 @@ namespace BookmarkStudio
 
             if (General.Instance.PromptForBookmarkName)
             {
-                bool hasExistingBookmark = await BookmarkOperationsService.Current.HasBookmarkAtCurrentLocationAsync(cancellationToken);
+                var hasExistingBookmark = await BookmarkOperationsService.Current.HasBookmarkAtCurrentLocationAsync(cancellationToken);
 
                 if (!hasExistingBookmark)
                 {
                     // Use selected text as suggestion if available, otherwise fall back to default label
-                    string? selectedText = await BookmarkOperationsService.Current.GetSelectedTextAsync(cancellationToken);
-                    string defaultLabel = selectedText ?? await BookmarkOperationsService.Current.GetNextDefaultLabelAsync(cancellationToken);
+                    var selectedText = await BookmarkOperationsService.Current.GetSelectedTextAsync(cancellationToken);
+                    var defaultLabel = selectedText ?? await BookmarkOperationsService.Current.GetNextDefaultLabelAsync(cancellationToken);
 
                     label = TextPromptWindow.Show("New Bookmark", "Enter a name for this bookmark:", defaultLabel, selectTextOnLoad: true);
 

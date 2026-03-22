@@ -44,19 +44,31 @@ namespace BookmarkStudio
 
         public async Task<BookmarkWorkspaceState> LoadWorkspaceAsync(string solutionPath, CancellationToken cancellationToken)
         {
-            string storagePath = GetStoragePath(solutionPath);
+            var storagePath = GetStoragePath(solutionPath);
             if (!File.Exists(storagePath))
             {
                 return new BookmarkWorkspaceState();
             }
 
-            string json = await Task.Run(() => File.ReadAllText(storagePath, Encoding.UTF8), cancellationToken);
+            var json = await Task.Run(() => File.ReadAllText(storagePath, Encoding.UTF8), cancellationToken);
             if (string.IsNullOrWhiteSpace(json))
             {
                 return new BookmarkWorkspaceState();
             }
 
-            string solutionDirectory = GetSolutionDirectory(solutionPath);
+            try
+            {
+                return ParseWorkspaceJson(json, GetSolutionDirectory(solutionPath), cancellationToken);
+            }
+            catch (JsonException ex)
+            {
+                await ex.LogAsync();
+                return new BookmarkWorkspaceState();
+            }
+        }
+
+        private BookmarkWorkspaceState ParseWorkspaceJson(string json, string solutionDirectory, CancellationToken cancellationToken)
+        {
             using JsonDocument document = JsonDocument.Parse(json);
             JsonElement rootElement = document.RootElement;
 
@@ -106,8 +118,8 @@ namespace BookmarkStudio
                 throw new ArgumentNullException(nameof(state));
             }
 
-            string storagePath = GetStoragePath(solutionPath);
-            string? directory = Path.GetDirectoryName(storagePath);
+            var storagePath = GetStoragePath(solutionPath);
+            var directory = Path.GetDirectoryName(storagePath);
             if (string.IsNullOrWhiteSpace(directory))
             {
                 throw new InvalidOperationException("Bookmark storage directory could not be determined.");
@@ -115,10 +127,10 @@ namespace BookmarkStudio
 
             Directory.CreateDirectory(directory);
 
-            string solutionDirectory = GetSolutionDirectory(solutionPath);
+            var solutionDirectory = GetSolutionDirectory(solutionPath);
             FolderNode root = BuildFolderTree(state);
 
-            string json = await Task.Run(() => SerializeTree(root, solutionDirectory, state.ExpandedFolders), cancellationToken);
+            var json = await Task.Run(() => SerializeTree(root, solutionDirectory, state.ExpandedFolders), cancellationToken);
             await Task.Run(() => File.WriteAllText(storagePath, json, Encoding.UTF8), cancellationToken);
         }
 
@@ -129,36 +141,36 @@ namespace BookmarkStudio
         {
             if (string.IsNullOrWhiteSpace(solutionPath))
             {
-                string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                string transientPath = Path.Combine(localAppData, "BookmarkStudio", "Transient", BookmarksFileName);
+                var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                var transientPath = Path.Combine(localAppData, "BookmarkStudio", "Transient", BookmarksFileName);
                 return new BookmarkStorageInfo(BookmarkStorageLocation.Personal, transientPath, BookmarksFileName);
             }
 
-            string solutionDirectory = Path.GetDirectoryName(solutionPath) ?? string.Empty;
-            string? repoRoot = GetRepositoryRoot(solutionDirectory);
-            string baseDirectory = repoRoot ?? solutionDirectory;
+            var solutionDirectory = Path.GetDirectoryName(solutionPath) ?? string.Empty;
+            var repoRoot = GetRepositoryRoot(solutionDirectory);
+            var baseDirectory = repoRoot ?? solutionDirectory;
 
             // Check solution/repo root first for team-shared bookmarks (new name, then legacy)
-            string solutionRootPath = Path.Combine(baseDirectory, BookmarksFileName);
+            var solutionRootPath = Path.Combine(baseDirectory, BookmarksFileName);
             if (File.Exists(solutionRootPath))
             {
                 return new BookmarkStorageInfo(BookmarkStorageLocation.Solution, solutionRootPath, BookmarksFileName);
             }
 
-            string legacySolutionRootPath = Path.Combine(baseDirectory, LegacyBookmarksFileName);
+            var legacySolutionRootPath = Path.Combine(baseDirectory, LegacyBookmarksFileName);
             if (File.Exists(legacySolutionRootPath))
             {
                 return new BookmarkStorageInfo(BookmarkStorageLocation.Solution, legacySolutionRootPath, LegacyBookmarksFileName);
             }
 
             // Check .vs folder for user-specific bookmarks (new name, then legacy)
-            string personalPath = Path.Combine(solutionDirectory, ".vs", BookmarksFileName);
+            var personalPath = Path.Combine(solutionDirectory, ".vs", BookmarksFileName);
             if (File.Exists(personalPath))
             {
                 return new BookmarkStorageInfo(BookmarkStorageLocation.Personal, personalPath, ".vs/" + BookmarksFileName);
             }
 
-            string legacyPersonalPath = Path.Combine(solutionDirectory, ".vs", LegacyBookmarksFileName);
+            var legacyPersonalPath = Path.Combine(solutionDirectory, ".vs", LegacyBookmarksFileName);
             if (File.Exists(legacyPersonalPath))
             {
                 return new BookmarkStorageInfo(BookmarkStorageLocation.Personal, legacyPersonalPath, ".vs/" + LegacyBookmarksFileName);
@@ -175,9 +187,9 @@ namespace BookmarkStudio
                 throw new InvalidOperationException("Cannot determine solution storage path without a solution.");
             }
 
-            string solutionDirectory = Path.GetDirectoryName(solutionPath) ?? string.Empty;
-            string? repoRoot = GetRepositoryRoot(solutionDirectory);
-            string baseDirectory = repoRoot ?? solutionDirectory;
+            var solutionDirectory = Path.GetDirectoryName(solutionPath) ?? string.Empty;
+            var repoRoot = GetRepositoryRoot(solutionDirectory);
+            var baseDirectory = repoRoot ?? solutionDirectory;
             return Path.Combine(baseDirectory, BookmarksFileName);
         }
 
@@ -185,11 +197,11 @@ namespace BookmarkStudio
         {
             if (string.IsNullOrWhiteSpace(solutionPath))
             {
-                string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+                var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
                 return Path.Combine(localAppData, "BookmarkStudio", "Transient", BookmarksFileName);
             }
 
-            string solutionDirectory = Path.GetDirectoryName(solutionPath) ?? string.Empty;
+            var solutionDirectory = Path.GetDirectoryName(solutionPath) ?? string.Empty;
             return Path.Combine(solutionDirectory, ".vs", BookmarksFileName);
         }
 
@@ -213,11 +225,11 @@ namespace BookmarkStudio
                 return currentInfo;
             }
 
-            string targetPath = targetLocation == BookmarkStorageLocation.Solution
+            var targetPath = targetLocation == BookmarkStorageLocation.Solution
                 ? GetSolutionStoragePath(solutionPath)
                 : GetPersonalStoragePath(solutionPath);
 
-            string? targetDirectory = Path.GetDirectoryName(targetPath);
+            var targetDirectory = Path.GetDirectoryName(targetPath);
             if (string.IsNullOrWhiteSpace(targetDirectory))
             {
                 throw new InvalidOperationException("Could not determine target directory for bookmarks.");
@@ -246,7 +258,7 @@ namespace BookmarkStudio
         /// </summary>
         public async Task<BookmarkWorkspaceState> LoadWorkspaceFromLocationAsync(string solutionPath, BookmarkStorageLocation location, CancellationToken cancellationToken)
         {
-            string storagePath = location == BookmarkStorageLocation.Solution
+            var storagePath = location == BookmarkStorageLocation.Solution
                 ? GetSolutionStoragePath(solutionPath)
                 : GetPersonalStoragePath(solutionPath);
 
@@ -255,13 +267,25 @@ namespace BookmarkStudio
                 return new BookmarkWorkspaceState();
             }
 
-            string json = await Task.Run(() => File.ReadAllText(storagePath, Encoding.UTF8), cancellationToken);
+            var json = await Task.Run(() => File.ReadAllText(storagePath, Encoding.UTF8), cancellationToken);
             if (string.IsNullOrWhiteSpace(json))
             {
                 return new BookmarkWorkspaceState();
             }
 
-            string solutionDirectory = GetSolutionDirectory(solutionPath);
+            try
+            {
+                return ParseWorkspaceJsonFromLocation(json, GetSolutionDirectory(solutionPath), location, cancellationToken);
+            }
+            catch (JsonException ex)
+            {
+                await ex.LogAsync();
+                return new BookmarkWorkspaceState();
+            }
+        }
+
+        private BookmarkWorkspaceState ParseWorkspaceJsonFromLocation(string json, string solutionDirectory, BookmarkStorageLocation location, CancellationToken cancellationToken)
+        {
             using JsonDocument document = JsonDocument.Parse(json);
             JsonElement rootElement = document.RootElement;
 
@@ -300,11 +324,11 @@ namespace BookmarkStudio
                 throw new ArgumentNullException(nameof(state));
             }
 
-            string storagePath = location == BookmarkStorageLocation.Solution
+            var storagePath = location == BookmarkStorageLocation.Solution
                 ? GetSolutionStoragePath(solutionPath)
                 : GetPersonalStoragePath(solutionPath);
 
-            string? directory = Path.GetDirectoryName(storagePath);
+            var directory = Path.GetDirectoryName(storagePath);
             if (string.IsNullOrWhiteSpace(directory))
             {
                 throw new InvalidOperationException("Bookmark storage directory could not be determined.");
@@ -312,10 +336,10 @@ namespace BookmarkStudio
 
             Directory.CreateDirectory(directory);
 
-            string solutionDirectory = GetSolutionDirectory(solutionPath);
+            var solutionDirectory = GetSolutionDirectory(solutionPath);
             FolderNode root = BuildFolderTree(state);
 
-            string json = await Task.Run(() => SerializeTree(root, solutionDirectory, state.ExpandedFolders), cancellationToken);
+            var json = await Task.Run(() => SerializeTree(root, solutionDirectory, state.ExpandedFolders), cancellationToken);
             await Task.Run(() => File.WriteAllText(storagePath, json, Encoding.UTF8), cancellationToken);
         }
 
@@ -390,7 +414,7 @@ namespace BookmarkStudio
             BookmarkStorageLocation targetLocation,
             CancellationToken cancellationToken)
         {
-            string normalizedTargetFolder = BookmarkIdentity.NormalizeFolderPath(targetFolderPath);
+            var normalizedTargetFolder = BookmarkIdentity.NormalizeFolderPath(targetFolderPath);
 
             DualBookmarkWorkspaceState dualState = await LoadDualWorkspaceAsync(solutionPath, cancellationToken);
 
@@ -433,8 +457,8 @@ namespace BookmarkStudio
             BookmarkStorageLocation targetLocation,
             CancellationToken cancellationToken)
         {
-            string normalizedSource = BookmarkIdentity.NormalizeFolderPath(sourceFolderPath);
-            string normalizedTarget = BookmarkIdentity.NormalizeFolderPath(targetFolderPath);
+            var normalizedSource = BookmarkIdentity.NormalizeFolderPath(sourceFolderPath);
+            var normalizedTarget = BookmarkIdentity.NormalizeFolderPath(targetFolderPath);
 
             if (string.IsNullOrWhiteSpace(normalizedSource))
             {
@@ -451,24 +475,22 @@ namespace BookmarkStudio
                 ? dualState.SolutionState
                 : dualState.PersonalState;
 
-            string sourcePrefix = normalizedSource + "/";
+            var sourcePrefix = normalizedSource + "/";
 
             // Find all bookmarks in the source folder and its subfolders
-            List<BookmarkMetadata> bookmarksToMove = sourceState.Bookmarks
+            List<BookmarkMetadata> bookmarksToMove = [.. sourceState.Bookmarks
                 .Where(b =>
                 {
-                    string group = BookmarkIdentity.NormalizeFolderPath(b.Group);
+                    var group = BookmarkIdentity.NormalizeFolderPath(b.Group);
                     return string.Equals(group, normalizedSource, StringComparison.OrdinalIgnoreCase)
                         || group.StartsWith(sourcePrefix, StringComparison.OrdinalIgnoreCase);
-                })
-                .ToList();
+                })];
 
             // Find all folder paths in the source folder
-            List<string> foldersToMove = sourceState.FolderPaths
+            List<string> foldersToMove = [.. sourceState.FolderPaths
                 .Where(path =>
                     string.Equals(path, normalizedSource, StringComparison.OrdinalIgnoreCase)
-                    || path.StartsWith(sourcePrefix, StringComparison.OrdinalIgnoreCase))
-                .ToList();
+                    || path.StartsWith(sourcePrefix, StringComparison.OrdinalIgnoreCase))];
 
             // Remove bookmarks from source
             foreach (BookmarkMetadata bookmark in bookmarksToMove)
@@ -477,7 +499,7 @@ namespace BookmarkStudio
             }
 
             // Remove folders from source
-            foreach (string folder in foldersToMove)
+            foreach (var folder in foldersToMove)
             {
                 sourceState.FolderPaths.Remove(folder);
             }
@@ -488,7 +510,7 @@ namespace BookmarkStudio
             // Calculate path transformation: replace source path with target path
             foreach (BookmarkMetadata bookmark in bookmarksToMove)
             {
-                string oldGroup = BookmarkIdentity.NormalizeFolderPath(bookmark.Group);
+                var oldGroup = BookmarkIdentity.NormalizeFolderPath(bookmark.Group);
                 string newGroup;
 
                 if (string.Equals(oldGroup, normalizedSource, StringComparison.OrdinalIgnoreCase))
@@ -507,7 +529,7 @@ namespace BookmarkStudio
             }
 
             // Add transformed folder paths to target
-            foreach (string folder in foldersToMove)
+            foreach (var folder in foldersToMove)
             {
                 string newFolder;
                 if (string.Equals(folder, normalizedSource, StringComparison.OrdinalIgnoreCase))
@@ -532,17 +554,17 @@ namespace BookmarkStudio
 
         private static void CleanupLegacyFiles(string currentPath)
         {
-            string? directory = Path.GetDirectoryName(currentPath);
+            var directory = Path.GetDirectoryName(currentPath);
             if (string.IsNullOrWhiteSpace(directory))
             {
                 return;
             }
 
             // If the current file uses the new name, also delete any legacy file
-            string currentFileName = Path.GetFileName(currentPath);
+            var currentFileName = Path.GetFileName(currentPath);
             if (string.Equals(currentFileName, BookmarksFileName, StringComparison.OrdinalIgnoreCase))
             {
-                string legacyPath = Path.Combine(directory, LegacyBookmarksFileName);
+                var legacyPath = Path.Combine(directory, LegacyBookmarksFileName);
                 if (File.Exists(legacyPath))
                 {
                     try
@@ -578,7 +600,7 @@ namespace BookmarkStudio
                 return null;
             }
 
-            string? current = normalizedDirectoryPath;
+            var current = normalizedDirectoryPath;
 
             while (!string.IsNullOrWhiteSpace(current))
             {
@@ -649,7 +671,7 @@ namespace BookmarkStudio
                     continue;
                 }
 
-                string childPath = string.IsNullOrEmpty(folderPath)
+                var childPath = string.IsNullOrEmpty(folderPath)
                     ? property.Name
                     : string.Concat(folderPath, "/", property.Name);
 
@@ -666,7 +688,7 @@ namespace BookmarkStudio
                 {
                     if (folderElement.ValueKind == JsonValueKind.String)
                     {
-                        string? folderPath = folderElement.GetString();
+                        var folderPath = folderElement.GetString();
                         if (!string.IsNullOrEmpty(folderPath))
                         {
                             state.ExpandedFolders.Add(folderPath!);
@@ -678,8 +700,8 @@ namespace BookmarkStudio
 
         private static BookmarkMetadata ToMetadata(JsonElement element, string solutionDirectory, string folderPath)
         {
-            string documentPath = GetStringProperty(element, "documentPath");
-            int lineNumber = GetIntProperty(element, "lineNumber");
+            var documentPath = GetStringProperty(element, "documentPath");
+            var lineNumber = GetIntProperty(element, "lineNumber");
 
             return new BookmarkMetadata
             {
@@ -708,7 +730,7 @@ namespace BookmarkStudio
 
                 writer.WritePropertyName("expandedFolders");
                 writer.WriteStartArray();
-                foreach (string folder in expandedFolders.OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
+                foreach (var folder in expandedFolders.OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
                 {
                     writer.WriteStringValue(folder);
                 }
@@ -771,7 +793,7 @@ namespace BookmarkStudio
         {
             FolderNode root = new FolderNode();
 
-            foreach (string path in state.FolderPaths)
+            foreach (var path in state.FolderPaths)
             {
                 EnsureFolder(root, path);
             }
@@ -788,15 +810,15 @@ namespace BookmarkStudio
 
         private static FolderNode EnsureFolder(FolderNode root, string folderPath)
         {
-            string normalizedPath = BookmarkIdentity.NormalizeFolderPath(folderPath);
+            var normalizedPath = BookmarkIdentity.NormalizeFolderPath(folderPath);
             if (string.IsNullOrEmpty(normalizedPath))
             {
                 return root;
             }
 
             FolderNode current = root;
-            string[] segments = normalizedPath.Split('/');
-            foreach (string segment in segments)
+            var segments = normalizedPath.Split('/');
+            foreach (var segment in segments)
             {
                 if (!current.Children.TryGetValue(segment, out FolderNode? child))
                 {
@@ -812,7 +834,7 @@ namespace BookmarkStudio
 
         private static void RegisterFolderPath(ISet<string> folderPaths, string folderPath)
         {
-            string normalized = BookmarkIdentity.NormalizeFolderPath(folderPath);
+            var normalized = BookmarkIdentity.NormalizeFolderPath(folderPath);
             folderPaths.Add(normalized);
 
             if (string.IsNullOrEmpty(normalized))
@@ -820,9 +842,9 @@ namespace BookmarkStudio
                 return;
             }
 
-            string[] segments = normalized.Split('/');
-            string current = string.Empty;
-            foreach (string segment in segments)
+            var segments = normalized.Split('/');
+            var current = string.Empty;
+            foreach (var segment in segments)
             {
                 current = string.IsNullOrEmpty(current)
                     ? segment
@@ -863,7 +885,7 @@ namespace BookmarkStudio
                 return 0;
             }
 
-            if (property.ValueKind == JsonValueKind.Number && property.TryGetInt32(out int value))
+            if (property.ValueKind == JsonValueKind.Number && property.TryGetInt32(out var value))
             {
                 return value;
             }
@@ -878,7 +900,7 @@ namespace BookmarkStudio
                 return null;
             }
 
-            if (property.ValueKind == JsonValueKind.Number && property.TryGetInt32(out int value))
+            if (property.ValueKind == JsonValueKind.Number && property.TryGetInt32(out var value))
             {
                 return value;
             }
@@ -888,7 +910,7 @@ namespace BookmarkStudio
 
         private static BookmarkColor GetColorProperty(JsonElement element, string propertyName)
         {
-            string value = GetStringProperty(element, propertyName);
+            var value = GetStringProperty(element, propertyName);
             if (Enum.TryParse(value, true, out BookmarkColor color))
             {
                 return color;
@@ -899,13 +921,13 @@ namespace BookmarkStudio
 
         private static DateTime GetDateTimeProperty(JsonElement element, string propertyName)
         {
-            string value = GetStringProperty(element, propertyName);
+            var value = GetStringProperty(element, propertyName);
             return ParseDateTime(value);
         }
 
         private static DateTime? GetNullableDateTimeProperty(JsonElement element, string propertyName)
         {
-            string value = GetStringProperty(element, propertyName);
+            var value = GetStringProperty(element, propertyName);
             if (string.IsNullOrWhiteSpace(value))
             {
                 return null;
@@ -957,7 +979,7 @@ namespace BookmarkStudio
                 return documentPath ?? string.Empty;
             }
 
-            string normalizedDir = solutionDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+            var normalizedDir = solutionDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
                 + Path.DirectorySeparatorChar;
 
             if (documentPath.StartsWith(normalizedDir, StringComparison.OrdinalIgnoreCase))

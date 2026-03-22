@@ -11,13 +11,13 @@ namespace BookmarkStudio
     internal sealed class BookmarkManagerViewModel : INotifyPropertyChanged
     {
         private readonly BookmarkOperationsService _operations = BookmarkOperationsService.Current;
-        private readonly List<ManagedBookmark> _bookmarks = new List<ManagedBookmark>();
-        private readonly List<ManagedBookmark> _personalBookmarks = new List<ManagedBookmark>();
-        private readonly List<ManagedBookmark> _solutionBookmarks = new List<ManagedBookmark>();
-        private readonly HashSet<string> _folderPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { string.Empty };
-        private readonly HashSet<string> _personalFolderPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { string.Empty };
-        private readonly HashSet<string> _solutionFolderPaths = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { string.Empty };
-        private readonly HashSet<string> _expandedFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private readonly List<ManagedBookmark> _bookmarks = new();
+        private readonly List<ManagedBookmark> _personalBookmarks = new();
+        private readonly List<ManagedBookmark> _solutionBookmarks = new();
+        private readonly HashSet<string> _folderPaths = new(StringComparer.OrdinalIgnoreCase) { string.Empty };
+        private readonly HashSet<string> _personalFolderPaths = new(StringComparer.OrdinalIgnoreCase) { string.Empty };
+        private readonly HashSet<string> _solutionFolderPaths = new(StringComparer.OrdinalIgnoreCase) { string.Empty };
+        private readonly HashSet<string> _expandedFolders = new(StringComparer.OrdinalIgnoreCase);
         private bool _isTestMode;
         private BookmarkNodeViewModel? _selectedNode;
         private string _searchText = string.Empty;
@@ -181,8 +181,8 @@ namespace BookmarkStudio
         /// </summary>
         public void RefreshFromCache()
         {
-            string? selectedBookmarkId = SelectedBookmark?.BookmarkId;
-            string? selectedFolderPath = SelectedNode is FolderNodeViewModel folderNode ? folderNode.FolderPath : null;
+            var selectedBookmarkId = SelectedBookmark?.BookmarkId;
+            var selectedFolderPath = SelectedNode is FolderNodeViewModel folderNode ? folderNode.FolderPath : null;
 
             DualBookmarkWorkspaceState? cachedDualState = BookmarkStudioSession.Current.CachedDualState;
             if (cachedDualState is not null)
@@ -201,7 +201,7 @@ namespace BookmarkStudio
             RebuildTree();
             RestoreSelection(selectedBookmarkId, selectedFolderPath);
 
-            int totalBookmarks = _bookmarks.Count;
+            var totalBookmarks = _bookmarks.Count;
             SetStatus(string.Concat(totalBookmarks.ToString(System.Globalization.CultureInfo.InvariantCulture), " bookmarks loaded."));
         }
 
@@ -213,7 +213,7 @@ namespace BookmarkStudio
 
         private async Task RefreshAsync(bool performCleanup, CancellationToken cancellationToken)
         {
-            int staleCount = 0;
+            var staleCount = 0;
             DualBookmarkWorkspaceState dualState;
 
             if (performCleanup)
@@ -225,16 +225,16 @@ namespace BookmarkStudio
                 dualState = await _operations.RefreshDualAsync(cancellationToken);
             }
 
-            string? selectedBookmarkId = SelectedBookmark?.BookmarkId;
-            string? selectedFolderPath = SelectedNode is FolderNodeViewModel folderNode ? folderNode.FolderPath : null;
+            var selectedBookmarkId = SelectedBookmark?.BookmarkId;
+            var selectedFolderPath = SelectedNode is FolderNodeViewModel folderNode ? folderNode.FolderPath : null;
 
             ReloadDualData(dualState);
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             RebuildTree();
             RestoreSelection(selectedBookmarkId, selectedFolderPath);
 
-            int totalBookmarks = _personalBookmarks.Count + _solutionBookmarks.Count;
-            string statusMessage = staleCount > 0
+            var totalBookmarks = _personalBookmarks.Count + _solutionBookmarks.Count;
+            var statusMessage = staleCount > 0
                 ? string.Concat(totalBookmarks.ToString(System.Globalization.CultureInfo.InvariantCulture), " bookmarks loaded. Removed ", staleCount.ToString(System.Globalization.CultureInfo.InvariantCulture), " stale bookmark(s).")
                 : string.Concat(totalBookmarks.ToString(System.Globalization.CultureInfo.InvariantCulture), " bookmarks loaded.");
             SetStatus(statusMessage);
@@ -292,7 +292,7 @@ namespace BookmarkStudio
             {
                 if (bookmark.SlotNumber.HasValue && bookmark.SlotNumber.Value >= 1 && bookmark.SlotNumber.Value <= 9)
                 {
-                    string label = string.IsNullOrWhiteSpace(bookmark.Label) 
+                    var label = string.IsNullOrWhiteSpace(bookmark.Label) 
                         ? bookmark.FileName 
                         : bookmark.Label;
                     assignments[bookmark.SlotNumber.Value] = label;
@@ -357,7 +357,7 @@ namespace BookmarkStudio
             ClearFolderPathsForStorage(storageLocation);
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             RebuildTree();
-            string storageName = storageLocation == BookmarkStorageLocation.Personal ? "User" : "Workspace";
+            var storageName = storageLocation == BookmarkStorageLocation.Personal ? "User" : "Workspace";
             SetStatus($"All bookmarks cleared from {storageName}.");
         }
 
@@ -367,7 +367,7 @@ namespace BookmarkStudio
             _storageInfo = newInfo;
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             UpdateRootNodeStorageLocation();
-            string message = string.Concat("Bookmarks moved to ", newInfo.RelativePath);
+            var message = string.Concat("Bookmarks moved to ", newInfo.RelativePath);
             SetStatus(string.Concat(_bookmarks.Count.ToString(System.Globalization.CultureInfo.InvariantCulture), " bookmarks in ", newInfo.RelativePath));
             await VS.StatusBar.ShowMessageAsync(message);
         }
@@ -378,7 +378,7 @@ namespace BookmarkStudio
             _storageInfo = newInfo;
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             UpdateRootNodeStorageLocation();
-            string message = string.Concat("Bookmarks moved to ", newInfo.RelativePath);
+            var message = string.Concat("Bookmarks moved to ", newInfo.RelativePath);
             SetStatus(string.Concat(_bookmarks.Count.ToString(System.Globalization.CultureInfo.InvariantCulture), " bookmarks in ", newInfo.RelativePath));
             await VS.StatusBar.ShowMessageAsync(message);
         }
@@ -422,7 +422,7 @@ namespace BookmarkStudio
             IReadOnlyList<ManagedBookmark> bookmarks = await _operations.CreateFolderAsync(parentPath, folderName, storageLocation, cancellationToken);
             ReloadDualBookmarks(bookmarks);
 
-            string createdPath = string.IsNullOrEmpty(parentPath)
+            var createdPath = string.IsNullOrEmpty(parentPath)
                 ? BookmarkIdentity.NormalizeFolderPath(folderName)
                 : string.Concat(parentPath, "/", BookmarkIdentity.NormalizeFolderPath(folderName));
 
@@ -441,8 +441,8 @@ namespace BookmarkStudio
             IReadOnlyList<ManagedBookmark> bookmarks = await _operations.RenameFolderAsync(folderNode.FolderPath, folderName, storageLocation, cancellationToken);
             ReloadDualBookmarks(bookmarks);
 
-            string parentPath = GetParentFolderPath(folderNode.FolderPath);
-            string renamedPath = string.IsNullOrEmpty(parentPath)
+            var parentPath = GetParentFolderPath(folderNode.FolderPath);
+            var renamedPath = string.IsNullOrEmpty(parentPath)
                 ? BookmarkIdentity.NormalizeFolderPath(folderName)
                 : string.Concat(parentPath, "/", BookmarkIdentity.NormalizeFolderPath(folderName));
 
@@ -473,8 +473,8 @@ namespace BookmarkStudio
 
         public async Task MoveFolderAsync(string sourceFolderPath, string targetFolderPath, BookmarkStorageLocation storageLocation, CancellationToken cancellationToken)
         {
-            string normalizedSource = BookmarkIdentity.NormalizeFolderPath(sourceFolderPath);
-            string normalizedTarget = BookmarkIdentity.NormalizeFolderPath(targetFolderPath);
+            var normalizedSource = BookmarkIdentity.NormalizeFolderPath(sourceFolderPath);
+            var normalizedTarget = BookmarkIdentity.NormalizeFolderPath(targetFolderPath);
 
             if (string.IsNullOrWhiteSpace(normalizedSource))
             {
@@ -511,8 +511,8 @@ namespace BookmarkStudio
             BookmarkStorageLocation targetStorage,
             CancellationToken cancellationToken)
         {
-            string normalizedSource = BookmarkIdentity.NormalizeFolderPath(sourceFolderPath);
-            string normalizedTarget = BookmarkIdentity.NormalizeFolderPath(targetFolderPath);
+            var normalizedSource = BookmarkIdentity.NormalizeFolderPath(sourceFolderPath);
+            var normalizedTarget = BookmarkIdentity.NormalizeFolderPath(targetFolderPath);
 
             if (string.IsNullOrWhiteSpace(normalizedSource))
             {
@@ -597,7 +597,7 @@ namespace BookmarkStudio
 
         internal void SelectFolder(string? folderPath)
         {
-            string normalizedPath = BookmarkIdentity.NormalizeFolderPath(folderPath);
+            var normalizedPath = BookmarkIdentity.NormalizeFolderPath(folderPath);
             FolderNodeViewModel? node = FindFolderNode(RootNodes, normalizedPath);
             SelectedNode = node;
         }
@@ -606,28 +606,28 @@ namespace BookmarkStudio
         {
             _isTestMode = true;
             ReloadData(
-                (bookmarks ?? Enumerable.Empty<ManagedBookmark>()).ToArray(),
-                (folderPaths ?? Enumerable.Empty<string>()).ToArray(),
+                (bookmarks ?? []).ToArray(),
+                (folderPaths ?? []).ToArray(),
                 new HashSet<string>(StringComparer.OrdinalIgnoreCase));
             RebuildTreeForTests();
         }
 
         private void RebuildTreeForTests()
         {
-            string? selectedBookmarkId = SelectedBookmark?.BookmarkId;
-            string? selectedFolderPath = SelectedNode is FolderNodeViewModel folderNode ? folderNode.FolderPath : null;
+            var selectedBookmarkId = SelectedBookmark?.BookmarkId;
+            var selectedFolderPath = SelectedNode is FolderNodeViewModel folderNode ? folderNode.FolderPath : null;
 
             RootNodes.Clear();
             BookmarkRows.Clear();
 
             FolderBuilderNode root = new FolderBuilderNode(string.Empty, null);
-            foreach (string folderPath in _folderPaths)
+            foreach (var folderPath in _folderPaths)
             {
                 EnsureFolderBuilderNode(root, folderPath);
             }
 
             IEnumerable<ManagedBookmark> sourceBookmarks = _bookmarks;
-            string search = SearchText.Trim();
+            var search = SearchText.Trim();
             if (!string.IsNullOrWhiteSpace(search))
             {
                 sourceBookmarks = sourceBookmarks.Where(bookmark => MatchesSearch(bookmark, search));
@@ -639,7 +639,7 @@ namespace BookmarkStudio
                 sourceBookmarks = sourceBookmarks.Where(bookmark => bookmark.Color == filterValue);
             }
 
-            List<ManagedBookmark> visibleBookmarks = sourceBookmarks.ToList();
+            List<ManagedBookmark> visibleBookmarks = [.. sourceBookmarks];
             RebuildBookmarkRows(root, visibleBookmarks);
 
             foreach (ManagedBookmark bookmark in visibleBookmarks)
@@ -674,13 +674,13 @@ namespace BookmarkStudio
 
             _folderPaths.Clear();
             _folderPaths.Add(string.Empty);
-            foreach (string folderPath in folderPaths)
+            foreach (var folderPath in folderPaths)
             {
                 _folderPaths.Add(BookmarkIdentity.NormalizeFolderPath(folderPath));
             }
 
             _expandedFolders.Clear();
-            foreach (string folder in expandedFolders)
+            foreach (var folder in expandedFolders)
             {
                 _expandedFolders.Add(BookmarkIdentity.NormalizeFolderPath(folder));
             }
@@ -715,25 +715,25 @@ namespace BookmarkStudio
                 _folderPaths.Add(bookmark.FolderPath);
             }
 
-            foreach (string folderPath in dualState.PersonalState.FolderPaths)
+            foreach (var folderPath in dualState.PersonalState.FolderPaths)
             {
                 _personalFolderPaths.Add(BookmarkIdentity.NormalizeFolderPath(folderPath));
                 _folderPaths.Add(BookmarkIdentity.NormalizeFolderPath(folderPath));
             }
 
-            foreach (string folderPath in dualState.SolutionState.FolderPaths)
+            foreach (var folderPath in dualState.SolutionState.FolderPaths)
             {
                 _solutionFolderPaths.Add(BookmarkIdentity.NormalizeFolderPath(folderPath));
                 _folderPaths.Add(BookmarkIdentity.NormalizeFolderPath(folderPath));
             }
 
             _expandedFolders.Clear();
-            foreach (string folder in dualState.PersonalState.ExpandedFolders)
+            foreach (var folder in dualState.PersonalState.ExpandedFolders)
             {
                 _expandedFolders.Add(BookmarkIdentity.NormalizeFolderPath(folder));
             }
 
-            foreach (string folder in dualState.SolutionState.ExpandedFolders)
+            foreach (var folder in dualState.SolutionState.ExpandedFolders)
             {
                 _expandedFolders.Add(BookmarkIdentity.NormalizeFolderPath(folder));
             }
@@ -788,7 +788,7 @@ namespace BookmarkStudio
         /// </summary>
         private void ReloadFolderPaths(IReadOnlyList<string> folderPaths)
         {
-            foreach (string folderPath in folderPaths)
+            foreach (var folderPath in folderPaths)
             {
                 _folderPaths.Add(BookmarkIdentity.NormalizeFolderPath(folderPath));
             }
@@ -796,7 +796,7 @@ namespace BookmarkStudio
 
         private void RemoveFolderPathsForStorage(string folderPath, BookmarkStorageLocation storageLocation)
         {
-            string prefix = folderPath + "/";
+            var prefix = folderPath + "/";
 
             _folderPaths.RemoveWhere(path =>
                 string.Equals(path, folderPath, StringComparison.OrdinalIgnoreCase)
@@ -827,7 +827,7 @@ namespace BookmarkStudio
 
         private void AddFolderPathForStorage(string folderPath, BookmarkStorageLocation storageLocation)
         {
-            string normalized = BookmarkIdentity.NormalizeFolderPath(folderPath);
+            var normalized = BookmarkIdentity.NormalizeFolderPath(folderPath);
             _folderPaths.Add(normalized);
 
             HashSet<string> targetSet = storageLocation == BookmarkStorageLocation.Personal
@@ -839,46 +839,44 @@ namespace BookmarkStudio
 
         private void UpdateFolderPathsAfterMove(string sourceFolder, string targetFolder, BookmarkStorageLocation storageLocation)
         {
-            string sourcePrefix = sourceFolder + "/";
+            var sourcePrefix = sourceFolder + "/";
 
             HashSet<string> targetSet = storageLocation == BookmarkStorageLocation.Personal
                 ? _personalFolderPaths
                 : _solutionFolderPaths;
 
             // Find affected paths in both the global and storage-specific sets
-            List<string> affectedGlobal = _folderPaths
+            List<string> affectedGlobal = [.. _folderPaths
                 .Where(path => string.Equals(path, sourceFolder, StringComparison.OrdinalIgnoreCase)
-                    || path.StartsWith(sourcePrefix, StringComparison.OrdinalIgnoreCase))
-                .ToList();
+                    || path.StartsWith(sourcePrefix, StringComparison.OrdinalIgnoreCase))];
 
-            List<string> affectedStorage = targetSet
+            List<string> affectedStorage = [.. targetSet
                 .Where(path => string.Equals(path, sourceFolder, StringComparison.OrdinalIgnoreCase)
-                    || path.StartsWith(sourcePrefix, StringComparison.OrdinalIgnoreCase))
-                .ToList();
+                    || path.StartsWith(sourcePrefix, StringComparison.OrdinalIgnoreCase))];
 
             // Remove old paths
-            foreach (string path in affectedGlobal)
+            foreach (var path in affectedGlobal)
             {
                 _folderPaths.Remove(path);
             }
 
-            foreach (string path in affectedStorage)
+            foreach (var path in affectedStorage)
             {
                 targetSet.Remove(path);
             }
 
             // Add new paths
-            foreach (string path in affectedGlobal)
+            foreach (var path in affectedGlobal)
             {
-                string newPath = string.Equals(path, sourceFolder, StringComparison.OrdinalIgnoreCase)
+                var newPath = string.Equals(path, sourceFolder, StringComparison.OrdinalIgnoreCase)
                     ? targetFolder
                     : targetFolder + path.Substring(sourceFolder.Length);
                 _folderPaths.Add(newPath);
             }
 
-            foreach (string path in affectedStorage)
+            foreach (var path in affectedStorage)
             {
-                string newPath = string.Equals(path, sourceFolder, StringComparison.OrdinalIgnoreCase)
+                var newPath = string.Equals(path, sourceFolder, StringComparison.OrdinalIgnoreCase)
                     ? targetFolder
                     : targetFolder + path.Substring(sourceFolder.Length);
                 targetSet.Add(newPath);
@@ -940,8 +938,8 @@ namespace BookmarkStudio
                 ThrowIfNotOnUIThread();
             }
 
-            string? selectedBookmarkId = SelectedBookmark?.BookmarkId;
-            string? selectedFolderPath = SelectedNode is FolderNodeViewModel folderNode ? folderNode.FolderPath : null;
+            var selectedBookmarkId = SelectedBookmark?.BookmarkId;
+            var selectedFolderPath = SelectedNode is FolderNodeViewModel folderNode ? folderNode.FolderPath : null;
 
             RootNodes.Clear();
 
@@ -951,7 +949,7 @@ namespace BookmarkStudio
                 return;
             }
 
-            string search = SearchText.Trim();
+            var search = SearchText.Trim();
 
             // Build Personal storage root node
             FolderNodeViewModel personalRoot = BuildStorageRootNode(
@@ -979,7 +977,7 @@ namespace BookmarkStudio
             string search)
         {
             FolderBuilderNode root = new FolderBuilderNode(string.Empty, null);
-            foreach (string folderPath in folderPaths)
+            foreach (var folderPath in folderPaths)
             {
                 EnsureFolderBuilderNode(root, folderPath);
             }
@@ -996,7 +994,7 @@ namespace BookmarkStudio
                 sourceBookmarks = sourceBookmarks.Where(bookmark => bookmark.Color == filterValue);
             }
 
-            List<ManagedBookmark> visibleBookmarks = sourceBookmarks.ToList();
+            List<ManagedBookmark> visibleBookmarks = [.. sourceBookmarks];
 
             foreach (ManagedBookmark bookmark in visibleBookmarks)
             {
@@ -1061,7 +1059,7 @@ namespace BookmarkStudio
                 bookmarks.Select(bookmark => BookmarkIdentity.NormalizeFolderPath(bookmark.FolderPath)),
                 StringComparer.OrdinalIgnoreCase);
 
-            foreach (string folderPath in _folderPaths
+            foreach (var folderPath in _folderPaths
                 .Select(BookmarkIdentity.NormalizeFolderPath)
                 .Where(path => !string.IsNullOrWhiteSpace(path) && !foldersWithBookmarks.Contains(path))
                 .OrderBy(path => path, StringComparer.OrdinalIgnoreCase))
@@ -1092,14 +1090,14 @@ namespace BookmarkStudio
 
         private static FolderBuilderNode EnsureFolderBuilderNode(FolderBuilderNode root, string? folderPath)
         {
-            string normalizedPath = BookmarkIdentity.NormalizeFolderPath(folderPath);
+            var normalizedPath = BookmarkIdentity.NormalizeFolderPath(folderPath);
             if (string.IsNullOrWhiteSpace(normalizedPath))
             {
                 return root;
             }
 
             FolderBuilderNode current = root;
-            foreach (string segment in normalizedPath.Split('/'))
+            foreach (var segment in normalizedPath.Split('/'))
             {
                 if (!current.Children.TryGetValue(segment, out FolderBuilderNode? child))
                 {
@@ -1190,8 +1188,8 @@ namespace BookmarkStudio
 
         private static string GetParentFolderPath(string folderPath)
         {
-            string normalized = BookmarkIdentity.NormalizeFolderPath(folderPath);
-            int separator = normalized.LastIndexOf('/');
+            var normalized = BookmarkIdentity.NormalizeFolderPath(folderPath);
+            var separator = normalized.LastIndexOf('/');
             return separator <= 0
                 ? string.Empty
                 : normalized.Substring(0, separator);
@@ -1199,7 +1197,7 @@ namespace BookmarkStudio
 
         private static int CountVisibleBookmarks(IEnumerable<BookmarkNodeViewModel> nodes)
         {
-            int count = 0;
+            var count = 0;
             foreach (BookmarkNodeViewModel node in nodes)
             {
                 if (node is BookmarkItemNodeViewModel)
@@ -1362,9 +1360,9 @@ namespace BookmarkStudio
 
         public int TreeDepth { get; }
 
-        public Thickness NonNameColumnMargin => new Thickness(-(Math.Max(0, TreeDepth - 1) * TreeIndentPixels), 0, 0, 0);
+        public Thickness NonNameColumnMargin => new(-(Math.Max(0, TreeDepth - 1) * TreeIndentPixels), 0, 0, 0);
 
-        public Thickness NonNameRightAlignedMargin => new Thickness(-(Math.Max(0, TreeDepth - 1) * TreeIndentPixels), 0, 4, 0);
+        public Thickness NonNameRightAlignedMargin => new(-(Math.Max(0, TreeDepth - 1) * TreeIndentPixels), 0, 4, 0);
 
         public override bool IsFolder => false;
 
@@ -1390,7 +1388,7 @@ namespace BookmarkStudio
         }
 
         public static BookmarkGridRowViewModel CreateFolderPlaceholder(string folderPath)
-            => new BookmarkGridRowViewModel(folderPath);
+            => new(folderPath);
 
         public bool IsFolderPlaceholder => _bookmark is null;
 
@@ -1426,8 +1424,8 @@ namespace BookmarkStudio
             ? 0
             : FolderPath.Split('/').Length;
 
-        public Thickness ColorIndentMargin => new Thickness(4 + (FolderDepth * 12), 0, 0, 0);
+        public Thickness ColorIndentMargin => new(4 + (FolderDepth * 12), 0, 0, 0);
 
-        public Thickness NameIndentMargin => new Thickness(FolderDepth * 12, 0, 0, 0);
+        public Thickness NameIndentMargin => new(FolderDepth * 12, 0, 0, 0);
     }
 }

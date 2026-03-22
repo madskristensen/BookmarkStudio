@@ -37,12 +37,12 @@ public class RepositoryAndModelTests
     public void ToManagedBookmarks_WhenCalled_OrdersBySlotThenGroupThenPathThenLine()
     {
         BookmarkMetadata[] metadata =
-        {
-            new BookmarkMetadata { BookmarkId = "3", Group = "B", DocumentPath = @"C:\repo\b.cs", LineNumber = 8, SlotNumber = null },
-            new BookmarkMetadata { BookmarkId = "2", Group = "A", DocumentPath = @"C:\repo\a.cs", LineNumber = 20, SlotNumber = 2 },
-            new BookmarkMetadata { BookmarkId = "1", Group = "A", DocumentPath = @"C:\repo\a.cs", LineNumber = 10, SlotNumber = 1 },
-            new BookmarkMetadata { BookmarkId = "4", Group = "A", DocumentPath = @"C:\repo\a.cs", LineNumber = 2, SlotNumber = null },
-        };
+        [
+            new() { BookmarkId = "3", Group = "B", DocumentPath = @"C:\repo\b.cs", LineNumber = 8, SlotNumber = null },
+            new() { BookmarkId = "2", Group = "A", DocumentPath = @"C:\repo\a.cs", LineNumber = 20, SlotNumber = 2 },
+            new() { BookmarkId = "1", Group = "A", DocumentPath = @"C:\repo\a.cs", LineNumber = 10, SlotNumber = 1 },
+            new() { BookmarkId = "4", Group = "A", DocumentPath = @"C:\repo\a.cs", LineNumber = 2, SlotNumber = null },
+        ];
 
         IReadOnlyList<ManagedBookmark> managed = BookmarkRepositoryService.ToManagedBookmarks(metadata);
 
@@ -426,12 +426,12 @@ public class RepositoryAndModelTests
     public void FindNextAvailableSlot_WhenGapExists_ReturnsLowestAvailable()
     {
         BookmarkMetadata[] bookmarks =
-        {
-            new BookmarkMetadata { BookmarkId = "a", SlotNumber = 1 },
-            new BookmarkMetadata { BookmarkId = "b", SlotNumber = 2 },
-            new BookmarkMetadata { BookmarkId = "c", SlotNumber = 4 },
-            new BookmarkMetadata { BookmarkId = "d", SlotNumber = 7 },
-        };
+        [
+            new() { BookmarkId = "a", SlotNumber = 1 },
+            new() { BookmarkId = "b", SlotNumber = 2 },
+            new() { BookmarkId = "c", SlotNumber = 4 },
+            new() { BookmarkId = "d", SlotNumber = 7 },
+        ];
 
         int? result = BookmarkRepositoryService.FindNextAvailableSlot(bookmarks);
 
@@ -450,11 +450,11 @@ public class RepositoryAndModelTests
     public void FindNextDefaultLabel_WhenGapInNumbering_FillsGap()
     {
         BookmarkMetadata[] bookmarks =
-        {
-            new BookmarkMetadata { BookmarkId = "a", Label = "Bookmark1" },
-            new BookmarkMetadata { BookmarkId = "b", Label = "Bookmark3" },
-            new BookmarkMetadata { BookmarkId = "c", Label = "Custom Label" },
-        };
+        [
+            new() { BookmarkId = "a", Label = "Bookmark1" },
+            new() { BookmarkId = "b", Label = "Bookmark3" },
+            new() { BookmarkId = "c", Label = "Custom Label" },
+        ];
 
         string result = BookmarkRepositoryService.FindNextDefaultLabel(bookmarks);
 
@@ -465,10 +465,10 @@ public class RepositoryAndModelTests
     public void FindNextDefaultLabel_WhenAllSequential_ReturnsNextInSequence()
     {
         BookmarkMetadata[] bookmarks =
-        {
-            new BookmarkMetadata { BookmarkId = "a", Label = "Bookmark1" },
-            new BookmarkMetadata { BookmarkId = "b", Label = "Bookmark2" },
-        };
+        [
+            new() { BookmarkId = "a", Label = "Bookmark1" },
+            new() { BookmarkId = "b", Label = "Bookmark2" },
+        ];
 
         string result = BookmarkRepositoryService.FindNextDefaultLabel(bookmarks);
 

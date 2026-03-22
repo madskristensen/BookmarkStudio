@@ -20,7 +20,7 @@ namespace BookmarkStudio
         {
             if (value is TreeViewItem item)
             {
-                double indent = GetDepth(item) * IndentSize;
+                var indent = GetDepth(item) * IndentSize;
 
                 // If "Negate" parameter is passed, return negative left margin
                 if (parameter is string str && str.Equals("Negate", StringComparison.OrdinalIgnoreCase))
@@ -41,7 +41,7 @@ namespace BookmarkStudio
 
         private static int GetDepth(TreeViewItem item)
         {
-            int depth = 0;
+            var depth = 0;
             DependencyObject parent = VisualTreeHelper.GetParent(item);
 
             while (parent != null)

@@ -16,10 +16,10 @@ namespace BookmarkStudio
         public UIElement GenerateGlyph(IWpfTextViewLine line, IGlyphTag tag)
         {
             BookmarkGlyphTag? bookmarkTag = tag as BookmarkGlyphTag;
-            object tooltip = BuildTooltip(bookmarkTag);
+            var tooltip = BuildTooltip(bookmarkTag);
             Brush background = GetGlyphBrush(bookmarkTag);
             ContextMenu? contextMenu = null;
-            string? bookmarkId = bookmarkTag?.BookmarkId;
+            var bookmarkId = bookmarkTag?.BookmarkId;
 
             if (bookmarkTag is not null && !string.IsNullOrEmpty(bookmarkTag.BookmarkId))
             {
@@ -114,8 +114,8 @@ namespace BookmarkStudio
                 return "BookmarkStudio bookmark";
             }
 
-            bool hasLabel = !string.IsNullOrWhiteSpace(bookmarkTag.Label);
-            bool hasSlot = bookmarkTag.SlotNumber.HasValue;
+            var hasLabel = !string.IsNullOrWhiteSpace(bookmarkTag.Label);
+            var hasSlot = bookmarkTag.SlotNumber.HasValue;
 
             if (hasLabel && hasSlot)
             {
@@ -137,7 +137,7 @@ namespace BookmarkStudio
 
         private static ToolTip CreateThemedTooltip(string? label, int slotNumber)
         {
-            string shortcut = string.Concat("Alt+Shift+", slotNumber.ToString(CultureInfo.InvariantCulture));
+            var shortcut = string.Concat("Alt+Shift+", slotNumber.ToString(CultureInfo.InvariantCulture));
 
             StackPanel panel = new StackPanel
             {

@@ -18,7 +18,7 @@ namespace BookmarkStudio
 
             control.ViewModel.FilterColor = FilterColor;
 
-            string message = FilterColor.HasValue
+            var message = FilterColor.HasValue
                 ? string.Concat("Filtering by ", FilterColor.Value.ToString(), ".")
                 : "Showing all colors.";
 

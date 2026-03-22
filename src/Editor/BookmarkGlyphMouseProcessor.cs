@@ -37,7 +37,7 @@ namespace BookmarkStudio
             FrameworkElement marginElement = _margin.VisualElement;
             Point position = e.GetPosition(marginElement);
 
-            string? bookmarkId = FindBookmarkIdAtPosition(position);
+            var bookmarkId = FindBookmarkIdAtPosition(position);
             if (!string.IsNullOrEmpty(bookmarkId))
             {
                 _draggedBookmarkId = bookmarkId;
@@ -65,7 +65,7 @@ namespace BookmarkStudio
 
             if (!_isDragging)
             {
-                double distance = Math.Sqrt(
+                var distance = Math.Sqrt(
                     Math.Pow(currentPosition.X - _dragStartPosition.X, 2) +
                     Math.Pow(currentPosition.Y - _dragStartPosition.Y, 2));
 
@@ -92,12 +92,12 @@ namespace BookmarkStudio
             if (_draggedBookmarkId is not null && _isDragging)
             {
                 Point position = e.GetPosition(marginElement);
-                int targetLineNumber = GetLineNumberFromYPosition(position.Y);
+                var targetLineNumber = GetLineNumberFromYPosition(position.Y);
 
                 if (targetLineNumber > 0 && targetLineNumber != _originalLineNumber)
                 {
-                    string bookmarkId = _draggedBookmarkId;
-                    string? lineText = GetLineText(targetLineNumber);
+                    var bookmarkId = _draggedBookmarkId;
+                    var lineText = GetLineText(targetLineNumber);
 
                     ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
                     {
@@ -183,7 +183,7 @@ namespace BookmarkStudio
         private int GetLineNumberFromYPosition(double y)
         {
             IWpfTextView textView = _textViewHost.TextView;
-            double viewY = y + textView.ViewportTop;
+            var viewY = y + textView.ViewportTop;
 
             ITextViewLine? textViewLine = textView.TextViewLines.GetTextViewLineContainingYCoordinate(viewY);
             if (textViewLine is null)
@@ -200,7 +200,7 @@ namespace BookmarkStudio
             IWpfTextView textView = _textViewHost.TextView;
             ITextSnapshot snapshot = textView.TextSnapshot;
 
-            int lineIndex = lineNumber - 1;
+            var lineIndex = lineNumber - 1;
             if (lineIndex < 0 || lineIndex >= snapshot.LineCount)
             {
                 return null;
@@ -231,7 +231,7 @@ namespace BookmarkStudio
             }
 
             IWpfTextView textView = _textViewHost.TextView;
-            double viewY = mouseY + textView.ViewportTop;
+            var viewY = mouseY + textView.ViewportTop;
 
             ITextViewLine? textViewLine = textView.TextViewLines.GetTextViewLineContainingYCoordinate(viewY);
             if (textViewLine is null)
@@ -239,7 +239,7 @@ namespace BookmarkStudio
                 return;
             }
 
-            double indicatorY = textViewLine.Top - textView.ViewportTop;
+            var indicatorY = textViewLine.Top - textView.ViewportTop;
             _dropIndicatorAdorner.UpdatePosition(indicatorY);
         }
 

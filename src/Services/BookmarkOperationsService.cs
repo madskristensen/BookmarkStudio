@@ -10,7 +10,7 @@ namespace BookmarkStudio
 {
     internal sealed class BookmarkOperationsService
     {
-        private static readonly Lazy<BookmarkOperationsService> _instance = new Lazy<BookmarkOperationsService>(() => new BookmarkOperationsService());
+        private static readonly Lazy<BookmarkOperationsService> _instance = new(() => new BookmarkOperationsService());
         private readonly BookmarkStudioSession _session = BookmarkStudioSession.Current;
 
         public static BookmarkOperationsService Current => _instance.Value;
@@ -81,15 +81,15 @@ namespace BookmarkStudio
                 return null;
             }
 
-            string? selectedText = textDocument.Selection?.Text;
+            var selectedText = textDocument.Selection?.Text;
             if (string.IsNullOrWhiteSpace(selectedText))
             {
                 return null;
             }
 
             // Trim and limit to first line, max 100 characters for a reasonable label
-            string trimmed = selectedText!.Trim();
-            int newlineIndex = trimmed.IndexOfAny(new[] { '\r', '\n' });
+            var trimmed = selectedText!.Trim();
+            var newlineIndex = trimmed.IndexOfAny(['\r', '\n']);
             if (newlineIndex >= 0)
             {
                 trimmed = trimmed.Substring(0, newlineIndex).Trim();
@@ -134,7 +134,7 @@ namespace BookmarkStudio
                 return false;
             }
 
-            int hr = solutionService.GetProperty((int)__VSPROPID7.VSPROPID_IsInOpenFolderMode, out object value);
+            var hr = solutionService.GetProperty((int)__VSPROPID7.VSPROPID_IsInOpenFolderMode, out var value);
             return hr == 0 && value is bool isOpenFolderMode && isOpenFolderMode;
         }
 
@@ -246,7 +246,7 @@ namespace BookmarkStudio
             await _session.UpdateWorkspaceAsync(workspace =>
             {
                 workspace.ExpandedFolders.Clear();
-                foreach (string folder in expandedFolders)
+                foreach (var folder in expandedFolders)
                 {
                     workspace.ExpandedFolders.Add(folder);
                 }
@@ -255,9 +255,9 @@ namespace BookmarkStudio
 
         public async Task<IReadOnlyList<ManagedBookmark>> CreateFolderAsync(string? parentFolderPath, string? folderName, BookmarkStorageLocation storageLocation, CancellationToken cancellationToken)
         {
-            string normalizedFolderName = ValidateFolderName(folderName);
-            string parentPath = BookmarkIdentity.NormalizeFolderPath(parentFolderPath);
-            string targetPath = string.IsNullOrEmpty(parentPath)
+            var normalizedFolderName = ValidateFolderName(folderName);
+            var parentPath = BookmarkIdentity.NormalizeFolderPath(parentFolderPath);
+            var targetPath = string.IsNullOrEmpty(parentPath)
                 ? normalizedFolderName
                 : string.Concat(parentPath, "/", normalizedFolderName);
 
@@ -274,17 +274,17 @@ namespace BookmarkStudio
 
         public async Task<IReadOnlyList<ManagedBookmark>> RenameFolderAsync(string? sourceFolderPath, string? targetFolderName, BookmarkStorageLocation storageLocation, CancellationToken cancellationToken)
         {
-            string sourcePath = BookmarkIdentity.NormalizeFolderPath(sourceFolderPath);
+            var sourcePath = BookmarkIdentity.NormalizeFolderPath(sourceFolderPath);
             if (string.IsNullOrWhiteSpace(sourcePath))
             {
                 throw new ArgumentException("Select a folder to rename.", nameof(sourceFolderPath));
             }
 
-            string normalizedFolderName = ValidateFolderName(targetFolderName);
+            var normalizedFolderName = ValidateFolderName(targetFolderName);
             return await _session.UpdateWorkspaceAtLocationAsync(storageLocation, workspace =>
             {
-                string parentPath = GetParentFolderPath(sourcePath);
-                string targetPath = string.IsNullOrEmpty(parentPath)
+                var parentPath = GetParentFolderPath(sourcePath);
+                var targetPath = string.IsNullOrEmpty(parentPath)
                     ? normalizedFolderName
                     : string.Concat(parentPath, "/", normalizedFolderName);
 
@@ -303,7 +303,7 @@ namespace BookmarkStudio
 
         public async Task<IReadOnlyList<ManagedBookmark>> DeleteFolderRecursiveAsync(string? folderPath, CancellationToken cancellationToken)
         {
-            string normalizedFolderPath = BookmarkIdentity.NormalizeFolderPath(folderPath);
+            var normalizedFolderPath = BookmarkIdentity.NormalizeFolderPath(folderPath);
             if (string.IsNullOrWhiteSpace(normalizedFolderPath))
             {
                 throw new ArgumentException("Select a folder to delete.", nameof(folderPath));
@@ -320,7 +320,7 @@ namespace BookmarkStudio
 
         public async Task<IReadOnlyList<ManagedBookmark>> DeleteFolderRecursiveAsync(string? folderPath, BookmarkStorageLocation storageLocation, CancellationToken cancellationToken)
         {
-            string normalizedFolderPath = BookmarkIdentity.NormalizeFolderPath(folderPath);
+            var normalizedFolderPath = BookmarkIdentity.NormalizeFolderPath(folderPath);
             if (string.IsNullOrWhiteSpace(normalizedFolderPath))
             {
                 throw new ArgumentException("Select a folder to delete.", nameof(folderPath));
@@ -361,9 +361,7 @@ namespace BookmarkStudio
 
             return await _session.UpdateWorkspaceAsync(workspace =>
             {
-                List<BookmarkMetadata> toRemove = workspace.Bookmarks
-                    .Where(item => string.Equals(BookmarkIdentity.NormalizeDocumentPath(item.DocumentPath), activeLocation.NormalizedDocumentPath, StringComparison.Ordinal))
-                    .ToList();
+                List<BookmarkMetadata> toRemove = [.. workspace.Bookmarks.Where(item => string.Equals(BookmarkIdentity.NormalizeDocumentPath(item.DocumentPath), activeLocation.NormalizedDocumentPath, StringComparison.Ordinal))];
 
                 foreach (BookmarkMetadata bookmark in toRemove)
                 {
@@ -397,8 +395,8 @@ namespace BookmarkStudio
 
         public async Task<IReadOnlyList<ManagedBookmark>> MoveFolderAsync(string? sourceFolderPath, string? targetFolderPath, CancellationToken cancellationToken)
         {
-            string sourcePath = BookmarkIdentity.NormalizeFolderPath(sourceFolderPath);
-            string targetPath = BookmarkIdentity.NormalizeFolderPath(targetFolderPath);
+            var sourcePath = BookmarkIdentity.NormalizeFolderPath(sourceFolderPath);
+            var targetPath = BookmarkIdentity.NormalizeFolderPath(targetFolderPath);
 
             if (string.IsNullOrWhiteSpace(sourcePath))
             {
@@ -429,8 +427,8 @@ namespace BookmarkStudio
 
         public async Task<IReadOnlyList<ManagedBookmark>> MoveFolderAsync(string? sourceFolderPath, string? targetFolderPath, BookmarkStorageLocation storageLocation, CancellationToken cancellationToken)
         {
-            string sourcePath = BookmarkIdentity.NormalizeFolderPath(sourceFolderPath);
-            string targetPath = BookmarkIdentity.NormalizeFolderPath(targetFolderPath);
+            var sourcePath = BookmarkIdentity.NormalizeFolderPath(sourceFolderPath);
+            var targetPath = BookmarkIdentity.NormalizeFolderPath(targetFolderPath);
 
             if (string.IsNullOrWhiteSpace(sourcePath))
             {
@@ -535,7 +533,7 @@ namespace BookmarkStudio
                 return null;
             }
 
-            int lineNumber = textDocument.Selection.ActivePoint.Line;
+            var lineNumber = textDocument.Selection.ActivePoint.Line;
             return bookmarks.FirstOrDefault(item =>
                 string.Equals(BookmarkIdentity.NormalizeDocumentPath(item.DocumentPath), BookmarkIdentity.NormalizeDocumentPath(activeDocument.FullName), StringComparison.Ordinal) &&
                 item.LineNumber == lineNumber);
@@ -676,10 +674,10 @@ namespace BookmarkStudio
             }
 
             VirtualPoint activePoint = textDocument.Selection.ActivePoint;
-            int lineNumber = activePoint.Line;
+            var lineNumber = activePoint.Line;
             EditPoint lineStart = textDocument.CreateEditPoint();
             lineStart.MoveToLineAndOffset(lineNumber, 1);
-            string lineText = lineStart.GetLines(lineNumber, lineNumber + 1).TrimEnd('\r', '\n');
+            var lineText = lineStart.GetLines(lineNumber, lineNumber + 1).TrimEnd('\r', '\n');
 
             return new BookmarkSnapshot
             {
@@ -712,7 +710,7 @@ namespace BookmarkStudio
 
         private static int CompareBookmark(ManagedBookmark bookmark, ActiveBookmarkLocation location)
         {
-            int documentComparison = string.Compare(
+            var documentComparison = string.Compare(
                 BookmarkIdentity.NormalizeDocumentPath(bookmark.DocumentPath),
                 location.NormalizedDocumentPath,
                 StringComparison.Ordinal);
@@ -722,7 +720,7 @@ namespace BookmarkStudio
                 return documentComparison;
             }
 
-            int lineComparison = bookmark.LineNumber.CompareTo(location.LineNumber);
+            var lineComparison = bookmark.LineNumber.CompareTo(location.LineNumber);
             if (lineComparison != 0)
             {
                 return lineComparison;
@@ -738,7 +736,7 @@ namespace BookmarkStudio
                 throw new ArgumentException("Folder name cannot be empty.", nameof(folderName));
             }
 
-            string normalized = BookmarkIdentity.NormalizeFolderPath(folderName);
+            var normalized = BookmarkIdentity.NormalizeFolderPath(folderName);
             if (string.IsNullOrWhiteSpace(normalized) || normalized.Contains("/"))
             {
                 throw new ArgumentException("Folder name must be a single segment.", nameof(folderName));
@@ -755,8 +753,8 @@ namespace BookmarkStudio
 
         private static string GetParentFolderPath(string folderPath)
         {
-            string normalized = BookmarkIdentity.NormalizeFolderPath(folderPath);
-            int separatorIndex = normalized.LastIndexOf('/');
+            var normalized = BookmarkIdentity.NormalizeFolderPath(folderPath);
+            var separatorIndex = normalized.LastIndexOf('/');
             return separatorIndex <= 0
                 ? string.Empty
                 : normalized.Substring(0, separatorIndex);

@@ -189,7 +189,7 @@ namespace BookmarkStudio
             private void ApplySearchResults()
             {
                 ThreadHelper.ThrowIfNotOnUIThread();
-                uint resultCount = (uint)_viewModel.ApplySearchText(SearchQuery.SearchString);
+                var resultCount = (uint)_viewModel.ApplySearchText(SearchQuery.SearchString);
                 SearchResults = resultCount;
                 _viewModel.SetStatus(string.Concat(resultCount.ToString(System.Globalization.CultureInfo.InvariantCulture), " matching bookmarks."));
             }

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -39,7 +38,7 @@ namespace BookmarkStudio
                 throw new ArgumentNullException(nameof(updateAction));
             }
 
-            List<BookmarkMetadata> bookmarks = (await LoadAsync(solutionPath, cancellationToken)).ToList();
+            List<BookmarkMetadata> bookmarks = [.. (await LoadAsync(solutionPath, cancellationToken))];
             updateAction(bookmarks);
             await SaveAsync(solutionPath, bookmarks, cancellationToken);
             return ToManagedBookmarks(bookmarks);
@@ -66,7 +65,7 @@ namespace BookmarkStudio
                 throw new ArgumentNullException(nameof(updateAction));
             }
 
-            List<BookmarkMetadata> bookmarks = (await LoadAsync(solutionPath, cancellationToken)).ToList();
+            List<BookmarkMetadata> bookmarks = [.. (await LoadAsync(solutionPath, cancellationToken))];
             if (!updateAction(bookmarks))
             {
                 return ToManagedBookmarks(bookmarks);
@@ -79,27 +78,27 @@ namespace BookmarkStudio
         public async Task<ManagedBookmark?> ToggleAsync(string solutionPath, BookmarkSnapshot snapshot, CancellationToken cancellationToken)
                     => await ToggleAsync(solutionPath, snapshot, label: null, cancellationToken);
 
-                public async Task<ManagedBookmark?> ToggleAsync(string solutionPath, BookmarkSnapshot snapshot, string? label, CancellationToken cancellationToken)
-                {
-                    if (snapshot is null)
-                    {
-                        throw new ArgumentNullException(nameof(snapshot));
-                    }
+        public async Task<ManagedBookmark?> ToggleAsync(string solutionPath, BookmarkSnapshot snapshot, string? label, CancellationToken cancellationToken)
+        {
+            if (snapshot is null)
+            {
+                throw new ArgumentNullException(nameof(snapshot));
+            }
 
-                    List<BookmarkMetadata> bookmarks = (await LoadAsync(solutionPath, cancellationToken)).ToList();
-                    BookmarkMetadata existingBookmark = FindBySnapshot(bookmarks, snapshot);
-                    if (existingBookmark is not null)
-                    {
-                        bookmarks.Remove(existingBookmark);
-                        await SaveAsync(solutionPath, bookmarks, cancellationToken);
-                        return null;
-                    }
+            List<BookmarkMetadata> bookmarks = [.. (await LoadAsync(solutionPath, cancellationToken))];
+            BookmarkMetadata existingBookmark = FindBySnapshot(bookmarks, snapshot);
+            if (existingBookmark is not null)
+            {
+                bookmarks.Remove(existingBookmark);
+                await SaveAsync(solutionPath, bookmarks, cancellationToken);
+                return null;
+            }
 
-                    BookmarkMetadata createdBookmark = CreateBookmarkMetadata(bookmarks, snapshot, label);
-                    bookmarks.Add(createdBookmark);
-                    await SaveAsync(solutionPath, bookmarks, cancellationToken);
-                    return createdBookmark.ToManagedBookmark();
-                }
+            BookmarkMetadata createdBookmark = CreateBookmarkMetadata(bookmarks, snapshot, label);
+            bookmarks.Add(createdBookmark);
+            await SaveAsync(solutionPath, bookmarks, cancellationToken);
+            return createdBookmark.ToManagedBookmark();
+        }
 
         public static BookmarkMetadata GetRequiredBookmark(IEnumerable<BookmarkMetadata> bookmarks, string bookmarkId)
             => bookmarks.FirstOrDefault(item => string.Equals(item.BookmarkId, bookmarkId, StringComparison.Ordinal))
@@ -139,22 +138,22 @@ namespace BookmarkStudio
                 throw new ArgumentNullException(nameof(state));
             }
 
-            string targetPath = BookmarkIdentity.NormalizeFolderPath(folderPath);
+            var targetPath = BookmarkIdentity.NormalizeFolderPath(folderPath);
             if (string.IsNullOrWhiteSpace(targetPath))
             {
                 return false;
             }
 
-            string prefix = string.Concat(targetPath, "/");
-            int beforeBookmarkCount = state.Bookmarks.Count;
+            var prefix = string.Concat(targetPath, "/");
+            var beforeBookmarkCount = state.Bookmarks.Count;
             state.Bookmarks.RemoveAll(item =>
             {
-                string group = BookmarkIdentity.NormalizeFolderPath(item.Group);
+                var group = BookmarkIdentity.NormalizeFolderPath(item.Group);
                 return string.Equals(group, targetPath, StringComparison.OrdinalIgnoreCase)
                     || group.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
             });
 
-            int beforeFolderCount = state.FolderPaths.Count;
+            var beforeFolderCount = state.FolderPaths.Count;
             state.FolderPaths.RemoveWhere(path =>
                 string.Equals(path, targetPath, StringComparison.OrdinalIgnoreCase)
                 || path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
@@ -170,14 +169,14 @@ namespace BookmarkStudio
                 throw new ArgumentNullException(nameof(state));
             }
 
-            string sourcePath = BookmarkIdentity.NormalizeFolderPath(sourceFolderPath);
+            var sourcePath = BookmarkIdentity.NormalizeFolderPath(sourceFolderPath);
             if (string.IsNullOrWhiteSpace(sourcePath))
             {
                 return false;
             }
 
-            string parentPath = GetParentFolderPath(sourcePath);
-            string renamedPath = string.IsNullOrEmpty(parentPath)
+            var parentPath = GetParentFolderPath(sourcePath);
+            var renamedPath = string.IsNullOrEmpty(parentPath)
                 ? BookmarkIdentity.NormalizeFolderPath(targetFolderName)
                 : string.Concat(parentPath, "/", BookmarkIdentity.NormalizeFolderPath(targetFolderName));
 
@@ -186,26 +185,25 @@ namespace BookmarkStudio
                 return false;
             }
 
-            string sourcePrefix = string.Concat(sourcePath, "/");
-            List<string> affectedFolders = state.FolderPaths
+            var sourcePrefix = string.Concat(sourcePath, "/");
+            List<string> affectedFolders = [.. state.FolderPaths
                 .Where(path => string.Equals(path, sourcePath, StringComparison.OrdinalIgnoreCase)
-                    || path.StartsWith(sourcePrefix, StringComparison.OrdinalIgnoreCase))
-                .ToList();
+                    || path.StartsWith(sourcePrefix, StringComparison.OrdinalIgnoreCase))];
 
-            foreach (string folder in affectedFolders)
+            foreach (var folder in affectedFolders)
             {
                 state.FolderPaths.Remove(folder);
             }
 
-            foreach (string folder in affectedFolders)
+            foreach (var folder in affectedFolders)
             {
-                string suffix = folder.Length == sourcePath.Length ? string.Empty : folder.Substring(sourcePath.Length);
+                var suffix = folder.Length == sourcePath.Length ? string.Empty : folder.Substring(sourcePath.Length);
                 RegisterFolderPath(state.FolderPaths, string.Concat(renamedPath, suffix));
             }
 
             foreach (BookmarkMetadata bookmark in state.Bookmarks)
             {
-                string group = BookmarkIdentity.NormalizeFolderPath(bookmark.Group);
+                var group = BookmarkIdentity.NormalizeFolderPath(bookmark.Group);
                 if (string.Equals(group, sourcePath, StringComparison.OrdinalIgnoreCase))
                 {
                     bookmark.Group = renamedPath;
@@ -227,7 +225,7 @@ namespace BookmarkStudio
             }
 
             BookmarkMetadata bookmark = GetRequiredBookmark(state.Bookmarks, bookmarkId);
-            string normalizedFolderPath = BookmarkIdentity.NormalizeFolderPath(folderPath);
+            var normalizedFolderPath = BookmarkIdentity.NormalizeFolderPath(folderPath);
             bookmark.Group = normalizedFolderPath;
             RegisterFolderPath(state.FolderPaths, normalizedFolderPath);
         }
@@ -239,8 +237,8 @@ namespace BookmarkStudio
                 throw new ArgumentNullException(nameof(state));
             }
 
-            string sourcePath = BookmarkIdentity.NormalizeFolderPath(sourceFolderPath);
-            string targetPath = BookmarkIdentity.NormalizeFolderPath(targetFolderPath);
+            var sourcePath = BookmarkIdentity.NormalizeFolderPath(sourceFolderPath);
+            var targetPath = BookmarkIdentity.NormalizeFolderPath(targetFolderPath);
 
             if (string.IsNullOrWhiteSpace(sourcePath))
             {
@@ -252,20 +250,19 @@ namespace BookmarkStudio
                 return;
             }
 
-            string sourcePrefix = sourcePath + "/";
+            var sourcePrefix = sourcePath + "/";
 
             // Update folder paths
-            List<string> affectedFolders = state.FolderPaths
+            List<string> affectedFolders = [.. state.FolderPaths
                 .Where(path => string.Equals(path, sourcePath, StringComparison.OrdinalIgnoreCase)
-                    || path.StartsWith(sourcePrefix, StringComparison.OrdinalIgnoreCase))
-                .ToList();
+                    || path.StartsWith(sourcePrefix, StringComparison.OrdinalIgnoreCase))];
 
-            foreach (string folder in affectedFolders)
+            foreach (var folder in affectedFolders)
             {
                 state.FolderPaths.Remove(folder);
             }
 
-            foreach (string folder in affectedFolders)
+            foreach (var folder in affectedFolders)
             {
                 if (string.Equals(folder, sourcePath, StringComparison.OrdinalIgnoreCase))
                 {
@@ -273,7 +270,7 @@ namespace BookmarkStudio
                 }
                 else
                 {
-                    string suffix = folder.Substring(sourcePath.Length);
+                    var suffix = folder.Substring(sourcePath.Length);
                     RegisterFolderPath(state.FolderPaths, targetPath + suffix);
                 }
             }
@@ -281,7 +278,7 @@ namespace BookmarkStudio
             // Update bookmark groups
             foreach (BookmarkMetadata bookmark in state.Bookmarks)
             {
-                string group = BookmarkIdentity.NormalizeFolderPath(bookmark.Group);
+                var group = BookmarkIdentity.NormalizeFolderPath(bookmark.Group);
                 if (string.Equals(group, sourcePath, StringComparison.OrdinalIgnoreCase))
                 {
                     bookmark.Group = targetPath;
@@ -326,7 +323,7 @@ namespace BookmarkStudio
         {
             HashSet<int> usedSlots = new HashSet<int>(bookmarks.Where(b => b.SlotNumber.HasValue).Select(b => b.SlotNumber.GetValueOrDefault()));
 
-            for (int slot = 1; slot <= 9; slot++)
+            for (var slot = 1; slot <= 9; slot++)
             {
                 if (!usedSlots.Contains(slot))
                 {
@@ -347,20 +344,20 @@ namespace BookmarkStudio
 
             foreach (BookmarkMetadata bookmark in bookmarks)
             {
-                string label = bookmark.Label ?? string.Empty;
+                var label = bookmark.Label ?? string.Empty;
                 if (!label.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }
 
-                string suffix = label.Substring(prefix.Length);
-                if (int.TryParse(suffix, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out int number) && number > 0)
+                var suffix = label.Substring(prefix.Length);
+                if (int.TryParse(suffix, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var number) && number > 0)
                 {
                     usedNumbers.Add(number);
                 }
             }
 
-            int next = 1;
+            var next = 1;
             while (usedNumbers.Contains(next))
             {
                 next++;
@@ -371,8 +368,8 @@ namespace BookmarkStudio
 
         private static string GetParentFolderPath(string folderPath)
         {
-            string normalized = BookmarkIdentity.NormalizeFolderPath(folderPath);
-            int separatorIndex = normalized.LastIndexOf('/');
+            var normalized = BookmarkIdentity.NormalizeFolderPath(folderPath);
+            var separatorIndex = normalized.LastIndexOf('/');
             return separatorIndex <= 0
                 ? string.Empty
                 : normalized.Substring(0, separatorIndex);
@@ -380,7 +377,7 @@ namespace BookmarkStudio
 
         private static void RegisterFolderPath(ISet<string> folderPaths, string? folderPath)
         {
-            string normalized = BookmarkIdentity.NormalizeFolderPath(folderPath);
+            var normalized = BookmarkIdentity.NormalizeFolderPath(folderPath);
             folderPaths.Add(normalized);
 
             if (string.IsNullOrEmpty(normalized))
@@ -388,9 +385,9 @@ namespace BookmarkStudio
                 return;
             }
 
-            string[] segments = normalized.Split('/');
-            string current = string.Empty;
-            foreach (string segment in segments)
+            var segments = normalized.Split('/');
+            var current = string.Empty;
+            foreach (var segment in segments)
             {
                 current = string.IsNullOrEmpty(current)
                     ? segment

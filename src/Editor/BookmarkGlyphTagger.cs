@@ -13,13 +13,13 @@ namespace BookmarkStudio
     {
         private readonly ITextBuffer _buffer;
         private readonly ITextDocument? _textDocument;
-        private readonly object _trackingPointsLock = new object();
+        private readonly object _trackingPointsLock = new();
         private string _documentPath;
         private string _normalizedDocumentPath;
         private int _attachedViewCount;
         private int _isDisposed;
-        private volatile IReadOnlyList<ManagedBookmark> _cachedDocumentBookmarks = Array.Empty<ManagedBookmark>();
-        private Dictionary<string, ITrackingPoint> _trackingPoints = new Dictionary<string, ITrackingPoint>(StringComparer.Ordinal);
+        private volatile IReadOnlyList<ManagedBookmark> _cachedDocumentBookmarks = [];
+        private Dictionary<string, ITrackingPoint> _trackingPoints = new(StringComparer.Ordinal);
 
         public BookmarkGlyphTagger(ITextBuffer buffer, string documentPath)
             : this(buffer, documentPath, null)
@@ -74,8 +74,8 @@ namespace BookmarkStudio
             }
 
             ITextSnapshot snapshot = spans[0].Snapshot;
-            int startLine = spans[0].Start.GetContainingLine().LineNumber;
-            int endLine = spans[spans.Count - 1].End.GetContainingLine().LineNumber;
+            var startLine = spans[0].Start.GetContainingLine().LineNumber;
+            var endLine = spans[spans.Count - 1].End.GetContainingLine().LineNumber;
 
             // Use cached bookmarks for this document instead of filtering all bookmarks
             IReadOnlyList<ManagedBookmark> documentBookmarks = _cachedDocumentBookmarks;
@@ -108,7 +108,7 @@ namespace BookmarkStudio
                 }
 
                 ITextSnapshotLine line = snapshot.GetLineFromLineNumber(lineIndex);
-                int spanLength = line.Length > 0 ? 1 : 0;
+                var spanLength = line.Length > 0 ? 1 : 0;
                 SnapshotSpan span = new SnapshotSpan(line.Start, spanLength);
                 BookmarkGlyphTag glyphTag = new BookmarkGlyphTag
                 {
@@ -165,7 +165,7 @@ namespace BookmarkStudio
 
             foreach (ManagedBookmark bookmark in bookmarks)
             {
-                int targetLineIndex = bookmark.LineNumber - 1;
+                var targetLineIndex = bookmark.LineNumber - 1;
                 if (targetLineIndex < 0 || targetLineIndex >= snapshot.LineCount)
                 {
                     continue;
@@ -177,7 +177,7 @@ namespace BookmarkStudio
                 if (existingTrackingPoints.TryGetValue(bookmark.BookmarkId, out ITrackingPoint existingPoint))
                 {
                     SnapshotPoint currentPoint = existingPoint.GetPoint(snapshot);
-                    int currentLineIndex = currentPoint.GetContainingLine().LineNumber;
+                    var currentLineIndex = currentPoint.GetContainingLine().LineNumber;
 
                     // If the tracking point is still on the target line, preserve it
                     if (currentLineIndex == targetLineIndex)

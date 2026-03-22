@@ -53,7 +53,7 @@ namespace BookmarkStudio
         private string _normalizedDocumentPath;
         private int _attachedViewCount;
         private int _isDisposed;
-        private volatile IReadOnlyList<ManagedBookmark> _cachedDocumentBookmarks = Array.Empty<ManagedBookmark>();
+        private volatile IReadOnlyList<ManagedBookmark> _cachedDocumentBookmarks = [];
 
         public BookmarkOverviewTagger(ITextBuffer buffer, string documentPath)
             : this(buffer, documentPath, null)
@@ -107,24 +107,24 @@ namespace BookmarkStudio
             }
 
             ITextSnapshot snapshot = spans[0].Snapshot;
-            int startLine = spans[0].Start.GetContainingLine().LineNumber;
-            int endLine = spans[spans.Count - 1].End.GetContainingLine().LineNumber;
+            var startLine = spans[0].Start.GetContainingLine().LineNumber;
+            var endLine = spans[spans.Count - 1].End.GetContainingLine().LineNumber;
 
             // Use cached bookmarks for this document instead of filtering all bookmarks
             IReadOnlyList<ManagedBookmark> documentBookmarks = _cachedDocumentBookmarks;
             foreach (ManagedBookmark bookmark in documentBookmarks)
             {
-                int lineIndex = bookmark.LineNumber - 1;
+                var lineIndex = bookmark.LineNumber - 1;
                 if (lineIndex < startLine || lineIndex > endLine || lineIndex < 0 || lineIndex >= snapshot.LineCount)
                 {
                     continue;
                 }
 
                 ITextSnapshotLine line = snapshot.GetLineFromLineNumber(lineIndex);
-                int spanLength = line.Length > 0 ? 1 : 0;
+                var spanLength = line.Length > 0 ? 1 : 0;
                 SnapshotSpan span = new SnapshotSpan(line.Start, spanLength);
 
-                string formatName = BookmarkOverviewMarkFormatNames.GetFormatName(bookmark.Color);
+                var formatName = BookmarkOverviewMarkFormatNames.GetFormatName(bookmark.Color);
                 yield return new TagSpan<OverviewMarkTag>(span, new OverviewMarkTag(formatName));
             }
         }

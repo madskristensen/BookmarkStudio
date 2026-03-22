@@ -5,7 +5,7 @@ namespace BookmarkStudio
 {
     internal static class BookmarkBuiltInCommandInterceptor
     {
-        private static readonly System.Collections.Generic.List<IDisposable> _registrations = new System.Collections.Generic.List<IDisposable>();
+        private static readonly System.Collections.Generic.List<IDisposable> _registrations = new();
         private static bool _isInitialized;
 
         public static async Task InitializeAsync()

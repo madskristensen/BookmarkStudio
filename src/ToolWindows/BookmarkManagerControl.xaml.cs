@@ -12,7 +12,7 @@ namespace BookmarkStudio
     {
         private static readonly string BookmarkDragFormat = "BookmarkStudio.Bookmark";
         private static readonly string FolderDragFormat = "BookmarkStudio.Folder";
-        private readonly BookmarkManagerViewModel _viewModel = new BookmarkManagerViewModel();
+        private readonly BookmarkManagerViewModel _viewModel = new();
         private readonly ToolWindowInitData? _initData;
         private Point _dragStartPoint;
         private string? _dragBookmarkId;
@@ -92,7 +92,7 @@ namespace BookmarkStudio
                     // Check if it's a root node - require confirmation for clearing all bookmarks
                     if (_viewModel.SelectedNode is FolderNodeViewModel folderNode && folderNode.IsRoot)
                     {
-                        string storageName = folderNode.StorageLocation switch
+                        var storageName = folderNode.StorageLocation switch
                         {
                             BookmarkStorageLocation.Personal => "User",
                             BookmarkStorageLocation.Solution => "Workspace",
@@ -215,7 +215,7 @@ namespace BookmarkStudio
                 return;
             }
 
-            bool hasDragItem = !string.IsNullOrWhiteSpace(_dragBookmarkId) || !string.IsNullOrWhiteSpace(_dragFolderPath);
+            var hasDragItem = !string.IsNullOrWhiteSpace(_dragBookmarkId) || !string.IsNullOrWhiteSpace(_dragFolderPath);
             if (!hasDragItem)
             {
                 return;
@@ -246,14 +246,14 @@ namespace BookmarkStudio
 
         private void BookmarkTreeView_DragOver(object sender, DragEventArgs e)
         {
-            bool canDrop = e.Data.GetDataPresent(BookmarkDragFormat, false)
+            var canDrop = e.Data.GetDataPresent(BookmarkDragFormat, false)
                 || e.Data.GetDataPresent(FolderDragFormat, false);
 
             if (canDrop && e.Data.GetDataPresent(FolderDragFormat, false))
             {
                 // Check if dropping folder onto itself or a descendant
-                string? draggedFolder = e.Data.GetData(FolderDragFormat, false) as string;
-                string targetFolder = GetDropTargetFolderPath(e.OriginalSource as DependencyObject);
+                var draggedFolder = e.Data.GetData(FolderDragFormat, false) as string;
+                var targetFolder = GetDropTargetFolderPath(e.OriginalSource as DependencyObject);
 
                 if (!string.IsNullOrWhiteSpace(draggedFolder))
                 {
@@ -295,7 +295,7 @@ namespace BookmarkStudio
 
         private async Task HandleBookmarkDropAsync(DragEventArgs e)
         {
-            string? bookmarkId = e.Data.GetData(BookmarkDragFormat, false) as string;
+            var bookmarkId = e.Data.GetData(BookmarkDragFormat, false) as string;
             if (string.IsNullOrWhiteSpace(bookmarkId))
             {
                 return;
@@ -310,7 +310,7 @@ namespace BookmarkStudio
 
             // Determine target folder and storage location
             BookmarkStorageLocation? targetStorage = GetDropTargetStorageLocation(e.OriginalSource as DependencyObject);
-            string targetFolderPath = GetDropTargetFolderPath(e.OriginalSource as DependencyObject);
+            var targetFolderPath = GetDropTargetFolderPath(e.OriginalSource as DependencyObject);
 
             // Check if moving between storage locations
             if (targetStorage.HasValue && _dragSourceStorage.HasValue && targetStorage.Value != _dragSourceStorage.Value)
@@ -331,13 +331,13 @@ namespace BookmarkStudio
 
         private async Task HandleFolderDropAsync(DragEventArgs e)
         {
-            string? sourceFolderPath = e.Data.GetData(FolderDragFormat, false) as string;
+            var sourceFolderPath = e.Data.GetData(FolderDragFormat, false) as string;
             if (string.IsNullOrWhiteSpace(sourceFolderPath))
             {
                 return;
             }
 
-            string targetFolderPath = GetDropTargetFolderPath(e.OriginalSource as DependencyObject);
+            var targetFolderPath = GetDropTargetFolderPath(e.OriginalSource as DependencyObject);
 
             // Cannot drop folder onto itself or a descendant
             if (string.Equals(sourceFolderPath, targetFolderPath, StringComparison.OrdinalIgnoreCase))
@@ -360,12 +360,12 @@ namespace BookmarkStudio
             }
 
             // Get the folder name from the source path
-            string folderName = sourceFolderPath.Contains("/")
+            var folderName = sourceFolderPath.Contains("/")
                 ? sourceFolderPath.Substring(sourceFolderPath.LastIndexOf('/') + 1)
                 : sourceFolderPath;
 
             // Build the new path
-            string newFolderPath = string.IsNullOrEmpty(targetFolderPath)
+            var newFolderPath = string.IsNullOrEmpty(targetFolderPath)
                 ? folderName
                 : targetFolderPath + "/" + folderName;
 
@@ -412,7 +412,7 @@ namespace BookmarkStudio
                 return;
             }
 
-            string? newLabel = TextPromptWindow.Show("Edit Label", "Enter a label for the bookmark:", bookmark.Label, selectTextOnLoad: true);
+            var newLabel = TextPromptWindow.Show("Edit Label", "Enter a label for the bookmark:", bookmark.Label, selectTextOnLoad: true);
             if (newLabel is null)
             {
                 return;
@@ -426,7 +426,7 @@ namespace BookmarkStudio
         {
             SelectNodeFromContextMenu(sender);
 
-            if (sender is not MenuItem menuItem || menuItem.Tag is null || !int.TryParse(menuItem.Tag.ToString(), out int slotNumber))
+            if (sender is not MenuItem menuItem || menuItem.Tag is null || !int.TryParse(menuItem.Tag.ToString(), out var slotNumber))
             {
                 return;
             }
@@ -443,11 +443,11 @@ namespace BookmarkStudio
 
             Dictionary<int, string> slotAssignments = _viewModel.GetSlotAssignments();
 
-            foreach (object item in submenu.Items)
+            foreach (var item in submenu.Items)
             {
-                if (item is MenuItem slotMenuItem && slotMenuItem.Tag is not null && int.TryParse(slotMenuItem.Tag.ToString(), out int slotNumber))
+                if (item is MenuItem slotMenuItem && slotMenuItem.Tag is not null && int.TryParse(slotMenuItem.Tag.ToString(), out var slotNumber))
                 {
-                    if (slotAssignments.TryGetValue(slotNumber, out string bookmarkLabel))
+                    if (slotAssignments.TryGetValue(slotNumber, out var bookmarkLabel))
                     {
                         slotMenuItem.Header = string.Concat(slotNumber.ToString(System.Globalization.CultureInfo.InvariantCulture), " - ", bookmarkLabel);
                     }
@@ -469,7 +469,7 @@ namespace BookmarkStudio
         {
             SelectNodeFromContextMenu(sender);
 
-            if (sender is not MenuItem menuItem || menuItem.Tag is null || !int.TryParse(menuItem.Tag.ToString(), out int colorValue))
+            if (sender is not MenuItem menuItem || menuItem.Tag is null || !int.TryParse(menuItem.Tag.ToString(), out var colorValue))
             {
                 return;
             }
@@ -544,7 +544,7 @@ namespace BookmarkStudio
                 return;
             }
 
-            string storageName = folderNode.StorageLocation switch
+            var storageName = folderNode.StorageLocation switch
             {
                 BookmarkStorageLocation.Personal => "User",
                 BookmarkStorageLocation.Solution => "Workspace",
@@ -585,11 +585,11 @@ namespace BookmarkStudio
                 return;
             }
 
-            string storagePath = BookmarkOperationsService.Current.GetStoragePathForLocation(folderNode.StorageLocation.Value);
+            var storagePath = BookmarkOperationsService.Current.GetStoragePathForLocation(folderNode.StorageLocation.Value);
 
             if (!System.IO.File.Exists(storagePath))
             {
-                string storageName = folderNode.StorageLocation.Value == BookmarkStorageLocation.Personal ? "User" : "Workspace";
+                var storageName = folderNode.StorageLocation.Value == BookmarkStorageLocation.Personal ? "User" : "Workspace";
                 System.Windows.MessageBox.Show(
                     $"No bookmark file exists for {storageName} yet. Add a bookmark to create the file.",
                     "File Not Found",
@@ -614,7 +614,7 @@ namespace BookmarkStudio
 
     private async Task PromptCreateFolderInternalAsync()
     {
-        string? folderName = TextPromptWindow.Show("Add Folder", "Enter a folder name:", string.Empty);
+        var folderName = TextPromptWindow.Show("Add Folder", "Enter a folder name:", string.Empty);
         if (folderName is null)
         {
             return;
@@ -637,7 +637,7 @@ namespace BookmarkStudio
             return;
         }
 
-        string? folderName = TextPromptWindow.Show("Rename Folder", "Enter a new folder name:", folderNode.FolderName, selectTextOnLoad: true);
+        var folderName = TextPromptWindow.Show("Rename Folder", "Enter a new folder name:", folderNode.FolderName, selectTextOnLoad: true);
         if (folderName is null)
         {
             return;
@@ -655,7 +655,7 @@ namespace BookmarkStudio
             return;
         }
 
-        string? newLabel = TextPromptWindow.Show("Edit Label", "Enter a label for the bookmark:", bookmark.Label, selectTextOnLoad: true);
+        var newLabel = TextPromptWindow.Show("Edit Label", "Enter a label for the bookmark:", bookmark.Label, selectTextOnLoad: true);
         if (newLabel is null)
         {
             return;
@@ -697,7 +697,7 @@ namespace BookmarkStudio
     {
         try
         {
-            string location = await _viewModel.GetSelectedLocationAsync(CancellationToken.None);
+            var location = await _viewModel.GetSelectedLocationAsync(CancellationToken.None);
             Clipboard.SetText(location);
             _viewModel.SetStatus("Bookmark location copied to the clipboard.");
         }
@@ -790,14 +790,14 @@ namespace BookmarkStudio
             return directMatch;
         }
 
-        foreach (object child in parent.Items)
+        foreach (var child in parent.Items)
         {
             if (parent.ItemContainerGenerator.ContainerFromItem(child) is not TreeViewItem childContainer)
             {
                 continue;
             }
 
-            bool wasExpanded = childContainer.IsExpanded;
+            var wasExpanded = childContainer.IsExpanded;
             childContainer.IsExpanded = true;
             childContainer.UpdateLayout();
 

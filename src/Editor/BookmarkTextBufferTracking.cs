@@ -41,9 +41,9 @@ namespace BookmarkStudio
         private readonly string _normalizedDocumentPath;
         private readonly SemaphoreSlim _updateGate = new(1, 1);
         private readonly ITextBuffer _textBuffer;
-        private readonly object _trackingPointsLock = new object();
-        private readonly object _debounceCtsLock = new object();
-        private Dictionary<string, ITrackingPoint> _trackingPoints = new Dictionary<string, ITrackingPoint>(StringComparer.Ordinal);
+        private readonly object _trackingPointsLock = new();
+        private readonly object _debounceCtsLock = new();
+        private Dictionary<string, ITrackingPoint> _trackingPoints = new(StringComparer.Ordinal);
         private int _attachedViewCount;
         private int _isDisposed;
         private CancellationTokenSource? _debounceCts;
@@ -183,7 +183,7 @@ namespace BookmarkStudio
                     continue;
                 }
 
-                int lineIndex = bookmark.LineNumber - 1;
+                var lineIndex = bookmark.LineNumber - 1;
                 if (lineIndex < 0 || lineIndex >= snapshot.LineCount)
                 {
                     continue;
@@ -231,7 +231,7 @@ namespace BookmarkStudio
             }
 
             ITextSnapshot snapshot = _textBuffer.CurrentSnapshot;
-            bool changed = false;
+            var changed = false;
 
             Dictionary<string, ITrackingPoint> trackingPoints;
             lock (_trackingPointsLock)
@@ -257,7 +257,7 @@ namespace BookmarkStudio
                 else
                 {
                     // No tracking point - create one from current bookmark position
-                    int lineIndex = Clamp(bookmark.LineNumber - 1, 0, Math.Max(snapshot.LineCount - 1, 0));
+                    var lineIndex = Clamp(bookmark.LineNumber - 1, 0, Math.Max(snapshot.LineCount - 1, 0));
                     ITextSnapshotLine line = snapshot.GetLineFromLineNumber(lineIndex);
                     newLineNumber = line.LineNumber + 1;
                     newLineText = line.GetText();

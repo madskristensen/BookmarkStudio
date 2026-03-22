@@ -21,7 +21,7 @@ namespace BookmarkStudio
                 Command.Enabled = bookmark is not null;
                 if (bookmark is not null)
                 {
-                    Command.Text = string.Format(CultureInfo.CurrentCulture, "Go to {0}", bookmark.Label);
+                    Command.Text = string.Format(CultureInfo.CurrentCulture, "{0}", bookmark.Label);
                 }
             });
         }
