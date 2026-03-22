@@ -18,6 +18,14 @@
     {
       "pathOnDisk": "art/set-color.png",
       "targetPath": "art/set-color.png"
+    },
+    {
+      "pathOnDisk": "art/toolbar.png",
+      "targetPath": "art/toolbar.png"
+    },
+    {
+      "pathOnDisk": "art/glyph-drag-drop.gif",
+      "targetPath": "art/glyph-drag-drop.gif"
     }
   ],
   "overview": "README.md",

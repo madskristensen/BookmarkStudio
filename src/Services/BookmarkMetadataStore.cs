@@ -798,7 +798,7 @@ namespace BookmarkStudio
                 writer.WriteString("id", bookmark.BookmarkId);
                 writer.WriteString("documentPath", MakeRelativePath(bookmark.DocumentPath, solutionDirectory));
                 writer.WriteNumber("lineNumber", bookmark.LineNumber);
-                writer.WriteString("lineText", bookmark.LineText ?? string.Empty);
+                writer.WriteString("lineText", bookmark.LineText?.Trim() ?? string.Empty);
 
                 if (bookmark.ShortcutNumber.HasValue)
                 {

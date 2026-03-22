@@ -59,8 +59,8 @@ namespace BookmarkStudio
 
         public async Task<string> GetNextDefaultLabelAsync(CancellationToken cancellationToken)
         {
-            IReadOnlyList<BookmarkMetadata> metadata = await _session.LoadMetadataAsync(cancellationToken);
-            return BookmarkRepositoryService.FindNextDefaultLabel(metadata);
+            DualBookmarkWorkspaceState dualState = await _session.RefreshDualAsync(cancellationToken);
+            return BookmarkRepositoryService.FindNextDefaultLabel(dualState.AllBookmarks);
         }
 
         public async Task<string?> GetSelectedTextAsync(CancellationToken cancellationToken)

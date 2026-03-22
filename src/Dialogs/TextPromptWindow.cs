@@ -1,11 +1,19 @@
+using System;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Interop;
+using System.Windows.Media;
 using Microsoft.VisualStudio.PlatformUI;
+using Microsoft.VisualStudio.Shell;
 
 namespace BookmarkStudio
 {
     internal sealed class TextPromptWindow : VsUIDialogWindow
     {
+        private const int DwmwaCaptionColor = 35;
+        private const int DwmwaTextColor = 36;
+
         private readonly TextBox _inputTextBox;
         private readonly bool _selectTextOnLoad;
 
@@ -17,14 +25,27 @@ namespace BookmarkStudio
             Width = 420;
             Height = 160;
             ResizeMode = ResizeMode.NoResize;
-            WindowStartupLocation = WindowStartupLocation.CenterOwner;
             ShowInTaskbar = false;
             HasMaximizeButton = false;
             HasMinimizeButton = false;
             HasHelpButton = false;
             SetResourceReference(BackgroundProperty, EnvironmentColors.ToolWindowBackgroundBrushKey);
             SetResourceReference(ForegroundProperty, EnvironmentColors.ToolWindowTextBrushKey);
+
+            ThreadHelper.ThrowIfNotOnUIThread();
+            if (Package.GetGlobalService(typeof(Microsoft.VisualStudio.Shell.Interop.SDTE)) is EnvDTE.DTE dte)
+            {
+                var hwnd = (IntPtr)dte.MainWindow.HWnd;
+                if (hwnd != IntPtr.Zero)
+                {
+                    Owner = HwndSource.FromHwnd(hwnd)?.RootVisual as Window;
+                }
+            }
+
+            WindowStartupLocation = WindowStartupLocation.CenterOwner;
+
             Loaded += TextPromptWindow_Loaded;
+            SourceInitialized += OnSourceInitialized;
 
             var grid = new Grid
             {
@@ -120,5 +141,56 @@ namespace BookmarkStudio
 
             _inputTextBox.CaretIndex = _inputTextBox.Text?.Length ?? 0;
         }
+
+        private void OnSourceInitialized(object sender, EventArgs e)
+        {
+            try
+            {
+                ApplyTitleBarTheme();
+            }
+            catch (Exception ex)
+            {
+                _ = ex.LogAsync();
+            }
+        }
+
+        private void ApplyTitleBarTheme()
+        {
+            var handle = new WindowInteropHelper(this).Handle;
+            if (handle == IntPtr.Zero)
+            {
+                return;
+            }
+
+            if (TryGetResourceColor(EnvironmentColors.ToolWindowBackgroundBrushKey, out var captionColor))
+            {
+                int captionColorRef = ToColorRef(captionColor);
+                _ = DwmSetWindowAttribute(handle, DwmwaCaptionColor, ref captionColorRef, sizeof(int));
+            }
+
+            if (TryGetResourceColor(EnvironmentColors.ToolWindowTextBrushKey, out var textColor))
+            {
+                int textColorRef = ToColorRef(textColor);
+                _ = DwmSetWindowAttribute(handle, DwmwaTextColor, ref textColorRef, sizeof(int));
+            }
+        }
+
+        private bool TryGetResourceColor(object key, out Color color)
+        {
+            if (TryFindResource(key) is SolidColorBrush brush)
+            {
+                color = brush.Color;
+                return true;
+            }
+
+            color = default(Color);
+            return false;
+        }
+
+        private static int ToColorRef(Color color)
+            => color.R | (color.G << 8) | (color.B << 16);
+
+        [DllImport("dwmapi.dll")]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int attributeValue, int attributeSize);
     }
 }

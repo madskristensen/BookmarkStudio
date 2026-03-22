@@ -19,9 +19,9 @@ namespace BookmarkStudio
 
         [Category("Bookmarks")]
         [DisplayName("Default storage location")]
-        [Description("Determines where new bookmarks are stored by default. 'Workspace' stores bookmarks in the solution/repository folder for team sharing. 'Personal' stores bookmarks in your local user profile.")]
-        [DefaultValue(BookmarkStorageLocation.Workspace)]
+        [Description("Determines where new bookmarks are stored by default. 'Workspace' stores bookmarks in the solution/repository folder for team sharing. 'Personal' stores bookmarks in the '.vs' folder.")]
+        [DefaultValue(BookmarkStorageLocation.Personal)]
         [TypeConverter(typeof(EnumConverter))]
-        public BookmarkStorageLocation DefaultStorageLocation { get; set; } = BookmarkStorageLocation.Workspace;
+        public BookmarkStorageLocation DefaultStorageLocation { get; set; } = BookmarkStorageLocation.Personal;
     }
 }
