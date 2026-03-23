@@ -126,14 +126,6 @@
     </VSCTCompile>
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="EnvDTE80" />
-    <Reference Include="EnvDTE" />
-    <Reference Include="Microsoft.VisualStudio.CoreUtility" />
-    <Reference Include="Microsoft.VisualStudio.Text.Data" />
-    <Reference Include="Microsoft.VisualStudio.Text.Logic" />
-    <Reference Include="Microsoft.VisualStudio.Text.UI" />
-    <Reference Include="Microsoft.VisualStudio.Text.UI.Wpf" />
-    <Reference Include="Microsoft.VisualStudio.Utilities" />
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="System" />
@@ -151,7 +143,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+    <PackageReference Include="System.Text.Json" Version="8.0.5" ExcludeAssets="runtime" />
   </ItemGroup>
   <ItemGroup>
     <Page Include="ToolWindows\BookmarkManagerControl.xaml">
