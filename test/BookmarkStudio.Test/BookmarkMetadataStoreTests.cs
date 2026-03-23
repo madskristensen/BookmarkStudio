@@ -578,4 +578,258 @@ public class BookmarkMetadataStoreTests
             Directory.Delete(tempDir, recursive: true);
         }
     }
+
+    [TestMethod]
+    public void GetGlobalStoragePath_ReturnsUserProfilePath()
+    {
+        var store = new BookmarkMetadataStore();
+
+        string path = store.GetGlobalStoragePath();
+
+        string expectedPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            ".bookmarks.json");
+        Assert.AreEqual(expectedPath, path);
+    }
+
+    [TestMethod]
+    public void GetStoragePathForLocation_WhenGlobal_ReturnsGlobalPath()
+    {
+        var store = new BookmarkMetadataStore();
+        string solutionPath = Path.Combine(Path.GetTempPath(), "test.sln");
+
+        string path = store.GetStoragePathForLocation(solutionPath, BookmarkStorageLocation.Global);
+
+        Assert.AreEqual(store.GetGlobalStoragePath(), path);
+    }
+
+    [TestMethod]
+    public async Task SaveAndLoadWorkspaceToLocationAsync_WhenGlobal_RoundTripsBookmarkData()
+    {
+        var store = new BookmarkMetadataStore();
+        string globalPath = store.GetGlobalStoragePath();
+        string globalDir = Path.GetDirectoryName(globalPath);
+        string backupPath = globalPath + ".backup";
+
+        // Backup existing global file if it exists
+        bool hadExistingFile = File.Exists(globalPath);
+        if (hadExistingFile)
+        {
+            File.Copy(globalPath, backupPath, overwrite: true);
+        }
+
+        try
+        {
+            // Delete existing file to start fresh
+            if (File.Exists(globalPath))
+            {
+                File.Delete(globalPath);
+            }
+
+            var state = new BookmarkWorkspaceState();
+            state.Bookmarks.Add(new BookmarkMetadata
+            {
+                BookmarkId = "global-test-1",
+                DocumentPath = @"C:\Projects\App\Program.cs",
+                LineNumber = 42,
+                LineText = "Main entry point",
+                Label = "Global Bookmark",
+                Color = BookmarkColor.Blue,
+                Group = "GlobalFolder",
+                StorageLocation = BookmarkStorageLocation.Global
+            });
+            state.FolderPaths.Add(string.Empty);
+            state.FolderPaths.Add("GlobalFolder");
+            state.ExpandedFolders.Add("GlobalFolder");
+
+            await store.SaveWorkspaceToLocationAsync(string.Empty, BookmarkStorageLocation.Global, state, CancellationToken.None);
+
+            Assert.IsTrue(File.Exists(globalPath), "Global storage file should be created");
+
+            BookmarkWorkspaceState loaded = await store.LoadWorkspaceFromLocationAsync(string.Empty, BookmarkStorageLocation.Global, CancellationToken.None);
+
+            Assert.HasCount(1, loaded.Bookmarks);
+            BookmarkMetadata bookmark = loaded.Bookmarks[0];
+            Assert.AreEqual("global-test-1", bookmark.BookmarkId);
+            Assert.AreEqual(@"C:\Projects\App\Program.cs", bookmark.DocumentPath);
+            Assert.AreEqual(42, bookmark.LineNumber);
+            Assert.AreEqual("Global Bookmark", bookmark.Label);
+            Assert.AreEqual(BookmarkColor.Blue, bookmark.Color);
+            Assert.AreEqual("GlobalFolder", bookmark.Group);
+            Assert.AreEqual(BookmarkStorageLocation.Global, bookmark.StorageLocation);
+            Assert.Contains("GlobalFolder", loaded.FolderPaths);
+            Assert.Contains("GlobalFolder", loaded.ExpandedFolders);
+        }
+        finally
+        {
+            // Cleanup: delete test file and restore backup if existed
+            if (File.Exists(globalPath))
+            {
+                File.Delete(globalPath);
+            }
+
+            if (hadExistingFile)
+            {
+                File.Move(backupPath, globalPath);
+            }
+        }
+    }
+
+    [TestMethod]
+    public async Task LoadWorkspaceFromLocationAsync_WhenGlobalFileDoesNotExist_ReturnsEmptyState()
+    {
+        var store = new BookmarkMetadataStore();
+        string globalPath = store.GetGlobalStoragePath();
+        string backupPath = globalPath + ".backup";
+
+        // Backup existing global file if it exists
+        bool hadExistingFile = File.Exists(globalPath);
+        if (hadExistingFile)
+        {
+            File.Move(globalPath, backupPath);
+        }
+
+        try
+        {
+            BookmarkWorkspaceState state = await store.LoadWorkspaceFromLocationAsync(string.Empty, BookmarkStorageLocation.Global, CancellationToken.None);
+
+            Assert.IsNotNull(state);
+            Assert.IsEmpty(state.Bookmarks);
+            Assert.IsEmpty(state.ExpandedFolders);
+        }
+        finally
+        {
+            // Restore backup if existed
+            if (hadExistingFile)
+            {
+                File.Move(backupPath, globalPath);
+            }
+        }
+    }
+
+    [TestMethod]
+    public async Task SaveWorkspaceToLocationAsync_WhenGlobalWithMultipleBookmarks_PreservesAll()
+    {
+        var store = new BookmarkMetadataStore();
+        string globalPath = store.GetGlobalStoragePath();
+        string backupPath = globalPath + ".backup";
+
+        bool hadExistingFile = File.Exists(globalPath);
+        if (hadExistingFile)
+        {
+            File.Copy(globalPath, backupPath, overwrite: true);
+        }
+
+        try
+        {
+            if (File.Exists(globalPath))
+            {
+                File.Delete(globalPath);
+            }
+
+            var state = new BookmarkWorkspaceState();
+            state.Bookmarks.Add(new BookmarkMetadata
+            {
+                BookmarkId = "global-1",
+                DocumentPath = @"C:\Code\file1.cs",
+                LineNumber = 10,
+                Group = string.Empty,
+                StorageLocation = BookmarkStorageLocation.Global
+            });
+            state.Bookmarks.Add(new BookmarkMetadata
+            {
+                BookmarkId = "global-2",
+                DocumentPath = @"C:\Code\file2.cs",
+                LineNumber = 20,
+                Group = "Utilities",
+                StorageLocation = BookmarkStorageLocation.Global
+            });
+            state.Bookmarks.Add(new BookmarkMetadata
+            {
+                BookmarkId = "global-3",
+                DocumentPath = @"C:\Code\file3.cs",
+                LineNumber = 30,
+                Group = "Utilities/Helpers",
+                StorageLocation = BookmarkStorageLocation.Global
+            });
+            state.FolderPaths.Add(string.Empty);
+            state.FolderPaths.Add("Utilities");
+            state.FolderPaths.Add("Utilities/Helpers");
+
+            await store.SaveWorkspaceToLocationAsync(string.Empty, BookmarkStorageLocation.Global, state, CancellationToken.None);
+
+            BookmarkWorkspaceState loaded = await store.LoadWorkspaceFromLocationAsync(string.Empty, BookmarkStorageLocation.Global, CancellationToken.None);
+
+            Assert.HasCount(3, loaded.Bookmarks);
+            Assert.AreEqual(string.Empty, loaded.Bookmarks.Single(b => b.BookmarkId == "global-1").Group);
+            Assert.AreEqual("Utilities", loaded.Bookmarks.Single(b => b.BookmarkId == "global-2").Group);
+            Assert.AreEqual("Utilities/Helpers", loaded.Bookmarks.Single(b => b.BookmarkId == "global-3").Group);
+        }
+        finally
+        {
+            if (File.Exists(globalPath))
+            {
+                File.Delete(globalPath);
+            }
+
+            if (hadExistingFile)
+            {
+                File.Move(backupPath, globalPath);
+            }
+        }
+    }
+
+    [TestMethod]
+    public async Task GlobalStorage_WhenBookmarkHasAbsolutePath_PreservesAbsolutePath()
+    {
+        var store = new BookmarkMetadataStore();
+        string globalPath = store.GetGlobalStoragePath();
+        string backupPath = globalPath + ".backup";
+
+        bool hadExistingFile = File.Exists(globalPath);
+        if (hadExistingFile)
+        {
+            File.Copy(globalPath, backupPath, overwrite: true);
+        }
+
+        try
+        {
+            if (File.Exists(globalPath))
+            {
+                File.Delete(globalPath);
+            }
+
+            string absoluteDocPath = @"D:\OtherProjects\SomeApp\Controllers\HomeController.cs";
+
+            var state = new BookmarkWorkspaceState();
+            state.Bookmarks.Add(new BookmarkMetadata
+            {
+                BookmarkId = "absolute-path-test",
+                DocumentPath = absoluteDocPath,
+                LineNumber = 100,
+                Group = string.Empty,
+                StorageLocation = BookmarkStorageLocation.Global
+            });
+            state.FolderPaths.Add(string.Empty);
+
+            await store.SaveWorkspaceToLocationAsync(string.Empty, BookmarkStorageLocation.Global, state, CancellationToken.None);
+
+            BookmarkWorkspaceState loaded = await store.LoadWorkspaceFromLocationAsync(string.Empty, BookmarkStorageLocation.Global, CancellationToken.None);
+
+            Assert.HasCount(1, loaded.Bookmarks);
+            Assert.AreEqual(absoluteDocPath, loaded.Bookmarks[0].DocumentPath, "Absolute path should be preserved for global bookmarks");
+        }
+        finally
+        {
+            if (File.Exists(globalPath))
+            {
+                File.Delete(globalPath);
+            }
+
+            if (hadExistingFile)
+            {
+                File.Move(backupPath, globalPath);
+            }
+        }
+    }
 }
