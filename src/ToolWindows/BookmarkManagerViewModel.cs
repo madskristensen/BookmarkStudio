@@ -12,9 +12,11 @@ namespace BookmarkStudio
     {
         private readonly BookmarkOperationsService _operations = BookmarkOperationsService.Current;
         private readonly List<ManagedBookmark> _bookmarks = new();
+        private readonly List<ManagedBookmark> _globalBookmarks = new();
         private readonly List<ManagedBookmark> _personalBookmarks = new();
         private readonly List<ManagedBookmark> _solutionBookmarks = new();
         private readonly HashSet<string> _folderPaths = new(StringComparer.OrdinalIgnoreCase) { string.Empty };
+        private readonly HashSet<string> _globalFolderPaths = new(StringComparer.OrdinalIgnoreCase) { string.Empty };
         private readonly HashSet<string> _personalFolderPaths = new(StringComparer.OrdinalIgnoreCase) { string.Empty };
         private readonly HashSet<string> _solutionFolderPaths = new(StringComparer.OrdinalIgnoreCase) { string.Empty };
         private readonly HashSet<string> _expandedFolders = new(StringComparer.OrdinalIgnoreCase);
@@ -321,7 +323,7 @@ namespace BookmarkStudio
             RebuildTree();
             RestoreSelection(selectedBookmarkId, selectedFolderPath);
 
-            var totalBookmarks = _personalBookmarks.Count + _solutionBookmarks.Count;
+            var totalBookmarks = _globalBookmarks.Count + _personalBookmarks.Count + _solutionBookmarks.Count;
             var statusMessage = staleCount > 0
                 ? string.Concat(totalBookmarks.ToString(System.Globalization.CultureInfo.InvariantCulture), " bookmarks loaded. Removed ", staleCount.ToString(System.Globalization.CultureInfo.InvariantCulture), " stale bookmark(s).")
                 : string.Concat(totalBookmarks.ToString(System.Globalization.CultureInfo.InvariantCulture), " bookmarks loaded.");
@@ -508,7 +510,12 @@ namespace BookmarkStudio
             ClearFolderPathsForStorage(storageLocation);
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             RebuildTree();
-            var storageName = storageLocation == BookmarkStorageLocation.Personal ? "User" : "Workspace";
+            var storageName = storageLocation switch
+            {
+                BookmarkStorageLocation.Global => "Global",
+                BookmarkStorageLocation.Personal => "User",
+                _ => "Workspace",
+            };
             SetStatus($"All bookmarks cleared from {storageName}.");
         }
 
@@ -687,7 +694,13 @@ namespace BookmarkStudio
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             RebuildTree();
             SelectFolder(normalizedTarget);
-            SetStatus("Folder moved to " + (targetStorage == BookmarkStorageLocation.Personal ? "User" : "Workspace") + " storage.");
+            var storageDisplayName = targetStorage switch
+            {
+                BookmarkStorageLocation.Global => "Global",
+                BookmarkStorageLocation.Personal => "User",
+                _ => "Workspace",
+            };
+            SetStatus("Folder moved to " + storageDisplayName + " storage.");
         }
 
         public Task NavigateSelectedAsync(CancellationToken cancellationToken)
@@ -843,15 +856,26 @@ namespace BookmarkStudio
         private void ReloadDualData(DualBookmarkWorkspaceState dualState)
         {
             _bookmarks.Clear();
+            _globalBookmarks.Clear();
             _personalBookmarks.Clear();
             _solutionBookmarks.Clear();
             _folderPaths.Clear();
+            _globalFolderPaths.Clear();
             _personalFolderPaths.Clear();
             _solutionFolderPaths.Clear();
 
             _folderPaths.Add(string.Empty);
+            _globalFolderPaths.Add(string.Empty);
             _personalFolderPaths.Add(string.Empty);
             _solutionFolderPaths.Add(string.Empty);
+
+            foreach (ManagedBookmark bookmark in dualState.GlobalState.Bookmarks.Select(b => b.ToManagedBookmark()))
+            {
+                _bookmarks.Add(bookmark);
+                _globalBookmarks.Add(bookmark);
+                _globalFolderPaths.Add(bookmark.FolderPath);
+                _folderPaths.Add(bookmark.FolderPath);
+            }
 
             foreach (ManagedBookmark bookmark in dualState.PersonalState.Bookmarks.Select(b => b.ToManagedBookmark()))
             {
@@ -869,6 +893,12 @@ namespace BookmarkStudio
                 _folderPaths.Add(bookmark.FolderPath);
             }
 
+            foreach (var folderPath in dualState.GlobalState.FolderPaths)
+            {
+                _globalFolderPaths.Add(BookmarkIdentity.NormalizeFolderPath(folderPath));
+                _folderPaths.Add(BookmarkIdentity.NormalizeFolderPath(folderPath));
+            }
+
             foreach (var folderPath in dualState.PersonalState.FolderPaths)
             {
                 _personalFolderPaths.Add(BookmarkIdentity.NormalizeFolderPath(folderPath));
@@ -882,6 +912,11 @@ namespace BookmarkStudio
             }
 
             _expandedFolders.Clear();
+            foreach (var folder in dualState.GlobalState.ExpandedFolders)
+            {
+                _expandedFolders.Add(BookmarkIdentity.NormalizeFolderPath(folder));
+            }
+
             foreach (var folder in dualState.PersonalState.ExpandedFolders)
             {
                 _expandedFolders.Add(BookmarkIdentity.NormalizeFolderPath(folder));
@@ -906,13 +941,16 @@ namespace BookmarkStudio
         private void ReloadDualBookmarks(IReadOnlyList<ManagedBookmark> bookmarks)
         {
             _bookmarks.Clear();
+            _globalBookmarks.Clear();
             _personalBookmarks.Clear();
             _solutionBookmarks.Clear();
             _folderPaths.Clear();
+            _globalFolderPaths.Clear();
             _personalFolderPaths.Clear();
             _solutionFolderPaths.Clear();
 
             _folderPaths.Add(string.Empty);
+            _globalFolderPaths.Add(string.Empty);
             _personalFolderPaths.Add(string.Empty);
             _solutionFolderPaths.Add(string.Empty);
 
@@ -921,7 +959,12 @@ namespace BookmarkStudio
                 _bookmarks.Add(bookmark);
                 _folderPaths.Add(bookmark.FolderPath);
 
-                if (bookmark.StorageLocation == BookmarkStorageLocation.Personal)
+                if (bookmark.StorageLocation == BookmarkStorageLocation.Global)
+                {
+                    _globalBookmarks.Add(bookmark);
+                    _globalFolderPaths.Add(bookmark.FolderPath);
+                }
+                else if (bookmark.StorageLocation == BookmarkStorageLocation.Personal)
                 {
                     _personalBookmarks.Add(bookmark);
                     _personalFolderPaths.Add(bookmark.FolderPath);
@@ -938,6 +981,13 @@ namespace BookmarkStudio
             DualBookmarkWorkspaceState? dualState = BookmarkStudioSession.Current.CachedDualState;
             if (dualState is not null)
             {
+                foreach (var folderPath in dualState.GlobalState.FolderPaths)
+                {
+                    var normalized = BookmarkIdentity.NormalizeFolderPath(folderPath);
+                    _folderPaths.Add(normalized);
+                    _globalFolderPaths.Add(normalized);
+                }
+
                 foreach (var folderPath in dualState.PersonalState.FolderPaths)
                 {
                     var normalized = BookmarkIdentity.NormalizeFolderPath(folderPath);
@@ -954,6 +1004,11 @@ namespace BookmarkStudio
 
                 // Reload expanded folders from the cached state to reflect any path changes
                 _expandedFolders.Clear();
+                foreach (var folder in dualState.GlobalState.ExpandedFolders)
+                {
+                    _expandedFolders.Add(BookmarkIdentity.NormalizeFolderPath(folder));
+                }
+
                 foreach (var folder in dualState.PersonalState.ExpandedFolders)
                 {
                     _expandedFolders.Add(BookmarkIdentity.NormalizeFolderPath(folder));
@@ -980,6 +1035,16 @@ namespace BookmarkStudio
             }
         }
 
+        private HashSet<string> GetFolderPathsForStorage(BookmarkStorageLocation storageLocation)
+        {
+            return storageLocation switch
+            {
+                BookmarkStorageLocation.Global => _globalFolderPaths,
+                BookmarkStorageLocation.Workspace => _solutionFolderPaths,
+                _ => _personalFolderPaths,
+            };
+        }
+
         private void RemoveFolderPathsForStorage(string folderPath, BookmarkStorageLocation storageLocation)
         {
             var prefix = folderPath + "/";
@@ -988,9 +1053,7 @@ namespace BookmarkStudio
                 string.Equals(path, folderPath, StringComparison.OrdinalIgnoreCase)
                 || path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
 
-            HashSet<string> targetSet = storageLocation == BookmarkStorageLocation.Personal
-                ? _personalFolderPaths
-                : _solutionFolderPaths;
+            HashSet<string> targetSet = GetFolderPathsForStorage(storageLocation);
 
             targetSet.RemoveWhere(path =>
                 string.Equals(path, folderPath, StringComparison.OrdinalIgnoreCase)
@@ -999,9 +1062,7 @@ namespace BookmarkStudio
 
         private void ClearFolderPathsForStorage(BookmarkStorageLocation storageLocation)
         {
-            HashSet<string> targetSet = storageLocation == BookmarkStorageLocation.Personal
-                ? _personalFolderPaths
-                : _solutionFolderPaths;
+            HashSet<string> targetSet = GetFolderPathsForStorage(storageLocation);
 
             // Remove all paths from this storage from the global set
             _folderPaths.RemoveWhere(path => targetSet.Contains(path));
@@ -1016,9 +1077,7 @@ namespace BookmarkStudio
             var normalized = BookmarkIdentity.NormalizeFolderPath(folderPath);
             _folderPaths.Add(normalized);
 
-            HashSet<string> targetSet = storageLocation == BookmarkStorageLocation.Personal
-                ? _personalFolderPaths
-                : _solutionFolderPaths;
+            HashSet<string> targetSet = GetFolderPathsForStorage(storageLocation);
 
             targetSet.Add(normalized);
         }
@@ -1027,9 +1086,7 @@ namespace BookmarkStudio
         {
             var sourcePrefix = sourceFolder + "/";
 
-            HashSet<string> targetSet = storageLocation == BookmarkStorageLocation.Personal
-                ? _personalFolderPaths
-                : _solutionFolderPaths;
+            HashSet<string> targetSet = GetFolderPathsForStorage(storageLocation);
 
             // Find affected paths in both the global and storage-specific sets
             List<string> affectedGlobal = [.. _folderPaths
@@ -1131,29 +1188,36 @@ namespace BookmarkStudio
 
             RootNodes.Clear();
 
-            if (!_isTestMode && !_operations.IsSolutionOrFolderOpen())
-            {
-                RestoreSelection(selectedBookmarkId, selectedFolderPath);
-                return;
-            }
-
             var search = SearchText.Trim();
+            var isSolutionOpen = _isTestMode || _operations.IsSolutionOrFolderOpen();
 
-            // Build Personal storage root node
-            FolderNodeViewModel personalRoot = BuildStorageRootNode(
-                BookmarkStorageLocation.Personal,
-                _personalBookmarks,
-                _personalFolderPaths,
+            // Build Global storage root node (always visible)
+            FolderNodeViewModel globalRoot = BuildStorageRootNode(
+                BookmarkStorageLocation.Global,
+                _globalBookmarks,
+                _globalFolderPaths,
                 search);
-            RootNodes.Add(personalRoot);
+            RootNodes.Add(globalRoot);
 
-            // Build Solution storage root node
-            FolderNodeViewModel solutionRoot = BuildStorageRootNode(
-                BookmarkStorageLocation.Workspace,
-                _solutionBookmarks,
-                _solutionFolderPaths,
-                search);
-            RootNodes.Add(solutionRoot);
+            // Build Personal and Workspace storage root nodes only when a solution is open
+            if (isSolutionOpen)
+            {
+                // Build Personal storage root node
+                FolderNodeViewModel personalRoot = BuildStorageRootNode(
+                    BookmarkStorageLocation.Personal,
+                    _personalBookmarks,
+                    _personalFolderPaths,
+                    search);
+                RootNodes.Add(personalRoot);
+
+                // Build Solution storage root node
+                FolderNodeViewModel solutionRoot = BuildStorageRootNode(
+                    BookmarkStorageLocation.Workspace,
+                    _solutionBookmarks,
+                    _solutionFolderPaths,
+                    search);
+                RootNodes.Add(solutionRoot);
+            }
 
             RestoreSelection(selectedBookmarkId, selectedFolderPath);
         }
@@ -1478,6 +1542,7 @@ namespace BookmarkStudio
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(StorageLocation)));
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(FolderName)));
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DisplayText)));
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsGlobalRoot)));
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsPersonalRoot)));
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsSolutionRoot)));
                     PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CanMoveToSolution)));
@@ -1485,6 +1550,8 @@ namespace BookmarkStudio
                 }
             }
         }
+
+        public bool IsGlobalRoot => IsRoot && _storageLocation == BookmarkStorageLocation.Global;
 
         public bool IsPersonalRoot => IsRoot && _storageLocation == BookmarkStorageLocation.Personal;
 
@@ -1505,6 +1572,7 @@ namespace BookmarkStudio
 
                 return _storageLocation switch
                 {
+                    BookmarkStorageLocation.Global => "Global",
                     BookmarkStorageLocation.Personal => "User",
                     BookmarkStorageLocation.Workspace => "Workspace",
                     _ => "Root",

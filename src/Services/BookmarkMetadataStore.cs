@@ -10,6 +10,7 @@ namespace BookmarkStudio
 {
     public enum BookmarkStorageLocation
     {
+        Global,
         Personal,
         Workspace,
     }
@@ -242,11 +243,20 @@ namespace BookmarkStudio
             return Path.Combine(solutionDirectory, ".vs", BookmarksFileName);
         }
 
+        public string GetGlobalStoragePath()
+        {
+            var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            return Path.Combine(userProfile, BookmarksFileName);
+        }
+
         public string GetStoragePathForLocation(string solutionPath, BookmarkStorageLocation location)
         {
-            return location == BookmarkStorageLocation.Workspace
-                ? GetSolutionStoragePath(solutionPath)
-                : GetPersonalStoragePath(solutionPath);
+            return location switch
+            {
+                BookmarkStorageLocation.Global => GetGlobalStoragePath(),
+                BookmarkStorageLocation.Workspace => GetSolutionStoragePath(solutionPath),
+                _ => GetPersonalStoragePath(solutionPath),
+            };
         }
 
         public async Task<BookmarkStorageInfo> MoveToLocationAsync(string solutionPath, BookmarkStorageLocation targetLocation, CancellationToken cancellationToken)
@@ -295,9 +305,19 @@ namespace BookmarkStudio
         /// </summary>
         public async Task<BookmarkWorkspaceState> LoadWorkspaceFromLocationAsync(string solutionPath, BookmarkStorageLocation location, CancellationToken cancellationToken)
         {
-            var storagePath = location == BookmarkStorageLocation.Workspace
-                ? GetSolutionStoragePath(solutionPath)
-                : GetPersonalStoragePath(solutionPath);
+            // For Workspace storage, we need a solution path
+            if (location == BookmarkStorageLocation.Workspace && string.IsNullOrWhiteSpace(solutionPath))
+            {
+                return new BookmarkWorkspaceState();
+            }
+
+            // For Personal storage without a solution, return empty (no .vs folder)
+            if (location == BookmarkStorageLocation.Personal && string.IsNullOrWhiteSpace(solutionPath))
+            {
+                return new BookmarkWorkspaceState();
+            }
+
+            var storagePath = GetStoragePathForLocation(solutionPath, location);
 
             if (!File.Exists(storagePath))
             {
@@ -312,7 +332,8 @@ namespace BookmarkStudio
 
             try
             {
-                return ParseWorkspaceJsonFromLocation(json, GetSolutionDirectory(solutionPath), location, cancellationToken);
+                var solutionDirectory = location == BookmarkStorageLocation.Global ? string.Empty : GetSolutionDirectory(solutionPath);
+                return ParseWorkspaceJsonFromLocation(json, solutionDirectory, location, cancellationToken);
             }
             catch (JsonException ex)
             {
@@ -361,9 +382,7 @@ namespace BookmarkStudio
                 throw new ArgumentNullException(nameof(state));
             }
 
-            var storagePath = location == BookmarkStorageLocation.Workspace
-                ? GetSolutionStoragePath(solutionPath)
-                : GetPersonalStoragePath(solutionPath);
+            var storagePath = GetStoragePathForLocation(solutionPath, location);
 
             var directory = Path.GetDirectoryName(storagePath);
             if (string.IsNullOrWhiteSpace(directory))
@@ -373,7 +392,7 @@ namespace BookmarkStudio
 
             Directory.CreateDirectory(directory);
 
-            var solutionDirectory = GetSolutionDirectory(solutionPath);
+            var solutionDirectory = location == BookmarkStorageLocation.Global ? string.Empty : GetSolutionDirectory(solutionPath);
             FolderNode root = BuildFolderTree(state, state.ExpandedFolders);
 
             var json = await Task.Run(() => SerializeTree(root, solutionDirectory), cancellationToken);
@@ -397,30 +416,26 @@ namespace BookmarkStudio
         }
 
         /// <summary>
-        /// Loads both Personal and Solution storage locations and returns combined state.
+        /// Loads Global, Personal, and Workspace storage locations and returns combined state.
         /// </summary>
         public async Task<DualBookmarkWorkspaceState> LoadDualWorkspaceAsync(string solutionPath, CancellationToken cancellationToken)
         {
+            BookmarkWorkspaceState globalState = await LoadWorkspaceFromLocationAsync(solutionPath, BookmarkStorageLocation.Global, cancellationToken);
             BookmarkWorkspaceState personalState = await LoadWorkspaceFromLocationAsync(solutionPath, BookmarkStorageLocation.Personal, cancellationToken);
             BookmarkWorkspaceState solutionState = await LoadWorkspaceFromLocationAsync(solutionPath, BookmarkStorageLocation.Workspace, cancellationToken);
 
-            return new DualBookmarkWorkspaceState(personalState, solutionState);
+            return new DualBookmarkWorkspaceState(globalState, personalState, solutionState);
         }
 
         /// <summary>
         /// Moves a bookmark from one storage location to another.
         /// </summary>
-        public async Task MoveBookmarkBetweenLocationsAsync(string solutionPath, string bookmarkId, BookmarkStorageLocation targetLocation, CancellationToken cancellationToken)
+        public async Task MoveBookmarkBetweenLocationsAsync(string solutionPath, string bookmarkId, BookmarkStorageLocation sourceLocation, BookmarkStorageLocation targetLocation, CancellationToken cancellationToken)
         {
             DualBookmarkWorkspaceState dualState = await LoadDualWorkspaceAsync(solutionPath, cancellationToken);
 
-            BookmarkWorkspaceState sourceState = targetLocation == BookmarkStorageLocation.Workspace
-                ? dualState.PersonalState
-                : dualState.SolutionState;
-
-            BookmarkWorkspaceState targetState = targetLocation == BookmarkStorageLocation.Workspace
-                ? dualState.SolutionState
-                : dualState.PersonalState;
+            BookmarkWorkspaceState sourceState = dualState.GetStateForLocation(sourceLocation);
+            BookmarkWorkspaceState targetState = dualState.GetStateForLocation(targetLocation);
 
             BookmarkMetadata? bookmark = sourceState.Bookmarks.FirstOrDefault(b => string.Equals(b.BookmarkId, bookmarkId, StringComparison.Ordinal));
             if (bookmark is null)
@@ -433,10 +448,6 @@ namespace BookmarkStudio
             targetState.Bookmarks.Add(bookmark);
             RegisterFolderPath(targetState.FolderPaths, bookmark.Group);
 
-            BookmarkStorageLocation sourceLocation = targetLocation == BookmarkStorageLocation.Workspace
-                ? BookmarkStorageLocation.Personal
-                : BookmarkStorageLocation.Workspace;
-
             await SaveWorkspaceToLocationAsync(solutionPath, sourceLocation, sourceState, cancellationToken);
             await SaveWorkspaceToLocationAsync(solutionPath, targetLocation, targetState, cancellationToken);
         }
@@ -448,6 +459,7 @@ namespace BookmarkStudio
             string solutionPath,
             string bookmarkId,
             string targetFolderPath,
+            BookmarkStorageLocation sourceLocation,
             BookmarkStorageLocation targetLocation,
             CancellationToken cancellationToken)
         {
@@ -455,13 +467,8 @@ namespace BookmarkStudio
 
             DualBookmarkWorkspaceState dualState = await LoadDualWorkspaceAsync(solutionPath, cancellationToken);
 
-            BookmarkWorkspaceState sourceState = targetLocation == BookmarkStorageLocation.Workspace
-                ? dualState.PersonalState
-                : dualState.SolutionState;
-
-            BookmarkWorkspaceState targetState = targetLocation == BookmarkStorageLocation.Workspace
-                ? dualState.SolutionState
-                : dualState.PersonalState;
+            BookmarkWorkspaceState sourceState = dualState.GetStateForLocation(sourceLocation);
+            BookmarkWorkspaceState targetState = dualState.GetStateForLocation(targetLocation);
 
             BookmarkMetadata? bookmark = sourceState.Bookmarks.FirstOrDefault(b => string.Equals(b.BookmarkId, bookmarkId, StringComparison.Ordinal));
             if (bookmark is null)
@@ -474,10 +481,6 @@ namespace BookmarkStudio
             bookmark.Group = normalizedTargetFolder;
             targetState.Bookmarks.Add(bookmark);
             RegisterFolderPath(targetState.FolderPaths, normalizedTargetFolder);
-
-            BookmarkStorageLocation sourceLocation = targetLocation == BookmarkStorageLocation.Workspace
-                ? BookmarkStorageLocation.Personal
-                : BookmarkStorageLocation.Workspace;
 
             await SaveWorkspaceToLocationAsync(solutionPath, sourceLocation, sourceState, cancellationToken);
             await SaveWorkspaceToLocationAsync(solutionPath, targetLocation, targetState, cancellationToken);
@@ -504,13 +507,8 @@ namespace BookmarkStudio
 
             DualBookmarkWorkspaceState dualState = await LoadDualWorkspaceAsync(solutionPath, cancellationToken);
 
-            BookmarkWorkspaceState sourceState = sourceLocation == BookmarkStorageLocation.Workspace
-                ? dualState.SolutionState
-                : dualState.PersonalState;
-
-            BookmarkWorkspaceState targetState = targetLocation == BookmarkStorageLocation.Workspace
-                ? dualState.SolutionState
-                : dualState.PersonalState;
+            BookmarkWorkspaceState sourceState = dualState.GetStateForLocation(sourceLocation);
+            BookmarkWorkspaceState targetState = dualState.GetStateForLocation(targetLocation);
 
             var sourcePrefix = normalizedSource + "/";
 

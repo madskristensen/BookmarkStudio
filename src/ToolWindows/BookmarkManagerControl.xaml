@@ -244,6 +244,13 @@
                                         VerticalAlignment="Center"
                                         Moniker="{x:Static imageCatalog:KnownMonikers.FolderClosed}"
                                         Visibility="{Binding IsRoot, Converter={StaticResource BoolToVisibilityInverseConverter}}" />
+                    <!-- Globe icon for root global -->
+                    <imaging:CrispImage Width="16"
+                                        Height="16"
+                                        Margin="0,0,6,0"
+                                        VerticalAlignment="Center"
+                                        Moniker="{x:Static imageCatalog:KnownMonikers.CSBlankWebSite}"
+                                        Visibility="{Binding IsGlobalRoot, Converter={StaticResource BoolToVisibilityConverter}}" />
                     <!-- User icon for root personal -->
                     <imaging:CrispImage Width="16"
                                         Height="16"
@@ -256,7 +263,7 @@
                                         Height="16"
                                         Margin="0,0,6,0"
                                         VerticalAlignment="Center"
-                                        Moniker="{x:Static imageCatalog:KnownMonikers.TeamProject}"
+                                        Moniker="{x:Static imageCatalog:KnownMonikers.Repository}"
                                         Visibility="{Binding IsSolutionRoot, Converter={StaticResource BoolToVisibilityConverter}}" />
                     <TextBlock Text="{Binding FolderName}"
                                FontWeight="SemiBold"

@@ -295,6 +295,7 @@ public class BookmarkMetadataStoreTests
                 solutionPath,
                 "bookmark-1",
                 "TargetFolder",
+                BookmarkStorageLocation.Workspace,
                 BookmarkStorageLocation.Personal,
                 CancellationToken.None);
 
@@ -351,6 +352,7 @@ public class BookmarkMetadataStoreTests
                 solutionPath,
                 "bookmark-1",
                 "Parent/Child/Nested",
+                BookmarkStorageLocation.Workspace,
                 BookmarkStorageLocation.Personal,
                 CancellationToken.None);
 

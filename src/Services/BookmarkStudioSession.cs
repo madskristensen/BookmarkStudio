@@ -72,10 +72,17 @@ namespace BookmarkStudio
                 DualBookmarkWorkspaceState dualState = await EnsureDualStateLoadedAsync(cancellationToken);
 
                 // Try to apply update to each workspace - catch exceptions if bookmark not found in that workspace
+                var globalChanged = TryApplyUpdate(dualState.GlobalState.Bookmarks, updateAction);
                 var personalChanged = TryApplyUpdate(dualState.PersonalState.Bookmarks, updateAction);
                 var solutionChanged = TryApplyUpdate(dualState.SolutionState.Bookmarks, updateAction);
 
                 // Save changed workspaces
+                if (globalChanged)
+                {
+                    BookmarkRepositoryService.NormalizeWorkspaceState(dualState.GlobalState);
+                    await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Global, dualState.GlobalState, cancellationToken);
+                }
+
                 if (personalChanged)
                 {
                     BookmarkRepositoryService.NormalizeWorkspaceState(dualState.PersonalState);
@@ -119,9 +126,16 @@ namespace BookmarkStudio
                 var solutionPath = await GetSolutionPathAsync(cancellationToken);
                 DualBookmarkWorkspaceState dualState = await EnsureDualStateLoadedAsync(cancellationToken);
 
-                // Try to apply update to both workspaces
+                // Try to apply update to all workspaces
+                var globalChanged = updateAction(dualState.GlobalState.Bookmarks);
                 var personalChanged = updateAction(dualState.PersonalState.Bookmarks);
                 var solutionChanged = updateAction(dualState.SolutionState.Bookmarks);
+
+                if (globalChanged)
+                {
+                    BookmarkRepositoryService.NormalizeWorkspaceState(dualState.GlobalState);
+                    await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Global, dualState.GlobalState, cancellationToken);
+                }
 
                 if (personalChanged)
                 {
@@ -160,14 +174,22 @@ namespace BookmarkStudio
                 var solutionPath = await GetSolutionPathAsync(cancellationToken);
                 DualBookmarkWorkspaceState dualState = await EnsureDualStateLoadedAsync(cancellationToken);
 
-                // Check both locations for existing bookmark
+                // Check all locations for existing bookmark
+                BookmarkMetadata existingGlobal = BookmarkRepositoryService.FindBySnapshot(dualState.GlobalState.Bookmarks, snapshot);
                 BookmarkMetadata existingPersonal = BookmarkRepositoryService.FindBySnapshot(dualState.PersonalState.Bookmarks, snapshot);
                 BookmarkMetadata existingSolution = BookmarkRepositoryService.FindBySnapshot(dualState.SolutionState.Bookmarks, snapshot);
                 ManagedBookmark? result;
+                var globalChanged = false;
                 var personalChanged = false;
                 var solutionChanged = false;
 
-                if (existingPersonal is not null)
+                if (existingGlobal is not null)
+                {
+                    dualState.GlobalState.Bookmarks.Remove(existingGlobal);
+                    globalChanged = true;
+                    result = null;
+                }
+                else if (existingPersonal is not null)
                 {
                     dualState.PersonalState.Bookmarks.Remove(existingPersonal);
                     personalChanged = true;
@@ -187,6 +209,7 @@ namespace BookmarkStudio
 
                     // Create new bookmark - combine all bookmarks to find next available slot/label
                     var allBookmarks = new List<BookmarkMetadata>();
+                    allBookmarks.AddRange(dualState.GlobalState.Bookmarks);
                     allBookmarks.AddRange(dualState.PersonalState.Bookmarks);
                     allBookmarks.AddRange(dualState.SolutionState.Bookmarks);
 
@@ -196,7 +219,12 @@ namespace BookmarkStudio
                     BookmarkStorageLocation defaultLocation = General.Instance.DefaultStorageLocation;
                     createdBookmark.StorageLocation = defaultLocation;
 
-                    if (defaultLocation == BookmarkStorageLocation.Personal)
+                    if (defaultLocation == BookmarkStorageLocation.Global)
+                    {
+                        dualState.GlobalState.Bookmarks.Add(createdBookmark);
+                        globalChanged = true;
+                    }
+                    else if (defaultLocation == BookmarkStorageLocation.Personal)
                     {
                         dualState.PersonalState.Bookmarks.Add(createdBookmark);
                         personalChanged = true;
@@ -211,6 +239,12 @@ namespace BookmarkStudio
                 }
 
                 // Save changed workspaces
+                if (globalChanged)
+                {
+                    BookmarkRepositoryService.NormalizeWorkspaceState(dualState.GlobalState);
+                    await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Global, dualState.GlobalState, cancellationToken);
+                }
+
                 if (personalChanged)
                 {
                     BookmarkRepositoryService.NormalizeWorkspaceState(dualState.PersonalState);
@@ -422,6 +456,21 @@ namespace BookmarkStudio
         {
             var totalRemoved = 0;
 
+            // Remove stale from global bookmarks
+            List<BookmarkMetadata> staleGlobal = [.. dualState.GlobalState.Bookmarks.Where(bookmark => !string.IsNullOrWhiteSpace(bookmark.DocumentPath) && !System.IO.File.Exists(bookmark.DocumentPath))];
+
+            if (staleGlobal.Count > 0)
+            {
+                foreach (BookmarkMetadata stale in staleGlobal)
+                {
+                    dualState.GlobalState.Bookmarks.Remove(stale);
+                }
+
+                totalRemoved += staleGlobal.Count;
+                BookmarkRepositoryService.NormalizeWorkspaceState(dualState.GlobalState);
+                await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Global, dualState.GlobalState, cancellationToken);
+            }
+
             // Remove stale from personal bookmarks
             List<BookmarkMetadata> stalePersonal = [.. dualState.PersonalState.Bookmarks.Where(bookmark => !string.IsNullOrWhiteSpace(bookmark.DocumentPath) && !System.IO.File.Exists(bookmark.DocumentPath))];
 
@@ -463,30 +512,37 @@ namespace BookmarkStudio
                 var solutionPath = await GetSolutionPathAsync(cancellationToken);
                 DualBookmarkWorkspaceState dualState = await EnsureDualStateLoadedAsync(cancellationToken);
 
-                BookmarkStorageLocation sourceLocation = targetLocation == BookmarkStorageLocation.Workspace
-                    ? BookmarkStorageLocation.Personal
-                    : BookmarkStorageLocation.Workspace;
+                // Find the bookmark in any storage location
+                BookmarkStorageLocation? sourceLocation = null;
+                BookmarkWorkspaceState? sourceState = null;
+                BookmarkMetadata? bookmark = null;
 
-                BookmarkWorkspaceState sourceState = sourceLocation == BookmarkStorageLocation.Personal
-                    ? dualState.PersonalState
-                    : dualState.SolutionState;
+                foreach (var loc in new[] { BookmarkStorageLocation.Global, BookmarkStorageLocation.Personal, BookmarkStorageLocation.Workspace })
+                {
+                    var state = dualState.GetStateForLocation(loc);
+                    var found = state.Bookmarks.FirstOrDefault(b => string.Equals(b.BookmarkId, bookmarkId, StringComparison.Ordinal));
+                    if (found is not null)
+                    {
+                        sourceLocation = loc;
+                        sourceState = state;
+                        bookmark = found;
+                        break;
+                    }
+                }
 
-                BookmarkWorkspaceState targetState = targetLocation == BookmarkStorageLocation.Personal
-                    ? dualState.PersonalState
-                    : dualState.SolutionState;
-
-                BookmarkMetadata? bookmark = sourceState.Bookmarks.FirstOrDefault(b => string.Equals(b.BookmarkId, bookmarkId, StringComparison.Ordinal));
-                if (bookmark is null)
+                if (bookmark is null || sourceState is null || !sourceLocation.HasValue || sourceLocation.Value == targetLocation)
                 {
                     return;
                 }
+
+                BookmarkWorkspaceState targetState = dualState.GetStateForLocation(targetLocation);
 
                 sourceState.Bookmarks.Remove(bookmark);
                 bookmark.StorageLocation = targetLocation;
                 targetState.Bookmarks.Add(bookmark);
                 BookmarkRepositoryService.EnsureFolderPath(targetState, bookmark.Group);
 
-                await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, sourceLocation, sourceState, cancellationToken);
+                await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, sourceLocation.Value, sourceState, cancellationToken);
                 await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, targetLocation, targetState, cancellationToken);
 
                 UpdateCachedStateFromDualState(dualState);
@@ -506,32 +562,49 @@ namespace BookmarkStudio
                 var normalizedTargetFolder = BookmarkIdentity.NormalizeFolderPath(targetFolderPath);
                 DualBookmarkWorkspaceState dualState = await EnsureDualStateLoadedAsync(cancellationToken);
 
-                BookmarkStorageLocation sourceLocation = targetLocation == BookmarkStorageLocation.Workspace
-                    ? BookmarkStorageLocation.Personal
-                    : BookmarkStorageLocation.Workspace;
+                // Find the bookmark in any storage location
+                BookmarkStorageLocation? sourceLocation = null;
+                BookmarkWorkspaceState? sourceState = null;
+                BookmarkMetadata? bookmark = null;
 
-                BookmarkWorkspaceState sourceState = sourceLocation == BookmarkStorageLocation.Personal
-                    ? dualState.PersonalState
-                    : dualState.SolutionState;
+                foreach (var loc in new[] { BookmarkStorageLocation.Global, BookmarkStorageLocation.Personal, BookmarkStorageLocation.Workspace })
+                {
+                    var state = dualState.GetStateForLocation(loc);
+                    var found = state.Bookmarks.FirstOrDefault(b => string.Equals(b.BookmarkId, bookmarkId, StringComparison.Ordinal));
+                    if (found is not null)
+                    {
+                        sourceLocation = loc;
+                        sourceState = state;
+                        bookmark = found;
+                        break;
+                    }
+                }
 
-                BookmarkWorkspaceState targetState = targetLocation == BookmarkStorageLocation.Personal
-                    ? dualState.PersonalState
-                    : dualState.SolutionState;
-
-                BookmarkMetadata? bookmark = sourceState.Bookmarks.FirstOrDefault(b => string.Equals(b.BookmarkId, bookmarkId, StringComparison.Ordinal));
-                if (bookmark is null)
+                if (bookmark is null || sourceState is null || !sourceLocation.HasValue)
                 {
                     return;
                 }
 
-                sourceState.Bookmarks.Remove(bookmark);
-                bookmark.Group = normalizedTargetFolder;
-                bookmark.StorageLocation = targetLocation;
-                targetState.Bookmarks.Add(bookmark);
-                BookmarkRepositoryService.EnsureFolderPath(targetState, normalizedTargetFolder);
+                BookmarkWorkspaceState targetState = dualState.GetStateForLocation(targetLocation);
 
-                await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, sourceLocation, sourceState, cancellationToken);
-                await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, targetLocation, targetState, cancellationToken);
+                // If same storage location, just update folder
+                if (sourceLocation.Value == targetLocation)
+                {
+                    bookmark.Group = normalizedTargetFolder;
+                    BookmarkRepositoryService.EnsureFolderPath(targetState, normalizedTargetFolder);
+                    await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, targetLocation, targetState, cancellationToken);
+                }
+                else
+                {
+                    sourceState.Bookmarks.Remove(bookmark);
+                    bookmark.Group = normalizedTargetFolder;
+                    bookmark.StorageLocation = targetLocation;
+                    targetState.Bookmarks.Add(bookmark);
+                    BookmarkRepositoryService.EnsureFolderPath(targetState, normalizedTargetFolder);
+
+                    await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, sourceLocation.Value, sourceState, cancellationToken);
+                    await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, targetLocation, targetState, cancellationToken);
+                }
 
                 UpdateCachedStateFromDualState(dualState);
             }
@@ -633,7 +706,7 @@ namespace BookmarkStudio
 
         /// <summary>
         /// Clears slot numbers from personal bookmarks that conflict with workspace bookmarks.
-        /// Workspace bookmarks take precedence when there are duplicate slot assignments.
+        /// Workspace bookmarks take precedence, then personal, then global.
         /// </summary>
         private static void ResolveShortcutConflicts(DualBookmarkWorkspaceState dualState)
         {
@@ -642,11 +715,31 @@ namespace BookmarkStudio
                     .Where(b => b.ShortcutNumber.HasValue)
                     .Select(b => b.ShortcutNumber.GetValueOrDefault()));
 
+            // Personal bookmarks lose to workspace shortcuts
             foreach (BookmarkMetadata personalBookmark in dualState.PersonalState.Bookmarks)
             {
                 if (personalBookmark.ShortcutNumber.HasValue && workspaceShortcuts.Contains(personalBookmark.ShortcutNumber.Value))
                 {
                     personalBookmark.ShortcutNumber = null;
+                }
+            }
+
+            // Track all higher priority shortcuts (workspace + personal)
+            var higherPriorityShortcuts = new HashSet<int>(workspaceShortcuts);
+            foreach (BookmarkMetadata personalBookmark in dualState.PersonalState.Bookmarks)
+            {
+                if (personalBookmark.ShortcutNumber.HasValue)
+                {
+                    higherPriorityShortcuts.Add(personalBookmark.ShortcutNumber.Value);
+                }
+            }
+
+            // Global bookmarks lose to workspace and personal shortcuts
+            foreach (BookmarkMetadata globalBookmark in dualState.GlobalState.Bookmarks)
+            {
+                if (globalBookmark.ShortcutNumber.HasValue && higherPriorityShortcuts.Contains(globalBookmark.ShortcutNumber.Value))
+                {
+                    globalBookmark.ShortcutNumber = null;
                 }
             }
         }
@@ -680,10 +773,16 @@ namespace BookmarkStudio
         private void UpdateCachedStateFromDualState(DualBookmarkWorkspaceState dualState)
         {
             var allBookmarks = new List<ManagedBookmark>();
+            allBookmarks.AddRange(BookmarkRepositoryService.ToManagedBookmarks(dualState.GlobalState.Bookmarks));
             allBookmarks.AddRange(BookmarkRepositoryService.ToManagedBookmarks(dualState.PersonalState.Bookmarks));
             allBookmarks.AddRange(BookmarkRepositoryService.ToManagedBookmarks(dualState.SolutionState.Bookmarks));
 
             var allFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var path in dualState.GlobalState.FolderPaths)
+            {
+                allFolders.Add(path);
+            }
+
             foreach (var path in dualState.PersonalState.FolderPaths)
             {
                 allFolders.Add(path);

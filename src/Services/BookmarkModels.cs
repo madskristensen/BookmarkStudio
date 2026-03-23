@@ -285,11 +285,14 @@ namespace BookmarkStudio
         private IReadOnlyList<BookmarkMetadata>? _cachedAllBookmarks;
         private IReadOnlyList<string>? _cachedAllFolderPaths;
 
-        public DualBookmarkWorkspaceState(BookmarkWorkspaceState personalState, BookmarkWorkspaceState solutionState)
+        public DualBookmarkWorkspaceState(BookmarkWorkspaceState globalState, BookmarkWorkspaceState personalState, BookmarkWorkspaceState solutionState)
         {
+            GlobalState = globalState ?? new BookmarkWorkspaceState();
             PersonalState = personalState ?? new BookmarkWorkspaceState();
             SolutionState = solutionState ?? new BookmarkWorkspaceState();
         }
+
+        public BookmarkWorkspaceState GlobalState { get; }
 
         public BookmarkWorkspaceState PersonalState { get; }
 
@@ -302,6 +305,7 @@ namespace BookmarkStudio
                 if (_cachedAllBookmarks is null)
                 {
                     var all = new List<BookmarkMetadata>();
+                    all.AddRange(GlobalState.Bookmarks);
                     all.AddRange(PersonalState.Bookmarks);
                     all.AddRange(SolutionState.Bookmarks);
                     _cachedAllBookmarks = all;
@@ -318,6 +322,11 @@ namespace BookmarkStudio
                 if (_cachedAllFolderPaths is null)
                 {
                     var all = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    foreach (var path in GlobalState.FolderPaths)
+                    {
+                        all.Add(path);
+                    }
+
                     foreach (var path in PersonalState.FolderPaths)
                     {
                         all.Add(path);
@@ -333,6 +342,16 @@ namespace BookmarkStudio
 
                 return _cachedAllFolderPaths;
             }
+        }
+
+        public BookmarkWorkspaceState GetStateForLocation(BookmarkStorageLocation location)
+        {
+            return location switch
+            {
+                BookmarkStorageLocation.Global => GlobalState,
+                BookmarkStorageLocation.Workspace => SolutionState,
+                _ => PersonalState,
+            };
         }
     }
 }

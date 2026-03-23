@@ -523,7 +523,8 @@ public class RepositoryAndModelTests
         var solutionState = new BookmarkWorkspaceState();
         solutionState.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "solution-1", Label = "Bookmark3" });
 
-        var dualState = new DualBookmarkWorkspaceState(personalState, solutionState);
+        var globalState = new BookmarkWorkspaceState();
+        var dualState = new DualBookmarkWorkspaceState(globalState, personalState, solutionState);
 
         Assert.HasCount(3, dualState.AllBookmarks);
         Assert.IsTrue(dualState.AllBookmarks.Any(b => b.BookmarkId == "personal-1"));
@@ -542,7 +543,8 @@ public class RepositoryAndModelTests
         solutionState.FolderPaths.Add(string.Empty);
         solutionState.FolderPaths.Add("SolutionFolder");
 
-        var dualState = new DualBookmarkWorkspaceState(personalState, solutionState);
+        var globalState = new BookmarkWorkspaceState();
+        var dualState = new DualBookmarkWorkspaceState(globalState, personalState, solutionState);
 
         Assert.HasCount(3, dualState.AllFolderPaths);
         Assert.Contains(string.Empty, dualState.AllFolderPaths);
@@ -561,7 +563,8 @@ public class RepositoryAndModelTests
         solutionState.FolderPaths.Add(string.Empty);
         solutionState.FolderPaths.Add("SharedFolder");
 
-        var dualState = new DualBookmarkWorkspaceState(personalState, solutionState);
+        var globalState = new BookmarkWorkspaceState();
+        var dualState = new DualBookmarkWorkspaceState(globalState, personalState, solutionState);
 
         Assert.HasCount(2, dualState.AllFolderPaths);
     }
@@ -578,7 +581,8 @@ public class RepositoryAndModelTests
         var solutionState = new BookmarkWorkspaceState();
         solutionState.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "s1", Label = "Bookmark3" });
 
-        var dualState = new DualBookmarkWorkspaceState(personalState, solutionState);
+        var globalState = new BookmarkWorkspaceState();
+        var dualState = new DualBookmarkWorkspaceState(globalState, personalState, solutionState);
 
         string result = BookmarkRepositoryService.FindNextDefaultLabel(dualState.AllBookmarks);
 

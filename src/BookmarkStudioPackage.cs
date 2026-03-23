@@ -66,10 +66,12 @@ namespace BookmarkStudio
 
         private void OnAfterCloseSolution()
         {
-            ThreadHelper.JoinableTaskFactory.StartOnIdle(() =>
+            BookmarkStudioSession.Current.InvalidateSolutionPath();
+            ThreadHelper.JoinableTaskFactory.StartOnIdle(async () =>
             {
-                BookmarkStudioSession.Current.Clear();
-                BookmarkManagerToolWindow.ClearIfVisible();
+                // Refresh to show only Global bookmarks
+                await BookmarkStudioSession.Current.RefreshAsync(CancellationToken.None);
+                await BookmarkManagerToolWindow.RefreshIfVisibleAsync(CancellationToken.None);
             }).FireAndForget();
         }
 
@@ -86,10 +88,12 @@ namespace BookmarkStudio
 
         private void OnAfterCloseFolder(string? folderPath)
         {
-            ThreadHelper.JoinableTaskFactory.StartOnIdle(() =>
+            BookmarkStudioSession.Current.InvalidateSolutionPath();
+            ThreadHelper.JoinableTaskFactory.StartOnIdle(async () =>
             {
-                BookmarkStudioSession.Current.Clear();
-                BookmarkManagerToolWindow.ClearIfVisible();
+                // Refresh to show only Global bookmarks
+                await BookmarkStudioSession.Current.RefreshAsync(CancellationToken.None);
+                await BookmarkManagerToolWindow.RefreshIfVisibleAsync(CancellationToken.None);
             }).FireAndForget();
         }
     }
