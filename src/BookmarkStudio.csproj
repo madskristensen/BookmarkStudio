@@ -71,6 +71,7 @@
     <Compile Include="Commands\BookmarkCommandActions.cs" />
     <Compile Include="BookmarkStudioPackage.cs" />
     <Compile Include="Services\BookmarkMetadataStore.cs" />
+    <Compile Include="Services\BookmarkNameSuggestionService.cs" />
     <Compile Include="source.extension.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>

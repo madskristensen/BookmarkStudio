@@ -14,9 +14,10 @@ namespace BookmarkStudio
 
                 if (!hasExistingBookmark)
                 {
-                    // Use selected text as suggestion if available, otherwise fall back to default label
+                    // Use selected text as suggestion if available, otherwise try to extract a meaningful
+                    // identifier from the current line, falling back to default "Bookmark N" naming
                     var selectedText = await BookmarkOperationsService.Current.GetSelectedTextAsync(cancellationToken);
-                    var defaultLabel = selectedText ?? await BookmarkOperationsService.Current.GetNextDefaultLabelAsync(cancellationToken);
+                    var defaultLabel = selectedText ?? await BookmarkOperationsService.Current.GetSuggestedLabelAsync(cancellationToken);
 
                     label = TextPromptWindow.Show("New Bookmark", "Enter a name for this bookmark:", defaultLabel, selectTextOnLoad: true);
 

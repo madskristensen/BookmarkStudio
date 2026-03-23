@@ -63,6 +63,27 @@ namespace BookmarkStudio
             return BookmarkRepositoryService.FindNextDefaultLabel(dualState.AllBookmarks);
         }
 
+        /// <summary>
+        /// Gets a suggested label for a new bookmark by analyzing the code at the current caret position.
+        /// Returns a meaningful identifier from the current line if found, otherwise falls back to the default label.
+        /// </summary>
+        public async Task<string> GetSuggestedLabelAsync(CancellationToken cancellationToken)
+        {
+            // First, try to get a meaningful name from code classification
+            BookmarkNameSuggestionService? suggestionService = BookmarkNameSuggestionService.TryGetInstance();
+            if (suggestionService is not null)
+            {
+                string? suggestedName = await suggestionService.GetSuggestedNameAsync(cancellationToken);
+                if (!string.IsNullOrWhiteSpace(suggestedName))
+                {
+                    return suggestedName;
+                }
+            }
+
+            // Fall back to the default "Bookmark N" naming
+            return await GetNextDefaultLabelAsync(cancellationToken);
+        }
+
         public async Task<string?> GetSelectedTextAsync(CancellationToken cancellationToken)
         {
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
