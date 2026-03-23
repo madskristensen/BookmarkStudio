@@ -594,6 +594,43 @@ namespace BookmarkStudio
             SetStatus("Folder created.");
         }
 
+        public async Task AddFileBookmarkToGlobalAsync(string filePath, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(filePath))
+            {
+                throw new ArgumentNullException(nameof(filePath));
+            }
+
+            if (!System.IO.File.Exists(filePath))
+            {
+                SetStatus("The selected file does not exist.");
+                return;
+            }
+
+            var absolutePath = System.IO.Path.GetFullPath(filePath);
+            var fileName = System.IO.Path.GetFileName(absolutePath);
+
+            var bookmark = new BookmarkMetadata
+            {
+                BookmarkId = Guid.NewGuid().ToString("N"),
+                DocumentPath = absolutePath,
+                LineNumber = 0,
+                LineText = absolutePath,
+                Label = fileName,
+                ShortcutNumber = null,
+                Color = BookmarkColor.Blue,
+                StorageLocation = BookmarkStorageLocation.Global,
+            };
+
+            IReadOnlyList<ManagedBookmark> bookmarks = await _operations.AddBookmarkToGlobalAsync(bookmark, cancellationToken);
+            ReloadDualBookmarks(bookmarks);
+
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+            RebuildTree();
+            SelectBookmark(bookmark.BookmarkId);
+            SetStatus($"File bookmark '{fileName}' added to Global.");
+        }
+
         public async Task RenameSelectedFolderAsync(string folderName, CancellationToken cancellationToken)
         {
             FolderNodeViewModel folderNode = GetRequiredSelectedFolder();

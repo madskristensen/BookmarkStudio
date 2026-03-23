@@ -202,6 +202,13 @@
                                 <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.NewFolder}" />
                             </MenuItem.Icon>
                         </MenuItem>
+                        <MenuItem x:Name="AddFileMenuItem" Header="Add File..." Click="AddFileMenuItem_Click"
+                                  Style="{StaticResource ThemedMenuItemStyle}"
+                                  Visibility="{Binding IsGlobalRoot, Converter={StaticResource BoolToVisibilityConverter}}">
+                            <MenuItem.Icon>
+                                <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.AddDocument}" />
+                            </MenuItem.Icon>
+                        </MenuItem>
                         <Separator x:Name="FolderSeparator1" Style="{StaticResource ThemedSeparatorStyle}" />
                         <MenuItem Header="Clear Bookmarks" 
                                   Click="ClearBookmarksMenuItem_Click"

@@ -153,6 +153,20 @@ Bookmark Studio looks for the file in this order:
 2. Repository root
 3. `.vs` folder (default)
 
+## Global Bookmarks
+
+Global bookmarks persist across all solutions and are stored in `%USERPROFILE%\.bookmarks.json`. They appear under the **Global** node in the Bookmark Manager and are always available, regardless of which solution is open.
+
+### Bookmarking Files from Anywhere
+
+Right-click the **Global** node and select **Add File...** to bookmark any file on disk - even files outside your current solution. This is useful for:
+
+- Quick access to frequently edited config files (hosts file, global gitconfig, etc.)
+- Reference documentation or specs stored anywhere on your machine
+- Files in other projects you frequently need to consult
+
+The file name becomes the bookmark label, and the full path is shown in the tooltip. Global file bookmarks don't have shortcut numbers assigned by default.
+
 ## Contribute
 
 [Issues](https://github.com/madskristensen/BookmarkStudio/issues), ideas, and pull requests are welcome.

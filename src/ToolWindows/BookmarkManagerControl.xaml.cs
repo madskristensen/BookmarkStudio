@@ -12,6 +12,11 @@ namespace BookmarkStudio
     {
         private static readonly string BookmarkDragFormat = "BookmarkStudio.Bookmark";
         private static readonly string FolderDragFormat = "BookmarkStudio.Folder";
+
+        // Multiplier for minimum drag distance to prevent accidental drags.
+        // The system default (typically 4 pixels) is often too sensitive.
+        private const double DragThresholdMultiplier = 3.0;
+
         private readonly BookmarkManagerViewModel _viewModel = new();
         private readonly ToolWindowInitData? _initData;
         private Point _dragStartPoint;
@@ -255,8 +260,11 @@ namespace BookmarkStudio
             }
 
             Point currentPosition = e.GetPosition(BookmarkTreeView);
-            if (Math.Abs(currentPosition.X - _dragStartPoint.X) < SystemParameters.MinimumHorizontalDragDistance
-                && Math.Abs(currentPosition.Y - _dragStartPoint.Y) < SystemParameters.MinimumVerticalDragDistance)
+            double minHorizontalDistance = SystemParameters.MinimumHorizontalDragDistance * DragThresholdMultiplier;
+            double minVerticalDistance = SystemParameters.MinimumVerticalDragDistance * DragThresholdMultiplier;
+
+            if (Math.Abs(currentPosition.X - _dragStartPoint.X) < minHorizontalDistance
+                && Math.Abs(currentPosition.Y - _dragStartPoint.Y) < minVerticalDistance)
             {
                 return;
             }
@@ -616,6 +624,34 @@ namespace BookmarkStudio
             }
 
             await PromptCreateFolderInternalAsync();
+        }
+
+        private async void AddFileMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            if (!SelectFolderFromContextMenu(sender))
+            {
+                return;
+            }
+
+            if (_viewModel.SelectedNode is not FolderNodeViewModel folderNode || !folderNode.IsGlobalRoot)
+            {
+                _viewModel.SetStatus("Add File is only available for the Global root folder.");
+                return;
+            }
+
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = "Select a file to bookmark",
+                Filter = "All files (*.*)|*.*",
+                CheckFileExists = true,
+            };
+
+            if (dialog.ShowDialog() != true)
+            {
+                return;
+            }
+
+            await RunAsync(cancellationToken => _viewModel.AddFileBookmarkToGlobalAsync(dialog.FileName, cancellationToken));
         }
 
         private async void RenameFolderMenuItem_Click(object sender, RoutedEventArgs e)

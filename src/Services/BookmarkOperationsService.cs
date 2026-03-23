@@ -283,6 +283,19 @@ namespace BookmarkStudio
             }, cancellationToken);
         }
 
+        public Task<IReadOnlyList<ManagedBookmark>> AddBookmarkToGlobalAsync(BookmarkMetadata bookmark, CancellationToken cancellationToken)
+        {
+            if (bookmark is null)
+            {
+                throw new ArgumentNullException(nameof(bookmark));
+            }
+
+            return _session.UpdateWorkspaceAtLocationAsync(BookmarkStorageLocation.Global, workspace =>
+            {
+                workspace.Bookmarks.Add(bookmark);
+            }, cancellationToken);
+        }
+
         public async Task<IReadOnlyList<ManagedBookmark>> RenameFolderAsync(string? sourceFolderPath, string? targetFolderName, BookmarkStorageLocation storageLocation, CancellationToken cancellationToken)
         {
             var sourcePath = BookmarkIdentity.NormalizeFolderPath(sourceFolderPath);
