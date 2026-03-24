@@ -137,6 +137,17 @@ Access settings via **Tools > Options > Bookmark Studio > General**.
 | Default storage location           | Choose where new bookmarks are stored: *Personal* (.vs folder) or *Workspace* (solution root for sharing).   |
 | Intercept built-in bookmark commands | Controls whether Visual Studio's built-in bookmark commands use Bookmark Studio. *Ask* (default) prompts you on first use, *Yes* always uses Bookmark Studio, *No* lets native bookmarks work normally. Use the direct shortcuts (Alt+Shift+Space, Alt+Shift+N) to always use Bookmark Studio regardless of this setting. |
 
+### Smart Name Suggestions
+
+When **Prompt for bookmark name** is enabled, Bookmark Studio suggests a name using this fallback order:
+
+1. Classified identifier at the caret location (for example method or type name)
+2. File name without extension
+3. Current line text (trimmed, up to 50 characters)
+4. `Bookmark`
+
+If the suggested name already exists, Bookmark Studio appends a numeric suffix (`1`, `2`, `3`, and so on).
+
 ## Sharing Bookmarks
 
 Bookmark Studio stores bookmarks in `.bookmarks.json`. By default, this file lives in the `.vs` folder (which is typically gitignored).

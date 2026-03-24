@@ -14,8 +14,9 @@ namespace BookmarkStudio
 
                 if (!hasExistingBookmark)
                 {
-                    // Use selected text as suggestion if available, otherwise try to extract a meaningful
-                    // identifier from the current line, falling back to default "Bookmark N" naming
+                    // Use selected text when available.
+                    // Otherwise use smart fallback naming (classified identifier, file name, line text, Bookmark)
+                    // with numeric suffixing when needed for uniqueness.
                     var selectedText = await BookmarkOperationsService.Current.GetSelectedTextAsync(cancellationToken);
                     var defaultLabel = selectedText ?? await BookmarkOperationsService.Current.GetSuggestedLabelAsync(cancellationToken);
 

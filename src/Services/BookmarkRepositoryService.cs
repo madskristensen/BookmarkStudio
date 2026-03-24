@@ -383,6 +383,42 @@ namespace BookmarkStudio
         }
 
         /// <summary>
+        /// Returns a unique label based on the preferred label.
+        /// If the preferred label is already used, appends the lowest available numeric suffix (1, 2, 3, ...).
+        /// </summary>
+        internal static string FindNextAvailableLabel(IEnumerable<BookmarkMetadata> bookmarks, string? preferredLabel)
+        {
+            if (bookmarks is null)
+            {
+                throw new ArgumentNullException(nameof(bookmarks));
+            }
+
+            var baseLabel = string.IsNullOrWhiteSpace(preferredLabel)
+                ? "Bookmark"
+                : preferredLabel.Trim();
+
+            var usedLabels = new HashSet<string>(
+                bookmarks
+                    .Select(item => item.Label)
+                    .Where(label => !string.IsNullOrWhiteSpace(label))
+                    .Select(label => label.Trim()),
+                StringComparer.OrdinalIgnoreCase);
+
+            if (!usedLabels.Contains(baseLabel))
+            {
+                return baseLabel;
+            }
+
+            var suffix = 1;
+            while (usedLabels.Contains(string.Concat(baseLabel, suffix.ToString(System.Globalization.CultureInfo.InvariantCulture))))
+            {
+                suffix++;
+            }
+
+            return string.Concat(baseLabel, suffix.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
+
+        /// <summary>
         /// Returns the next default folder name in the format "Folder1", "Folder2", etc.
         /// </summary>
         internal static string FindNextDefaultFolderName(IEnumerable<string> folderPaths)

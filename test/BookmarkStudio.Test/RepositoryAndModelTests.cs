@@ -477,6 +477,61 @@ public class RepositoryAndModelTests
     }
 
     [TestMethod]
+    public void FindNextAvailableLabel_WhenPreferredLabelIsUnused_ReturnsPreferredLabel()
+    {
+        BookmarkMetadata[] bookmarks =
+        [
+            new() { BookmarkId = "a", Label = "Existing" },
+        ];
+
+        string result = BookmarkRepositoryService.FindNextAvailableLabel(bookmarks, "MyMethod");
+
+        Assert.AreEqual("MyMethod", result);
+    }
+
+    [TestMethod]
+    public void FindNextAvailableLabel_WhenPreferredLabelIsUsed_ReturnsPreferredLabelWithSuffixOne()
+    {
+        BookmarkMetadata[] bookmarks =
+        [
+            new() { BookmarkId = "a", Label = "MyMethod" },
+        ];
+
+        string result = BookmarkRepositoryService.FindNextAvailableLabel(bookmarks, "MyMethod");
+
+        Assert.AreEqual("MyMethod1", result);
+    }
+
+    [TestMethod]
+    public void FindNextAvailableLabel_WhenSuffixGapExists_ReturnsLowestAvailableSuffix()
+    {
+        BookmarkMetadata[] bookmarks =
+        [
+            new() { BookmarkId = "a", Label = "MyMethod" },
+            new() { BookmarkId = "b", Label = "MyMethod1" },
+            new() { BookmarkId = "c", Label = "MyMethod3" },
+        ];
+
+        string result = BookmarkRepositoryService.FindNextAvailableLabel(bookmarks, "MyMethod");
+
+        Assert.AreEqual("MyMethod2", result);
+    }
+
+    [TestMethod]
+    public void FindNextAvailableLabel_WhenPreferredLabelIsBlank_UsesBookmarkBase()
+    {
+        BookmarkMetadata[] bookmarks =
+        [
+            new() { BookmarkId = "a", Label = "Bookmark" },
+            new() { BookmarkId = "b", Label = "Bookmark1" },
+        ];
+
+        string result = BookmarkRepositoryService.FindNextAvailableLabel(bookmarks, " ");
+
+        Assert.AreEqual("Bookmark2", result);
+    }
+
+    [TestMethod]
     public void FindNextDefaultFolderName_WhenNoFolders_ReturnsFolder1()
     {
         string result = BookmarkRepositoryService.FindNextDefaultFolderName(Array.Empty<string>());

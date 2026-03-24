@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using EnvDTE;
@@ -57,31 +58,52 @@ namespace BookmarkStudio
             return activeBookmark is not null;
         }
 
-        public async Task<string> GetNextDefaultLabelAsync(CancellationToken cancellationToken)
-        {
-            DualBookmarkWorkspaceState dualState = await _session.RefreshDualAsync(cancellationToken);
-            return BookmarkRepositoryService.FindNextDefaultLabel(dualState.AllBookmarks);
-        }
-
         /// <summary>
         /// Gets a suggested label for a new bookmark by analyzing the code at the current caret position.
-        /// Returns a meaningful identifier from the current line if found, otherwise falls back to the default label.
+        /// Fallback order: classified identifier, file name, line text (max 50 chars), then "Bookmark".
+        /// If a candidate label already exists, a numeric suffix is appended.
         /// </summary>
         public async Task<string> GetSuggestedLabelAsync(CancellationToken cancellationToken)
         {
-            // First, try to get a meaningful name from code classification
+            DualBookmarkWorkspaceState dualState = await _session.RefreshDualAsync(cancellationToken);
+
             BookmarkNameSuggestionService? suggestionService = BookmarkNameSuggestionService.TryGetInstance();
             if (suggestionService is not null)
             {
                 string? suggestedName = await suggestionService.GetSuggestedNameAsync(cancellationToken);
                 if (!string.IsNullOrWhiteSpace(suggestedName))
                 {
-                    return suggestedName;
+                    return BookmarkRepositoryService.FindNextAvailableLabel(dualState.AllBookmarks, suggestedName);
                 }
             }
 
-            // Fall back to the default "Bookmark N" naming
-            return await GetNextDefaultLabelAsync(cancellationToken);
+            BookmarkSnapshot? snapshot = null;
+            try
+            {
+                snapshot = await CaptureActiveSnapshotAsync(cancellationToken);
+            }
+            catch (InvalidOperationException ex)
+            {
+                await ex.LogAsync();
+                snapshot = null;
+            }
+
+            if (snapshot is not null)
+            {
+                var fileName = Path.GetFileNameWithoutExtension(snapshot.DocumentPath)?.Trim();
+                if (!string.IsNullOrWhiteSpace(fileName))
+                {
+                    return BookmarkRepositoryService.FindNextAvailableLabel(dualState.AllBookmarks, fileName);
+                }
+
+                string? lineTextLabel = CreateLineTextLabel(snapshot.LineText);
+                if (!string.IsNullOrWhiteSpace(lineTextLabel))
+                {
+                    return BookmarkRepositoryService.FindNextAvailableLabel(dualState.AllBookmarks, lineTextLabel);
+                }
+            }
+
+            return BookmarkRepositoryService.FindNextAvailableLabel(dualState.AllBookmarks, "Bookmark");
         }
 
         public async Task<string?> GetSelectedTextAsync(CancellationToken cancellationToken)
@@ -705,6 +727,24 @@ namespace BookmarkStudio
             }
 
             return 0;
+        }
+
+        private static string? CreateLineTextLabel(string? lineText)
+        {
+            if (string.IsNullOrWhiteSpace(lineText))
+            {
+                return null;
+            }
+
+            var trimmed = lineText.Trim();
+            if (trimmed.Length > 50)
+            {
+                trimmed = trimmed.Substring(0, 50).Trim();
+            }
+
+            return string.IsNullOrWhiteSpace(trimmed)
+                ? null
+                : trimmed;
         }
 
         private static string ValidateFolderName(string? folderName)
