@@ -114,7 +114,7 @@ namespace BookmarkStudio
                 BookmarkId = Guid.NewGuid().ToString("N"),
                 ShortcutNumber = FindNextAvailableShortcut(existingBookmarks),
                 Label = string.IsNullOrWhiteSpace(label) ? FindNextDefaultLabel(existingBookmarks) : label,
-                Color = BookmarkColor.Blue,
+                Color = General.Instance.DefaultBookmarkColor,
             };
 
             bookmark.UpdateFromSnapshot(snapshot);

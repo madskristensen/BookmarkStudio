@@ -135,6 +135,7 @@ Access settings via **Tools > Options > Bookmark Studio > General**.
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------------- |
 | Prompt for bookmark name           | When enabled, a dialog prompts for a name when creating a new bookmark.                                       |
 | Default storage location           | Choose where new bookmarks are stored: *Personal* (.vs folder) or *Workspace* (solution root for sharing).   |
+| Default bookmark color             | The color automatically assigned to newly created bookmarks. Defaults to *Blue*.                             |
 | Intercept built-in bookmark commands | Controls whether Visual Studio's built-in bookmark commands use Bookmark Studio. *Ask* (default) prompts you on first use, *Yes* always uses Bookmark Studio, *No* lets native bookmarks work normally. Use the direct shortcuts (Alt+Shift+Space, Alt+Shift+N) to always use Bookmark Studio regardless of this setting. |
 
 ### Smart Name Suggestions

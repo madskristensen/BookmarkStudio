@@ -31,6 +31,13 @@ namespace BookmarkStudio
         [TypeConverter(typeof(EnumConverter))]
         public BookmarkStorageLocation DefaultStorageLocation { get; set; } = BookmarkStorageLocation.Personal;
 
+        [Category("Bookmarks")]
+        [DisplayName("Default bookmark color")]
+        [Description("The color automatically assigned to newly created bookmarks.")]
+        [DefaultValue(BookmarkColor.Blue)]
+        [TypeConverter(typeof(EnumConverter))]
+        public BookmarkColor DefaultBookmarkColor { get; set; } = BookmarkColor.Blue;
+
         [Category("Commands")]
         [DisplayName("Intercept built-in bookmark commands")]
         [Description("Controls whether the built-in Visual Studio bookmark commands (Ctrl+K,K etc.) use Bookmark Studio. 'Ask' prompts on first use, 'Yes' always intercepts, 'No' never intercepts.")]

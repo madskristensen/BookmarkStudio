@@ -68,18 +68,22 @@ namespace BookmarkStudio
         public static MenuItem CreateSetColorSubmenu(string bookmarkId, Func<string, CancellationToken, Task>? refreshCallback = null)
         {
             var submenu = new MenuItem { Header = "Set Color" };
+            BookmarkColor defaultColor = General.Instance.DefaultBookmarkColor;
 
-            AddColorMenuItem(submenu, "Blue (default)", BookmarkColor.Blue, bookmarkId, refreshCallback);
-            AddColorMenuItem(submenu, "Red", BookmarkColor.Red, bookmarkId, refreshCallback);
-            AddColorMenuItem(submenu, "Orange", BookmarkColor.Orange, bookmarkId, refreshCallback);
-            AddColorMenuItem(submenu, "Yellow", BookmarkColor.Yellow, bookmarkId, refreshCallback);
-            AddColorMenuItem(submenu, "Green", BookmarkColor.Green, bookmarkId, refreshCallback);
-            AddColorMenuItem(submenu, "Purple", BookmarkColor.Purple, bookmarkId, refreshCallback);
-            AddColorMenuItem(submenu, "Pink", BookmarkColor.Pink, bookmarkId, refreshCallback);
-            AddColorMenuItem(submenu, "Teal", BookmarkColor.Teal, bookmarkId, refreshCallback);
+            AddColorMenuItem(submenu, GetColorLabel("Blue", BookmarkColor.Blue, defaultColor), BookmarkColor.Blue, bookmarkId, refreshCallback);
+            AddColorMenuItem(submenu, GetColorLabel("Red", BookmarkColor.Red, defaultColor), BookmarkColor.Red, bookmarkId, refreshCallback);
+            AddColorMenuItem(submenu, GetColorLabel("Orange", BookmarkColor.Orange, defaultColor), BookmarkColor.Orange, bookmarkId, refreshCallback);
+            AddColorMenuItem(submenu, GetColorLabel("Yellow", BookmarkColor.Yellow, defaultColor), BookmarkColor.Yellow, bookmarkId, refreshCallback);
+            AddColorMenuItem(submenu, GetColorLabel("Green", BookmarkColor.Green, defaultColor), BookmarkColor.Green, bookmarkId, refreshCallback);
+            AddColorMenuItem(submenu, GetColorLabel("Purple", BookmarkColor.Purple, defaultColor), BookmarkColor.Purple, bookmarkId, refreshCallback);
+            AddColorMenuItem(submenu, GetColorLabel("Pink", BookmarkColor.Pink, defaultColor), BookmarkColor.Pink, bookmarkId, refreshCallback);
+            AddColorMenuItem(submenu, GetColorLabel("Teal", BookmarkColor.Teal, defaultColor), BookmarkColor.Teal, bookmarkId, refreshCallback);
 
             return submenu;
         }
+
+        private static string GetColorLabel(string name, BookmarkColor color, BookmarkColor defaultColor)
+            => color == defaultColor ? $"{name} (default)" : name;
 
         /// <summary>
         /// Creates a "Rename" menu item with the standard Rename icon.

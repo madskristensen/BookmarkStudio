@@ -618,7 +618,7 @@ namespace BookmarkStudio
                 LineText = absolutePath,
                 Label = fileName,
                 ShortcutNumber = null,
-                Color = BookmarkColor.Blue,
+                Color = General.Instance.DefaultBookmarkColor,
                 StorageLocation = BookmarkStorageLocation.Global,
             };
 
