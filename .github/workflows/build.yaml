@@ -55,7 +55,7 @@ jobs:
       run: dotnet vstest /_built/BookmarkStudio.Test.dll --logger "trx;LogFileName=test-results.trx"
 
     - name: Report test results
-      uses: dorny/test-reporter@3
+      uses: dorny/test-reporter@v3
       if: ${{ always() && (github.event_name != 'pull_request_target' || github.event.pull_request.head.repo.full_name == github.repository) }}
       with:
         name: Test Results
