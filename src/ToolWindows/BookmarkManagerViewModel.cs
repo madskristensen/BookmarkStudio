@@ -791,12 +791,23 @@ namespace BookmarkStudio
         {
             if (string.IsNullOrWhiteSpace(bookmarkId))
             {
+                ClearNodeIsSelected();
                 SelectedNode = null;
                 return;
             }
 
             BookmarkItemNodeViewModel? node = FindBookmarkNode(RootNodes, bookmarkId!);
+            if (node is not null)
+            {
+                ExpandAncestors(RootNodes, bookmarkId!);
+            }
+
+            ClearNodeIsSelected();
             SelectedNode = node;
+            if (node is not null)
+            {
+                node.IsSelected = true;
+            }
         }
 
         internal void SelectFolder(string? folderPath)
@@ -804,6 +815,14 @@ namespace BookmarkStudio
             var normalizedPath = BookmarkIdentity.NormalizeFolderPath(folderPath);
             FolderNodeViewModel? node = FindFolderNode(RootNodes, normalizedPath);
             SelectedNode = node;
+        }
+
+        private void ClearNodeIsSelected()
+        {
+            if (_selectedNode is not null)
+            {
+                _selectedNode.IsSelected = false;
+            }
         }
 
         internal void LoadForTests(IEnumerable<ManagedBookmark> bookmarks, IEnumerable<string>? folderPaths = null)
@@ -1475,6 +1494,37 @@ namespace BookmarkStudio
             return null;
         }
 
+        /// <summary>
+        /// Expands all ancestor folder nodes that contain the specified bookmark
+        /// so that the TreeViewItem container is realized for selection.
+        /// </summary>
+        private static bool ExpandAncestors(IEnumerable<BookmarkNodeViewModel> nodes, string bookmarkId)
+        {
+            foreach (BookmarkNodeViewModel node in nodes)
+            {
+                if (node is BookmarkItemNodeViewModel bookmarkNode)
+                {
+                    if (string.Equals(bookmarkNode.Bookmark.BookmarkId, bookmarkId, StringComparison.Ordinal))
+                    {
+                        return true;
+                    }
+
+                    continue;
+                }
+
+                if (node is FolderNodeViewModel folderNode)
+                {
+                    if (ExpandAncestors(folderNode.Children, bookmarkId))
+                    {
+                        folderNode.IsExpanded = true;
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
         private static string GetParentFolderPath(string folderPath)
         {
             var normalized = BookmarkIdentity.NormalizeFolderPath(folderPath);
@@ -1535,14 +1585,34 @@ namespace BookmarkStudio
         }
     }
 
-    public abstract class BookmarkNodeViewModel
+    public abstract class BookmarkNodeViewModel : INotifyPropertyChanged
     {
+        private bool _isSelected;
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+
         public abstract bool IsFolder { get; }
 
         public abstract string DisplayText { get; }
+
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set
+            {
+                if (_isSelected != value)
+                {
+                    _isSelected = value;
+                    OnPropertyChanged(nameof(IsSelected));
+                }
+            }
+        }
+
+        protected void OnPropertyChanged(string propertyName)
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
-    public sealed class FolderNodeViewModel : BookmarkNodeViewModel, INotifyPropertyChanged
+    public sealed class FolderNodeViewModel : BookmarkNodeViewModel
     {
         private bool _isExpanded;
         private bool _isMultiSelected;
@@ -1560,8 +1630,6 @@ namespace BookmarkStudio
             _storageLocation = storageLocation;
         }
 
-        public event PropertyChangedEventHandler? PropertyChanged;
-
         public event EventHandler? IsExpandedChanged;
 
         public string FolderPath { get; }
@@ -1576,14 +1644,14 @@ namespace BookmarkStudio
                 if (_storageLocation != value)
                 {
                     _storageLocation = value;
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(StorageLocation)));
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(FolderName)));
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DisplayText)));
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsGlobalRoot)));
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsPersonalRoot)));
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsSolutionRoot)));
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CanMoveToSolution)));
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CanMoveToPersonal)));
+                    OnPropertyChanged(nameof(StorageLocation));
+                    OnPropertyChanged(nameof(FolderName));
+                    OnPropertyChanged(nameof(DisplayText));
+                    OnPropertyChanged(nameof(IsGlobalRoot));
+                    OnPropertyChanged(nameof(IsPersonalRoot));
+                    OnPropertyChanged(nameof(IsSolutionRoot));
+                    OnPropertyChanged(nameof(CanMoveToSolution));
+                    OnPropertyChanged(nameof(CanMoveToPersonal));
                 }
             }
         }
@@ -1627,7 +1695,7 @@ namespace BookmarkStudio
                 if (_isMultiSelected != value)
                 {
                     _isMultiSelected = value;
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsMultiSelected)));
+                    OnPropertyChanged(nameof(IsMultiSelected));
                 }
             }
         }
@@ -1640,7 +1708,7 @@ namespace BookmarkStudio
                 if (_isExpanded != value)
                 {
                     _isExpanded = value;
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsExpanded)));
+                    OnPropertyChanged(nameof(IsExpanded));
                     IsExpandedChanged?.Invoke(this, EventArgs.Empty);
                 }
             }
@@ -1653,7 +1721,7 @@ namespace BookmarkStudio
         public override string DisplayText => FolderName;
     }
 
-    public sealed class BookmarkItemNodeViewModel : BookmarkNodeViewModel, INotifyPropertyChanged
+    public sealed class BookmarkItemNodeViewModel : BookmarkNodeViewModel
     {
         private const int TreeIndentPixels = 19;
         private bool _isMultiSelected;
@@ -1663,8 +1731,6 @@ namespace BookmarkStudio
             Bookmark = bookmark ?? throw new ArgumentNullException(nameof(bookmark));
             TreeDepth = Math.Max(0, treeDepth);
         }
-
-        public event PropertyChangedEventHandler? PropertyChanged;
 
         public ManagedBookmark Bookmark { get; }
 
@@ -1678,7 +1744,7 @@ namespace BookmarkStudio
                 if (_isMultiSelected != value)
                 {
                     _isMultiSelected = value;
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsMultiSelected)));
+                    OnPropertyChanged(nameof(IsMultiSelected));
                 }
             }
         }

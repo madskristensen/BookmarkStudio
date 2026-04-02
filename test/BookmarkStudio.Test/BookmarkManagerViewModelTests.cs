@@ -74,6 +74,64 @@ public class BookmarkManagerViewModelTests
     }
 
     [TestMethod]
+    public void SelectBookmark_WhenBookmarkExists_SetsIsSelectedOnNode()
+    {
+        var viewModel = new BookmarkManagerViewModel();
+        viewModel.LoadForTests(new[]
+        {
+            new ManagedBookmark { BookmarkId = "id-1", DocumentPath = @"C:\repo\a.cs", LineNumber = 1, Group = "FolderA" },
+            new ManagedBookmark { BookmarkId = "id-2", DocumentPath = @"C:\repo\b.cs", LineNumber = 2, Group = "FolderA" },
+        }, new[] { string.Empty, "FolderA" });
+
+        viewModel.SelectBookmark("id-1");
+
+        Assert.IsTrue(viewModel.SelectedNode.IsSelected);
+    }
+
+    [TestMethod]
+    public void SelectBookmark_WhenSwitchingBookmarks_ClearsIsSelectedOnPreviousNode()
+    {
+        var viewModel = new BookmarkManagerViewModel();
+        viewModel.LoadForTests(new[]
+        {
+            new ManagedBookmark { BookmarkId = "id-1", DocumentPath = @"C:\repo\a.cs", LineNumber = 1, Group = string.Empty },
+            new ManagedBookmark { BookmarkId = "id-2", DocumentPath = @"C:\repo\b.cs", LineNumber = 2, Group = string.Empty },
+        }, new[] { string.Empty });
+        viewModel.SelectBookmark("id-1");
+        var firstNode = viewModel.SelectedNode;
+
+        viewModel.SelectBookmark("id-2");
+
+        Assert.IsFalse(firstNode.IsSelected);
+        Assert.IsTrue(viewModel.SelectedNode.IsSelected);
+        Assert.AreEqual("id-2", viewModel.SelectedBookmark.BookmarkId);
+    }
+
+    [TestMethod]
+    public void SelectBookmark_WhenBookmarkInNestedFolder_ExpandsAncestorFolders()
+    {
+        var viewModel = new BookmarkManagerViewModel();
+        viewModel.LoadForTests(new[]
+        {
+            new ManagedBookmark { BookmarkId = "id-1", DocumentPath = @"C:\repo\a.cs", LineNumber = 1, Group = "Team/Backlog" },
+        }, new[] { string.Empty, "Team", "Team/Backlog" });
+
+        // Collapse all folders first
+        var root = (FolderNodeViewModel)viewModel.RootNodes[0];
+        var teamFolder = (FolderNodeViewModel)root.Children[0];
+        var backlogFolder = (FolderNodeViewModel)teamFolder.Children[0];
+        teamFolder.IsExpanded = false;
+        backlogFolder.IsExpanded = false;
+
+        viewModel.SelectBookmark("id-1");
+
+        Assert.IsTrue(teamFolder.IsExpanded);
+        Assert.IsTrue(backlogFolder.IsExpanded);
+        Assert.IsNotNull(viewModel.SelectedBookmark);
+        Assert.AreEqual("id-1", viewModel.SelectedBookmark.BookmarkId);
+    }
+
+    [TestMethod]
     public void SelectFolder_WhenFolderExists_SelectsFolderNode()
     {
         var viewModel = new BookmarkManagerViewModel();
