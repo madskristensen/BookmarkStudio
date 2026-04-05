@@ -102,6 +102,58 @@ namespace BookmarkStudio
         }
 
         /// <summary>
+        /// Gets selected text when the active editor has exactly one non-empty selection span.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>The normalized selected text, or null when the active selection is not a single span.</returns>
+        public async Task<string?> GetSingleSelectionSpanTextAsync(CancellationToken cancellationToken)
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+
+            try
+            {
+                DocumentView? docView = await VS.Documents.GetActiveDocumentViewAsync();
+                if (docView?.TextView is null)
+                {
+                    return null;
+                }
+
+                return GetSingleSelectionSpanTextFromTextView(docView.TextView);
+            }
+            catch (Exception ex)
+            {
+                await ex.LogAsync();
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Gets the word under the caret from the active editor.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation token.</param>
+        /// <returns>The word under the caret, or null when no valid word can be resolved.</returns>
+        public async Task<string?> GetWordUnderCaretAsync(CancellationToken cancellationToken)
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+
+            try
+            {
+                DocumentView? docView = await VS.Documents.GetActiveDocumentViewAsync();
+                if (docView?.TextView is null)
+                {
+                    return null;
+                }
+
+                return GetWordUnderCaretFromTextView(docView.TextView);
+            }
+            catch (Exception ex)
+            {
+                await ex.LogAsync();
+                return null;
+            }
+        }
+
+        /// <summary>
         /// Suggests a meaningful name for a bookmark based on the code at the current caret position.
         /// </summary>
         /// <param name="cancellationToken">Cancellation token.</param>
@@ -165,6 +217,37 @@ namespace BookmarkStudio
             }
 
             return ExtractBestIdentifier(classifications);
+        }
+
+        private static string? GetSingleSelectionSpanTextFromTextView(IWpfTextView textView)
+        {
+            if (textView.IsClosed)
+            {
+                return null;
+            }
+
+            NormalizedSnapshotSpanCollection selectedSpans = textView.Selection.SelectedSpans;
+            if (selectedSpans.Count != 1)
+            {
+                return null;
+            }
+
+            return NormalizeLabelCandidate(selectedSpans[0].GetText(), 100);
+        }
+
+        private static string? GetWordUnderCaretFromTextView(IWpfTextView textView)
+        {
+            if (textView.IsClosed || textView.TextSnapshot.Length == 0)
+            {
+                return null;
+            }
+
+            SnapshotPoint caretPosition = textView.Caret.Position.BufferPosition;
+            ITextSnapshotLine line = caretPosition.GetContainingLine();
+            string lineText = line.GetText();
+            int caretIndex = caretPosition.Position - line.Start.Position;
+
+            return ExtractWordAtPosition(lineText, caretIndex);
         }
 
         /// <summary>
@@ -331,5 +414,79 @@ namespace BookmarkStudio
                    text.Equals("id", StringComparison.OrdinalIgnoreCase) ||
                    text.Equals("_", StringComparison.Ordinal);
         }
+
+        internal static string? ExtractWordAtPosition(string? lineText, int caretIndex)
+        {
+            if (lineText is null || string.IsNullOrWhiteSpace(lineText) || caretIndex < 0 || caretIndex > lineText.Length)
+            {
+                return null;
+            }
+
+            int index = caretIndex;
+            if (index == lineText.Length)
+            {
+                index--;
+            }
+
+            if (index < 0)
+            {
+                return null;
+            }
+
+            if (!IsWordCharacter(lineText[index]))
+            {
+                if (index == 0 || !IsWordCharacter(lineText[index - 1]))
+                {
+                    return null;
+                }
+
+                index--;
+            }
+
+            int start = index;
+            while (start > 0 && IsWordCharacter(lineText[start - 1]))
+            {
+                start--;
+            }
+
+            int end = index;
+            while (end + 1 < lineText.Length && IsWordCharacter(lineText[end + 1]))
+            {
+                end++;
+            }
+
+            string? candidate = NormalizeLabelCandidate(lineText.Substring(start, end - start + 1), 100);
+            if (candidate is null || IsCommonNoise(candidate))
+            {
+                return null;
+            }
+
+            return candidate;
+        }
+
+        internal static string? NormalizeLabelCandidate(string? text, int maxLength)
+        {
+            if (text is null || string.IsNullOrWhiteSpace(text))
+            {
+                return null;
+            }
+
+            string trimmed = text.Trim();
+            int newlineIndex = trimmed.IndexOfAny(['\r', '\n']);
+            if (newlineIndex >= 0)
+            {
+                trimmed = trimmed.Substring(0, newlineIndex).Trim();
+            }
+
+            if (trimmed.Length > maxLength)
+            {
+                trimmed = trimmed.Substring(0, maxLength).Trim();
+            }
+
+            return string.IsNullOrWhiteSpace(trimmed) ? null : trimmed;
+        }
+
+        private static bool IsWordCharacter(char c)
+            => char.IsLetterOrDigit(c) || c == '_';
     }
 }

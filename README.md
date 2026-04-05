@@ -141,10 +141,12 @@ Access settings via **Tools > Options > Bookmark Studio > General**.
 
 When **Prompt for bookmark name** is enabled, Bookmark Studio suggests a name using this fallback order:
 
-1. Classified identifier at the caret location (for example method or type name)
-2. File name without extension
-3. Current line text (trimmed, up to 50 characters)
-4. `Bookmark`
+1. Selected text when there is exactly one non-empty selection span
+2. Classified identifier at the caret location (for example method or type name)
+3. Word under the caret
+4. File name without extension
+5. Current line text (trimmed, up to 50 characters)
+6. `Bookmark`
 
 If the suggested name already exists, Bookmark Studio appends a numeric suffix (`1`, `2`, `3`, and so on).
 

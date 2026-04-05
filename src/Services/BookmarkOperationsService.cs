@@ -60,7 +60,8 @@ namespace BookmarkStudio
 
         /// <summary>
         /// Gets a suggested label for a new bookmark by analyzing the code at the current caret position.
-        /// Fallback order: classified identifier, file name, line text (max 50 chars), then "Bookmark".
+        /// Fallback order: single selection span, classified identifier, word under caret,
+        /// file name, line text (max 50 chars), then "Bookmark".
         /// If a candidate label already exists, a numeric suffix is appended.
         /// </summary>
         public async Task<string> GetSuggestedLabelAsync(CancellationToken cancellationToken)
@@ -70,10 +71,22 @@ namespace BookmarkStudio
             BookmarkNameSuggestionService? suggestionService = BookmarkNameSuggestionService.TryGetInstance();
             if (suggestionService is not null)
             {
+                string? selectedSpanText = await suggestionService.GetSingleSelectionSpanTextAsync(cancellationToken);
+                if (!string.IsNullOrWhiteSpace(selectedSpanText))
+                {
+                    return BookmarkRepositoryService.FindNextAvailableLabel(dualState.AllBookmarks, selectedSpanText);
+                }
+
                 string? suggestedName = await suggestionService.GetSuggestedNameAsync(cancellationToken);
                 if (!string.IsNullOrWhiteSpace(suggestedName))
                 {
                     return BookmarkRepositoryService.FindNextAvailableLabel(dualState.AllBookmarks, suggestedName);
+                }
+
+                string? wordUnderCaret = await suggestionService.GetWordUnderCaretAsync(cancellationToken);
+                if (!string.IsNullOrWhiteSpace(wordUnderCaret))
+                {
+                    return BookmarkRepositoryService.FindNextAvailableLabel(dualState.AllBookmarks, wordUnderCaret);
                 }
             }
 

@@ -14,11 +14,10 @@ namespace BookmarkStudio
 
                 if (!hasExistingBookmark)
                 {
-                    // Use selected text when available.
-                    // Otherwise use smart fallback naming (classified identifier, file name, line text, Bookmark)
+                    // Use smart fallback naming (single selected span, classified identifier,
+                    // word under caret, file name, line text, Bookmark)
                     // with numeric suffixing when needed for uniqueness.
-                    var selectedText = await BookmarkOperationsService.Current.GetSelectedTextAsync(cancellationToken);
-                    var defaultLabel = selectedText ?? await BookmarkOperationsService.Current.GetSuggestedLabelAsync(cancellationToken);
+                    var defaultLabel = await BookmarkOperationsService.Current.GetSuggestedLabelAsync(cancellationToken);
 
                     label = TextPromptWindow.Show("New Bookmark", "Enter a name for this bookmark:", defaultLabel, selectTextOnLoad: true);
 
