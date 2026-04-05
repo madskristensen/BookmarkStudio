@@ -85,6 +85,8 @@ namespace BookmarkStudio
         {
             var menu = new ContextMenu();
 
+            menu.Items.Add(BookmarkContextMenuHelper.CreateRemoveBookmarkMenuItem(bookmarkId, BookmarkManagerToolWindow.RefreshIfVisibleAsync));
+            menu.Items.Add(new Separator());
             menu.Items.Add(BookmarkContextMenuHelper.CreateAssignShortcutSubmenu(bookmarkId, BookmarkManagerToolWindow.RefreshIfVisibleAsync));
             menu.Items.Add(new Separator());
             menu.Items.Add(BookmarkContextMenuHelper.CreateSetColorSubmenu(bookmarkId, BookmarkManagerToolWindow.RefreshIfVisibleAsync));

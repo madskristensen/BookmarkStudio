@@ -109,11 +109,16 @@ namespace BookmarkStudio
             col1.SetValue(ColumnDefinition.WidthProperty, new GridLength(1, GridUnitType.Star));
 
             var col2 = new FrameworkElementFactory(typeof(ColumnDefinition));
-            col2.SetValue(ColumnDefinition.WidthProperty, new GridLength(17));
+            col2.SetValue(ColumnDefinition.WidthProperty, GridLength.Auto);
+            col2.SetValue(ColumnDefinition.SharedSizeGroupProperty, "MenuItemGestureColumnGroup");
+
+            var col3 = new FrameworkElementFactory(typeof(ColumnDefinition));
+            col3.SetValue(ColumnDefinition.WidthProperty, new GridLength(17));
 
             grid.AppendChild(col0);
             grid.AppendChild(col1);
             grid.AppendChild(col2);
+            grid.AppendChild(col3);
 
             // Icon gutter background
             var iconGutter = new FrameworkElementFactory(typeof(Border));
@@ -138,10 +143,20 @@ namespace BookmarkStudio
             header.SetValue(FrameworkElement.MarginProperty, new Thickness(6, 4, 6, 4));
             header.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
 
+            // Input gesture text
+            var gesture = new FrameworkElementFactory(typeof(TextBlock));
+            gesture.SetValue(Grid.ColumnProperty, 2);
+            gesture.SetBinding(TextBlock.TextProperty, new Binding("InputGestureText") { RelativeSource = new RelativeSource(RelativeSourceMode.TemplatedParent) });
+            gesture.SetValue(FrameworkElement.MarginProperty, new Thickness(16, 4, 6, 4));
+            gesture.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
+            gesture.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Right);
+            gesture.SetValue(TextBlock.FontSizeProperty, 11.0);
+            gesture.SetResourceReference(TextBlock.ForegroundProperty, EnvironmentColors.CommandBarTextInactiveBrushKey);
+
             // Submenu arrow
             var arrow = new FrameworkElementFactory(typeof(Path));
             arrow.Name = "Arrow";
-            arrow.SetValue(Grid.ColumnProperty, 2);
+            arrow.SetValue(Grid.ColumnProperty, 3);
             arrow.SetValue(FrameworkElement.HorizontalAlignmentProperty, HorizontalAlignment.Center);
             arrow.SetValue(FrameworkElement.VerticalAlignmentProperty, VerticalAlignment.Center);
             arrow.SetResourceReference(Shape.FillProperty, VsBrushes.CommandBarMenuSubmenuGlyphKey);
@@ -171,6 +186,7 @@ namespace BookmarkStudio
             grid.AppendChild(iconGutter);
             grid.AppendChild(icon);
             grid.AppendChild(header);
+            grid.AppendChild(gesture);
             grid.AppendChild(arrow);
             grid.AppendChild(popup);
             border.AppendChild(grid);

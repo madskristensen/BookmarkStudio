@@ -181,6 +181,36 @@ namespace BookmarkStudio
             return assignments;
         }
 
+        /// <summary>
+        /// Creates a "Remove Bookmark" menu item.
+        /// </summary>
+        /// <param name="bookmarkId">The bookmark ID to operate on.</param>
+        /// <param name="refreshCallback">Optional callback to invoke after removal completes.</param>
+        public static MenuItem CreateRemoveBookmarkMenuItem(string bookmarkId, Func<string, CancellationToken, Task>? refreshCallback = null)
+        {
+            var icon = new CrispImage
+            {
+                Moniker = KnownMonikers.Cancel,
+                Width = 16,
+                Height = 16,
+            };
+
+            var item = new MenuItem { Header = "Remove Bookmark", Icon = icon, InputGestureText = "Alt+Shift+Space" };
+            item.Click += (sender, e) =>
+            {
+                ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
+                {
+                    await BookmarkOperationsService.Current.RemoveBookmarkAsync(bookmarkId, CancellationToken.None);
+                    if (refreshCallback is not null)
+                    {
+                        await refreshCallback(bookmarkId, CancellationToken.None);
+                    }
+                }).FireAndForget();
+            };
+
+            return item;
+        }
+
         private static void AddColorMenuItem(MenuItem submenu, string header, BookmarkColor color, string bookmarkId, Func<string, CancellationToken, Task>? refreshCallback)
         {
             var icon = new Border
