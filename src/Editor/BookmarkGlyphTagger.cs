@@ -223,10 +223,8 @@ namespace BookmarkStudio
 
                 ITextSnapshotLine line = snapshot.GetLineFromLineNumber(targetLineIndex);
 
-                // Create tracking point at the start of the line
-                // Use Positive tracking so insertions before this point push it forward
-                ITrackingPoint trackingPoint = snapshot.CreateTrackingPoint(line.Start.Position, PointTrackingMode.Positive);
-                newTrackingPoints[bookmark.BookmarkId] = trackingPoint;
+                // Create tracking point inside line content to avoid line-boundary drift
+                newTrackingPoints[bookmark.BookmarkId] = BookmarkTextBufferTracker.CreateStableTrackingPoint(line);
             }
 
             lock (_trackingPointsLock)

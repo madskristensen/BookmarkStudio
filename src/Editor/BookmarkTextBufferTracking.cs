@@ -55,6 +55,7 @@ namespace BookmarkStudio
             _normalizedDocumentPath = BookmarkIdentity.NormalizeDocumentPath(_documentPath);
             InitializeTrackingPoints();
             _textBuffer.ChangedLowPriority += OnTextBufferChanged;
+            BookmarkStudioSession.Current.BookmarksChanged += OnBookmarksChanged;
         }
 
         public void AttachToView(IWpfTextView textView)
@@ -167,6 +168,7 @@ namespace BookmarkStudio
             }
 
             _textBuffer.ChangedLowPriority -= OnTextBufferChanged;
+            BookmarkStudioSession.Current.BookmarksChanged -= OnBookmarksChanged;
             _updateGate.Dispose();
         }
 
@@ -190,13 +192,72 @@ namespace BookmarkStudio
                 }
 
                 ITextSnapshotLine line = snapshot.GetLineFromLineNumber(lineIndex);
-                ITrackingPoint trackingPoint = snapshot.CreateTrackingPoint(line.Start.Position, PointTrackingMode.Positive);
-                newTrackingPoints[bookmark.BookmarkId] = trackingPoint;
+                newTrackingPoints[bookmark.BookmarkId] = CreateStableTrackingPoint(line);
             }
 
             lock (_trackingPointsLock)
             {
                 _trackingPoints = newTrackingPoints;
+            }
+        }
+
+        /// <summary>
+        /// When bookmarks are added or changed, eagerly create tracking points for any
+        /// new bookmarks that don't already have one. This ensures tracking points exist
+        /// BEFORE the next text change, preventing the stale-line-number bug where a
+        /// bookmark's metadata line number is applied against a post-edit snapshot.
+        /// </summary>
+        private void OnBookmarksChanged(object sender, EventArgs e)
+        {
+            if (Volatile.Read(ref _isDisposed) == 1)
+            {
+                return;
+            }
+
+            ITextSnapshot snapshot = _textBuffer.CurrentSnapshot;
+            IReadOnlyList<ManagedBookmark> bookmarks = BookmarkStudioSession.Current.CachedBookmarks;
+
+            Dictionary<string, ITrackingPoint> trackingPoints;
+            lock (_trackingPointsLock)
+            {
+                trackingPoints = _trackingPoints;
+            }
+
+            Dictionary<string, ITrackingPoint>? updated = null;
+
+            foreach (ManagedBookmark bookmark in bookmarks)
+            {
+                if (!MatchesDocumentPath(bookmark.DocumentPath))
+                {
+                    continue;
+                }
+
+                if (trackingPoints.ContainsKey(bookmark.BookmarkId))
+                {
+                    continue;
+                }
+
+                var lineIndex = bookmark.LineNumber - 1;
+                if (lineIndex < 0 || lineIndex >= snapshot.LineCount)
+                {
+                    continue;
+                }
+
+                if (updated is null)
+                {
+                    updated = new Dictionary<string, ITrackingPoint>(trackingPoints, StringComparer.Ordinal);
+                }
+
+                ITextSnapshotLine line = snapshot.GetLineFromLineNumber(lineIndex);
+                updated[bookmark.BookmarkId] = CreateStableTrackingPoint(line);
+            }
+
+            if (updated is not null)
+            {
+                lock (_trackingPointsLock)
+                {
+                    _trackingPoints = updated;
+                }
             }
         }
 
@@ -263,8 +324,7 @@ namespace BookmarkStudio
                     newLineText = line.GetText();
 
                     // Create tracking point for future edits
-                    ITrackingPoint newTrackingPoint = snapshot.CreateTrackingPoint(line.Start.Position, PointTrackingMode.Positive);
-                    newTrackingPoints[bookmark.BookmarkId] = newTrackingPoint;
+                    newTrackingPoints[bookmark.BookmarkId] = CreateStableTrackingPoint(line);
                 }
 
                 if (bookmark.LineNumber == newLineNumber
@@ -298,6 +358,51 @@ namespace BookmarkStudio
 
         private bool MatchesDocumentPath(string documentPath)
             => string.Equals(BookmarkIdentity.NormalizeDocumentPath(documentPath), _normalizedDocumentPath, StringComparison.Ordinal);
+
+        /// <summary>
+        /// Creates a tracking point anchored at a stable position within the line content,
+        /// avoiding the ambiguous line-start boundary that can cause drift when edits occur
+        /// near line breaks.
+        /// </summary>
+        internal static ITrackingPoint CreateStableTrackingPoint(ITextSnapshotLine line)
+        {
+            ITextSnapshot snapshot = line.Snapshot;
+            int anchorOffset = GetFirstNonWhitespaceOffset(line.GetText());
+            int anchorPosition = line.Start.Position + anchorOffset;
+
+            // When the anchor is inside line content, use Positive so insertions
+            // at the anchor push the point forward (keeping it with the content).
+            // When the anchor is at line.Start (empty/whitespace-only line), use
+            // Negative so insertions at the boundary don't push the point onto
+            // the next line.
+            PointTrackingMode mode = anchorOffset > 0
+                ? PointTrackingMode.Positive
+                : PointTrackingMode.Negative;
+
+            return snapshot.CreateTrackingPoint(anchorPosition, mode);
+        }
+
+        /// <summary>
+        /// Returns the offset of the first non-whitespace character in the text,
+        /// or 0 if the text is empty or contains only whitespace.
+        /// </summary>
+        internal static int GetFirstNonWhitespaceOffset(string lineText)
+        {
+            if (string.IsNullOrEmpty(lineText))
+            {
+                return 0;
+            }
+
+            for (int i = 0; i < lineText.Length; i++)
+            {
+                if (!char.IsWhiteSpace(lineText[i]))
+                {
+                    return i;
+                }
+            }
+
+            return 0;
+        }
 
         private static int Clamp(int value, int minimum, int maximum)
         {
