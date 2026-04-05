@@ -25,7 +25,11 @@ namespace BookmarkStudio
 
             for (var i = 1; i <= 9; i++)
             {
-                var shortcutItem = new MenuItem { Header = i.ToString(), Tag = i };
+                var shortcutItem = new MenuItem
+                {
+                    Header = string.Concat(i.ToString(System.Globalization.CultureInfo.InvariantCulture), " - <Unassigned>"),
+                    Tag = i,
+                };
                 var shortcutNumber = i;
                 shortcutItem.Click += (sender, e) =>
                 {
@@ -152,30 +156,17 @@ namespace BookmarkStudio
         {
             var assignments = new Dictionary<int, string>();
 
-            try
+            IEnumerable<ManagedBookmark> allBookmarks = BookmarkStudioSession.Current.CachedBookmarks;
+
+            foreach (ManagedBookmark bookmark in allBookmarks)
             {
-                DualBookmarkWorkspaceState dualState = ThreadHelper.JoinableTaskFactory.Run(async () =>
+                if (bookmark.ShortcutNumber.HasValue && bookmark.ShortcutNumber.Value >= 1 && bookmark.ShortcutNumber.Value <= 9)
                 {
-                    return await BookmarkOperationsService.Current.RefreshDualAsync(CancellationToken.None);
-                });
-
-                IEnumerable<ManagedBookmark> allBookmarks = BookmarkRepositoryService.ToManagedBookmarks(dualState.PersonalState.Bookmarks)
-                    .Concat(BookmarkRepositoryService.ToManagedBookmarks(dualState.SolutionState.Bookmarks));
-
-                foreach (ManagedBookmark bookmark in allBookmarks)
-                {
-                    if (bookmark.ShortcutNumber.HasValue && bookmark.ShortcutNumber.Value >= 1 && bookmark.ShortcutNumber.Value <= 9)
-                    {
-                        var label = string.IsNullOrWhiteSpace(bookmark.Label)
-                            ? bookmark.FileName
-                            : bookmark.Label;
-                        assignments[bookmark.ShortcutNumber.Value] = label;
-                    }
+                    var label = string.IsNullOrWhiteSpace(bookmark.Label)
+                        ? bookmark.FileName
+                        : bookmark.Label;
+                    assignments[bookmark.ShortcutNumber.Value] = label;
                 }
-            }
-            catch
-            {
-                // If we can't get bookmarks, just return empty assignments
             }
 
             return assignments;
