@@ -232,15 +232,24 @@ namespace BookmarkStudio
                     continue;
                 }
 
-                if (trackingPoints.ContainsKey(bookmark.BookmarkId))
-                {
-                    continue;
-                }
-
                 var lineIndex = bookmark.LineNumber - 1;
                 if (lineIndex < 0 || lineIndex >= snapshot.LineCount)
                 {
                     continue;
+                }
+
+                // Check whether the existing tracking point already matches the
+                // bookmark's metadata line number.  When a bookmark is moved (e.g.
+                // dragged to a new line), the metadata is updated but the old
+                // tracking point still resolves to the original position.  We must
+                // replace it so that subsequent text edits track from the new location.
+                if (trackingPoints.TryGetValue(bookmark.BookmarkId, out ITrackingPoint existingPoint))
+                {
+                    int trackedLine = existingPoint.GetPoint(snapshot).GetContainingLine().LineNumber;
+                    if (trackedLine == lineIndex)
+                    {
+                        continue;
+                    }
                 }
 
                 if (updated is null)
