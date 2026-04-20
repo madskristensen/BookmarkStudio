@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.ComponentModel.Design;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -118,7 +117,7 @@ namespace BookmarkStudio
             _currentControl.SelectBookmark(bookmarkId);
         }
 
-        [Guid("62892db9-8c0f-4458-995c-b317a5c3dd78")]
+        [Guid("0bad4445-cbc4-4567-be7e-2b962807614b")]
         internal sealed class Pane : ToolWindowPane
         {
             public Pane()
