@@ -376,15 +376,16 @@ namespace BookmarkStudio
         internal static ITrackingPoint CreateStableTrackingPoint(ITextSnapshotLine line)
         {
             ITextSnapshot snapshot = line.Snapshot;
-            int anchorOffset = GetFirstNonWhitespaceOffset(line.GetText());
-            int anchorPosition = line.Start.Position + anchorOffset;
+            var lineText = line.GetText();
+            var anchorOffset = GetFirstNonWhitespaceOffset(lineText);
+            var anchorPosition = line.Start.Position + anchorOffset;
 
-            // When the anchor is inside line content, use Positive so insertions
-            // at the anchor push the point forward (keeping it with the content).
-            // When the anchor is at line.Start (empty/whitespace-only line), use
-            // Negative so insertions at the boundary don't push the point onto
-            // the next line.
-            PointTrackingMode mode = anchorOffset > 0
+            // Use Positive for all lines with content so the tracking point
+            // follows text through delete+undo sequences. Use Negative only
+            // for empty or whitespace-only lines to keep the point stable at
+            // the line-start boundary.
+            var hasContent = lineText.Length > 0 && !string.IsNullOrWhiteSpace(lineText);
+            PointTrackingMode mode = hasContent
                 ? PointTrackingMode.Positive
                 : PointTrackingMode.Negative;
 
