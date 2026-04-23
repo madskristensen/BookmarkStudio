@@ -15,11 +15,6 @@ namespace BookmarkStudio
     [ProvideAutoLoad(VSConstants.UICONTEXT.SolutionExists_string, PackageAutoLoadFlags.BackgroundLoad)]
     [ProvideAutoLoad(VSConstants.UICONTEXT.FolderOpened_string, PackageAutoLoadFlags.BackgroundLoad)]
     [ProvideToolWindow(typeof(BookmarkManagerToolWindow.Pane), Style = VsDockStyle.Tabbed, Window = WindowGuids.SolutionExplorer)]
-    [ProvideToolWindowVisibility(typeof(BookmarkManagerToolWindow.Pane), VSConstants.UICONTEXT.SolutionHasSingleProject_string)]
-    [ProvideToolWindowVisibility(typeof(BookmarkManagerToolWindow.Pane), VSConstants.UICONTEXT.SolutionHasMultipleProjects_string)]
-    [ProvideToolWindowVisibility(typeof(BookmarkManagerToolWindow.Pane), VSConstants.UICONTEXT.Debugging_string)]
-    [ProvideToolWindowVisibility(typeof(BookmarkManagerToolWindow.Pane), VSConstants.UICONTEXT.EmptySolution_string)]
-    [ProvideToolWindowVisibility(typeof(BookmarkManagerToolWindow.Pane), VSConstants.UICONTEXT.FolderOpened_string)]
     [ProvideOptionPage(typeof(OptionsProvider.GeneralOptions), Vsix.Name, "General", 0, 0, true, ProvidesLocalizedCategoryName = false, SupportsProfiles = true)]
     [Guid(PackageGuids.BookmarkStudioString)]
     public sealed class BookmarkStudioPackage : ToolkitPackage
