@@ -166,6 +166,18 @@ Bookmark Studio looks for the file in this order:
 2. Repository root
 3. `.vs` folder (default)
 
+### Portable Paths
+
+New Workspace bookmark files save document paths relative to the `.bookmarks.json` file location. This makes shared bookmark files portable across machines, even when the solution is nested below the repository root or bookmarked files live outside the solution directory.
+
+For example, if `.bookmarks.json` is stored at the repository root, bookmarks for files elsewhere in that repository are saved as repository-relative paths such as `src/App/Program.cs` or `shared/Shared.cs`. Files outside the bookmarks file directory can use `../` path segments when needed.
+
+Bookmark Studio writes `"documentPathRoot": "bookmarksFile"` to new bookmark files to indicate this behavior. Existing bookmark files without that property keep the previous behavior, where relative paths are interpreted relative to the current solution directory. This keeps older shared bookmark files working unchanged.
+
+Personal bookmarks in `.vs/.bookmarks.json` continue to save paths relative to the solution directory. The `.vs` folder is user-specific and usually ignored by source control, so Personal bookmarks do not use bookmarks-file-relative paths.
+
+Global bookmarks are different: they remain machine-specific and keep absolute document paths because they are stored in `%USERPROFILE%\.bookmarks.json` and are not intended for team sharing.
+
 ## Global Bookmarks
 
 Global bookmarks persist across all solutions and are stored in `%USERPROFILE%\.bookmarks.json`. They appear under the **Global** node in the Bookmark Manager and are always available, regardless of which solution is open.

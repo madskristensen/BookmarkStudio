@@ -43,6 +43,10 @@ public class BookmarkMetadataStoreTests
             };
 
             await store.SaveAsync(solutionPath, new[] { original }, CancellationToken.None);
+            string json = File.ReadAllText(Path.Combine(tempDir, ".vs", ".bookmarks.json"), Encoding.UTF8);
+            Assert.DoesNotContain(@"""documentPathRoot""", json);
+            StringAssert.Contains(json, @"""documentPath"": ""src/Program.cs""");
+
             IReadOnlyList<BookmarkMetadata> loaded = await store.LoadAsync(solutionPath, CancellationToken.None);
 
             Assert.HasCount(1, loaded);
@@ -55,6 +59,92 @@ public class BookmarkMetadataStoreTests
             Assert.AreEqual(original.Label, result.Label);
             Assert.AreEqual(original.Color, result.Color);
             Assert.AreEqual("Core/Startup", result.Group);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task SaveWorkspaceToLocationAsync_WhenDocumentOutsideNestedSolution_SavesPathRelativeToBookmarksFile()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        string solutionDir = Path.Combine(tempDir, "src", "App");
+        string sharedDir = Path.Combine(tempDir, "shared");
+        Directory.CreateDirectory(Path.Combine(tempDir, ".git"));
+        Directory.CreateDirectory(solutionDir);
+        Directory.CreateDirectory(sharedDir);
+        string solutionPath = Path.Combine(solutionDir, "test.sln");
+        string documentPath = Path.Combine(sharedDir, "Shared.cs");
+        File.WriteAllText(solutionPath, string.Empty);
+        File.WriteAllText(documentPath, string.Empty);
+
+        try
+        {
+            var store = new BookmarkMetadataStore();
+            var state = new BookmarkWorkspaceState();
+            state.Bookmarks.Add(new BookmarkMetadata
+            {
+                BookmarkId = "shared-file",
+                DocumentPath = documentPath,
+                LineNumber = 7,
+                LineText = "shared",
+                StorageLocation = BookmarkStorageLocation.Workspace,
+            });
+
+            await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Workspace, state, CancellationToken.None);
+
+            string bookmarksPath = Path.Combine(tempDir, ".bookmarks.json");
+            string json = File.ReadAllText(bookmarksPath, Encoding.UTF8);
+            StringAssert.Contains(json, @"""documentPathRoot"": ""bookmarksFile""");
+            StringAssert.Contains(json, @"""documentPath"": ""shared/Shared.cs""");
+
+            BookmarkWorkspaceState loaded = await store.LoadWorkspaceFromLocationAsync(solutionPath, BookmarkStorageLocation.Workspace, CancellationToken.None);
+
+            Assert.HasCount(1, loaded.Bookmarks);
+            Assert.AreEqual(documentPath, loaded.Bookmarks[0].DocumentPath);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task LoadWorkspaceFromLocationAsync_WhenLegacyWorkspacePathIsRelativeToSolution_KeepsLegacyBaseDirectory()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        string solutionDir = Path.Combine(tempDir, "nested", "Solution");
+        Directory.CreateDirectory(Path.Combine(tempDir, ".git"));
+        Directory.CreateDirectory(Path.Combine(solutionDir, "src"));
+        string solutionPath = Path.Combine(solutionDir, "test.sln");
+        string documentPath = Path.Combine(solutionDir, "src", "Program.cs");
+        File.WriteAllText(solutionPath, string.Empty);
+        File.WriteAllText(documentPath, string.Empty);
+
+        string legacyJson = @"{
+            ""root"": {
+                ""_bookmarks"": [
+                    {
+                        ""id"": ""legacy-1"",
+                        ""documentPath"": ""src/Program.cs"",
+                        ""lineNumber"": 12,
+                        ""lineText"": ""legacy""
+                    }
+                ]
+            }
+        }";
+        File.WriteAllText(Path.Combine(tempDir, ".bookmarks.json"), legacyJson, Encoding.UTF8);
+
+        try
+        {
+            var store = new BookmarkMetadataStore();
+
+            BookmarkWorkspaceState loaded = await store.LoadWorkspaceFromLocationAsync(solutionPath, BookmarkStorageLocation.Workspace, CancellationToken.None);
+
+            Assert.HasCount(1, loaded.Bookmarks);
+            Assert.AreEqual(documentPath, loaded.Bookmarks[0].DocumentPath);
         }
         finally
         {
