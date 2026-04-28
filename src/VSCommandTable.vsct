@@ -44,6 +44,9 @@
       <Group guid="BookmarkStudio" id="BookmarkShortcutsMenuGoToGroup" priority="0x0100">
         <Parent guid="BookmarkStudio" id="BookmarkShortcutsMenu"/>
       </Group>
+      <Group guid="BookmarkStudio" id="FindAllReferencesResultBookmarkGroup" priority="0x0500">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_FINDALLREF"/>
+      </Group>
     </Groups>
 
     <Menus>
@@ -145,6 +148,16 @@
         <Strings>
           <ButtonText>Go To Previous Bookmark</ButtonText>
           <LocCanonicalName>.BookmarkStudio.GoToPreviousBookmark</LocCanonicalName>
+        </Strings>
+      </Button>
+
+      <Button guid="BookmarkStudio" id="AddResultAsBookmarkCommand" priority="0x0100" type="Button">
+        <Parent guid="BookmarkStudio" id="FindAllReferencesResultBookmarkGroup" />
+        <Icon guid="ImageCatalogGuid" id="Bookmark" />
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Add as Bookmark</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.AddResultAsBookmark</LocCanonicalName>
         </Strings>
       </Button>
 
@@ -363,7 +376,7 @@
   </KeyBindings>
 
   <CommandPlacements>
-    <CommandPlacement guid="BookmarkStudio" id="ToggleBookmarkCommand">
+    <CommandPlacement guid="BookmarkStudio" id="ToggleBookmarkCommand" priority="0x0100">
       <Parent guid="BookmarkStudio" id="MarginContextMenuBookmarkGroup"/>
     </CommandPlacement>
     <CommandPlacement guid="BookmarkStudio" id="OpenBookmarkManagerCommand" priority="0x0100">
@@ -395,6 +408,9 @@
     </CommandPlacement>
     <CommandPlacement guid="BookmarkStudio" id="GoToShortcut9Command" priority="0x0208">
       <Parent guid="BookmarkStudio" id="BookmarkShortcutsMenuGoToGroup"/>
+    </CommandPlacement>
+    <CommandPlacement guid="BookmarkStudio" id="AddResultAsBookmarkCommand" priority="0x0300">
+      <Parent guid="guidSHLMainMenu" id="IDG_VS_FINDALLREF_COMMON"/>
     </CommandPlacement>
   </CommandPlacements>
 
@@ -448,6 +464,8 @@
       <IDSymbol name="BookmarkShortcutsMenu" value="0x1031" />
       <IDSymbol name="BookmarkShortcutsMenuGroup" value="0x1032" />
       <IDSymbol name="BookmarkShortcutsMenuGoToGroup" value="0x1033" />
+      <IDSymbol name="FindAllReferencesResultBookmarkGroup" value="0x1034" />
+      <IDSymbol name="AddResultAsBookmarkCommand" value="0x0800" />
     </GuidSymbol>
 
     <!-- Editor margin context menu -->

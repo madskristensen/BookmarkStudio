@@ -72,6 +72,8 @@ namespace BookmarkStudio
         public const int BookmarkShortcutsMenu = 0x1031;
         public const int BookmarkShortcutsMenuGroup = 0x1032;
         public const int BookmarkShortcutsMenuGoToGroup = 0x1033;
+        public const int FindAllReferencesResultBookmarkGroup = 0x1034;
+        public const int AddResultAsBookmarkCommand = 0x0800;
         public const int LeftMarginContextMenu = 0x0066;
         public const int ToggleBookmark = 0x004C;
     }

@@ -266,6 +266,91 @@ namespace BookmarkStudio
             }
         }
 
+        public async Task<IReadOnlyList<ManagedBookmark>> AddBookmarksAsync(IEnumerable<BookmarkSnapshot> snapshots, CancellationToken cancellationToken)
+        {
+            if (snapshots is null)
+            {
+                throw new ArgumentNullException(nameof(snapshots));
+            }
+
+            List<BookmarkSnapshot> snapshotList = [.. snapshots.Where(snapshot => snapshot is not null)];
+            if (snapshotList.Count == 0)
+            {
+                return [];
+            }
+
+            await _repositoryGate.WaitAsync(cancellationToken);
+            try
+            {
+                var solutionPath = await GetSolutionPathAsync(cancellationToken);
+                DualBookmarkWorkspaceState dualState = await EnsureDualStateLoadedAsync(cancellationToken);
+
+                var allBookmarks = new List<BookmarkMetadata>();
+                allBookmarks.AddRange(dualState.GlobalState.Bookmarks);
+                allBookmarks.AddRange(dualState.PersonalState.Bookmarks);
+                allBookmarks.AddRange(dualState.SolutionState.Bookmarks);
+
+                BookmarkStorageLocation defaultLocation = General.Instance.DefaultStorageLocation;
+                List<BookmarkMetadata> targetBookmarks = defaultLocation == BookmarkStorageLocation.Global
+                    ? dualState.GlobalState.Bookmarks
+                    : defaultLocation == BookmarkStorageLocation.Personal
+                        ? dualState.PersonalState.Bookmarks
+                        : dualState.SolutionState.Bookmarks;
+
+                var changed = false;
+                var createdBookmarks = new List<ManagedBookmark>();
+                var seenKeys = new HashSet<string>(StringComparer.Ordinal);
+
+                foreach (BookmarkSnapshot snapshot in snapshotList)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    if (!seenKeys.Add(snapshot.ExactMatchKey) || BookmarkRepositoryService.FindBySnapshot(allBookmarks, snapshot) is not null)
+                    {
+                        continue;
+                    }
+
+                    await NativeBookmarkHelper.TryRemoveNativeBookmarkAsync(snapshot.DocumentPath, snapshot.LineNumber);
+
+                    BookmarkMetadata createdBookmark = BookmarkRepositoryService.CreateBookmarkMetadata(allBookmarks, snapshot, label: null);
+                    createdBookmark.StorageLocation = defaultLocation;
+
+                    targetBookmarks.Add(createdBookmark);
+                    allBookmarks.Add(createdBookmark);
+                    createdBookmarks.Add(createdBookmark.ToManagedBookmark());
+                    changed = true;
+                }
+
+                if (!changed)
+                {
+                    return [];
+                }
+
+                if (defaultLocation == BookmarkStorageLocation.Global)
+                {
+                    BookmarkRepositoryService.NormalizeWorkspaceState(dualState.GlobalState);
+                    await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Global, dualState.GlobalState, cancellationToken);
+                }
+                else if (defaultLocation == BookmarkStorageLocation.Personal)
+                {
+                    BookmarkRepositoryService.NormalizeWorkspaceState(dualState.PersonalState);
+                    await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Personal, dualState.PersonalState, cancellationToken);
+                }
+                else
+                {
+                    BookmarkRepositoryService.NormalizeWorkspaceState(dualState.SolutionState);
+                    await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Workspace, dualState.SolutionState, cancellationToken);
+                }
+
+                UpdateCachedStateFromDualState(dualState);
+                return createdBookmarks;
+            }
+            finally
+            {
+                _repositoryGate.Release();
+            }
+        }
+
         public void Clear()
         {
             InvalidateSolutionPath();

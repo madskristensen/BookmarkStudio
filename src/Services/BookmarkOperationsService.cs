@@ -51,6 +51,9 @@ namespace BookmarkStudio
         public Task<ManagedBookmark?> ToggleBookmarkAsync(string? label, CancellationToken cancellationToken)
             => ToggleActiveBookmarkAsync(label, cancellationToken);
 
+        public Task<IReadOnlyList<ManagedBookmark>> AddBookmarksAsync(IEnumerable<BookmarkSnapshot> snapshots, CancellationToken cancellationToken)
+            => _session.AddBookmarksAsync(snapshots, cancellationToken);
+
         public async Task<bool> HasBookmarkAtCurrentLocationAsync(CancellationToken cancellationToken)
         {
             IReadOnlyList<ManagedBookmark> bookmarks = await _session.RefreshAsync(cancellationToken);
