@@ -4,22 +4,25 @@ namespace BookmarkStudio
 {
     internal static class BookmarkCommandActions
     {
-        public static async Task ToggleBookmarkAsync(CancellationToken cancellationToken)
+        public static Task ToggleBookmarkAsync(CancellationToken cancellationToken)
+            => ToggleBookmarkAsync(overrideLocation: null, cancellationToken);
+
+        public static async Task ToggleBookmarkAsync(BookmarkStorageLocation? overrideLocation, CancellationToken cancellationToken)
         {
             string? label = null;
 
-            if (General.Instance.PromptForBookmarkName)
+            var hasExistingBookmark = await BookmarkOperationsService.Current.HasBookmarkAtCurrentLocationAsync(cancellationToken);
+
+            if (!hasExistingBookmark)
             {
-                var hasExistingBookmark = await BookmarkOperationsService.Current.HasBookmarkAtCurrentLocationAsync(cancellationToken);
+                // Use smart fallback naming (single selected span, classified identifier,
+                // word under caret, file name, line text, Bookmark)
+                // with numeric suffixing when needed for uniqueness.
+                label = await BookmarkOperationsService.Current.GetSuggestedLabelAsync(cancellationToken);
 
-                if (!hasExistingBookmark)
+                if (General.Instance.PromptForBookmarkName)
                 {
-                    // Use smart fallback naming (single selected span, classified identifier,
-                    // word under caret, file name, line text, Bookmark)
-                    // with numeric suffixing when needed for uniqueness.
-                    var defaultLabel = await BookmarkOperationsService.Current.GetSuggestedLabelAsync(cancellationToken);
-
-                    label = TextPromptWindow.Show("New Bookmark", "Enter a name for this bookmark:", defaultLabel, selectTextOnLoad: true);
+                    label = TextPromptWindow.Show("New Bookmark", "Enter a name for this bookmark:", label, selectTextOnLoad: true);
 
                     if (label is null)
                     {
@@ -28,7 +31,7 @@ namespace BookmarkStudio
                 }
             }
 
-            ManagedBookmark? bookmark = await BookmarkOperationsService.Current.ToggleBookmarkAsync(label, cancellationToken);
+            ManagedBookmark? bookmark = await BookmarkOperationsService.Current.ToggleBookmarkAsync(label, overrideLocation, cancellationToken);
             await BookmarkManagerToolWindow.RefreshIfVisibleAsync(bookmark?.BookmarkId, cancellationToken);
         }
 

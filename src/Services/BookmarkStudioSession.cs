@@ -159,9 +159,12 @@ namespace BookmarkStudio
         }
 
         public async Task<ManagedBookmark?> ToggleBookmarkAsync(BookmarkSnapshot snapshot, CancellationToken cancellationToken)
-            => await ToggleBookmarkAsync(snapshot, label: null, cancellationToken);
+            => await ToggleBookmarkAsync(snapshot, label: null, overrideLocation: null, cancellationToken);
 
         public async Task<ManagedBookmark?> ToggleBookmarkAsync(BookmarkSnapshot snapshot, string? label, CancellationToken cancellationToken)
+            => await ToggleBookmarkAsync(snapshot, label, overrideLocation: null, cancellationToken);
+
+        public async Task<ManagedBookmark?> ToggleBookmarkAsync(BookmarkSnapshot snapshot, string? label, BookmarkStorageLocation? overrideLocation, CancellationToken cancellationToken)
         {
             if (snapshot is null)
             {
@@ -215,8 +218,8 @@ namespace BookmarkStudio
 
                     BookmarkMetadata createdBookmark = BookmarkRepositoryService.CreateBookmarkMetadata(allBookmarks, snapshot, label);
 
-                    // Use the configured default storage location
-                    BookmarkStorageLocation defaultLocation = General.Instance.DefaultStorageLocation;
+                    // Use the override storage location if provided, otherwise the configured default.
+                    BookmarkStorageLocation defaultLocation = overrideLocation ?? General.Instance.DefaultStorageLocation;
                     createdBookmark.StorageLocation = defaultLocation;
 
                     if (defaultLocation == BookmarkStorageLocation.Global)

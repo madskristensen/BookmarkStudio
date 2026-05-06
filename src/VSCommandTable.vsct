@@ -47,6 +47,15 @@
       <Group guid="BookmarkStudio" id="FindAllReferencesResultBookmarkGroup" priority="0x0500">
         <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_FINDALLREF"/>
       </Group>
+      <Group guid="BookmarkStudio" id="EditorContextMenuBookmarkGroup" priority="0x0700">
+        <Parent guid="guidSHLMainMenu" id="IDM_VS_CTXT_CODEWIN"/>
+      </Group>
+      <Group guid="BookmarkStudio" id="EditorContextBookmarkSubmenuGroup" priority="0x0100">
+        <Parent guid="BookmarkStudio" id="EditorContextBookmarkMenu"/>
+      </Group>
+      <Group guid="BookmarkStudio" id="EditorContextBookmarkManagerGroup" priority="0x0200">
+        <Parent guid="BookmarkStudio" id="EditorContextBookmarkMenu"/>
+      </Group>
     </Groups>
 
     <Menus>
@@ -61,6 +70,7 @@
         <CommandFlag>TextChanges</CommandFlag>
         <Strings>
           <ButtonText>Settings</ButtonText>
+          <CommandName>Settings</CommandName>
         </Strings>
       </Menu>
       <Menu guid="BookmarkStudio" id="FilterByColorMenu" priority="0x0100" type="MenuControllerLatched">
@@ -76,6 +86,14 @@
         <CommandFlag>TextChanges</CommandFlag>
         <Strings>
           <CommandName>Bookmark Shortcuts</CommandName>
+        </Strings>
+      </Menu>
+      <Menu guid="BookmarkStudio" id="EditorContextBookmarkMenu" priority="0x0100" type="Menu">
+        <Parent guid="BookmarkStudio" id="EditorContextMenuBookmarkGroup"/>
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Bookmarks</ButtonText>
+          <CommandName>Bookmarks</CommandName>
         </Strings>
       </Menu>
     </Menus>
@@ -345,6 +363,34 @@
           <LocCanonicalName>.BookmarkStudio.FilterByColorTeal</LocCanonicalName>
         </Strings>
       </Button>
+
+      <Button guid="BookmarkStudio" id="AddGlobalBookmarkCommand" priority="0x0100" type="Button">
+        <Parent guid="BookmarkStudio" id="EditorContextBookmarkSubmenuGroup"/>
+        <Icon guid="ImageCatalogGuid" id="CSBlankWebSite"/>
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Add to Global</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.AddGlobalBookmark</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="BookmarkStudio" id="AddPersonalBookmarkCommand" priority="0x0101" type="Button">
+        <Parent guid="BookmarkStudio" id="EditorContextBookmarkSubmenuGroup"/>
+        <Icon guid="ImageCatalogGuid" id="User"/>
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Add to Personal</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.AddPersonalBookmark</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="BookmarkStudio" id="AddWorkspaceBookmarkCommand" priority="0x0102" type="Button">
+        <Parent guid="BookmarkStudio" id="EditorContextBookmarkSubmenuGroup"/>
+        <Icon guid="ImageCatalogGuid" id="Repository"/>
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <Strings>
+          <ButtonText>Add to Workspace</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.AddWorkspaceBookmark</LocCanonicalName>
+        </Strings>
+      </Button>
     </Buttons>
   </Commands>
 
@@ -381,6 +427,9 @@
     </CommandPlacement>
     <CommandPlacement guid="BookmarkStudio" id="OpenBookmarkManagerCommand" priority="0x0100">
       <Parent guid="BookmarkStudio" id="BookmarkShortcutsMenuGroup"/>
+    </CommandPlacement>
+    <CommandPlacement guid="BookmarkStudio" id="OpenBookmarkManagerCommand" priority="0x0100">
+      <Parent guid="BookmarkStudio" id="EditorContextBookmarkManagerGroup"/>
     </CommandPlacement>
     <CommandPlacement guid="BookmarkStudio" id="GoToShortcut1Command" priority="0x0200">
       <Parent guid="BookmarkStudio" id="BookmarkShortcutsMenuGoToGroup"/>
@@ -466,6 +515,13 @@
       <IDSymbol name="BookmarkShortcutsMenuGoToGroup" value="0x1033" />
       <IDSymbol name="FindAllReferencesResultBookmarkGroup" value="0x1034" />
       <IDSymbol name="AddResultAsBookmarkCommand" value="0x0800" />
+      <IDSymbol name="EditorContextMenuBookmarkGroup" value="0x1040" />
+      <IDSymbol name="EditorContextBookmarkMenu" value="0x1041" />
+      <IDSymbol name="EditorContextBookmarkSubmenuGroup" value="0x1042" />
+      <IDSymbol name="EditorContextBookmarkManagerGroup" value="0x1043" />
+      <IDSymbol name="AddGlobalBookmarkCommand" value="0x0900" />
+      <IDSymbol name="AddPersonalBookmarkCommand" value="0x0901" />
+      <IDSymbol name="AddWorkspaceBookmarkCommand" value="0x0902" />
     </GuidSymbol>
 
     <!-- Editor margin context menu -->

@@ -46,10 +46,13 @@ namespace BookmarkStudio
             => GetRequiredBookmarkAsync(bookmarkId, cancellationToken);
 
         public Task<ManagedBookmark?> ToggleBookmarkAsync(CancellationToken cancellationToken)
-            => ToggleActiveBookmarkAsync(label: null, cancellationToken);
+            => ToggleActiveBookmarkAsync(label: null, overrideLocation: null, cancellationToken);
 
         public Task<ManagedBookmark?> ToggleBookmarkAsync(string? label, CancellationToken cancellationToken)
-            => ToggleActiveBookmarkAsync(label, cancellationToken);
+            => ToggleActiveBookmarkAsync(label, overrideLocation: null, cancellationToken);
+
+        public Task<ManagedBookmark?> ToggleBookmarkAsync(string? label, BookmarkStorageLocation? overrideLocation, CancellationToken cancellationToken)
+            => ToggleActiveBookmarkAsync(label, overrideLocation, cancellationToken);
 
         public Task<IReadOnlyList<ManagedBookmark>> AddBookmarksAsync(IEnumerable<BookmarkSnapshot> snapshots, CancellationToken cancellationToken)
             => _session.AddBookmarksAsync(snapshots, cancellationToken);
@@ -658,10 +661,10 @@ namespace BookmarkStudio
             return bookmark;
         }
 
-        private async Task<ManagedBookmark?> ToggleActiveBookmarkAsync(string? label, CancellationToken cancellationToken)
+        private async Task<ManagedBookmark?> ToggleActiveBookmarkAsync(string? label, BookmarkStorageLocation? overrideLocation, CancellationToken cancellationToken)
         {
             BookmarkSnapshot snapshot = await CaptureActiveSnapshotAsync(cancellationToken);
-            ManagedBookmark? bookmark = await _session.ToggleBookmarkAsync(snapshot, label, cancellationToken);
+            ManagedBookmark? bookmark = await _session.ToggleBookmarkAsync(snapshot, label, overrideLocation, cancellationToken);
 
             if (bookmark is null)
             {
