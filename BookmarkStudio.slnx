@@ -7,6 +7,7 @@
   <Project Path="src/BookmarkStudio.csproj" Id="329b112a-c39a-4198-b658-02cb012cb599">
     <Platform Solution="*|arm64" Project="arm64" />
     <Platform Solution="*|x86" Project="x86" />
+    <Deploy Solution="Debug|Any CPU" />
   </Project>
   <Project Path="test/BookmarkStudio.Test/BookmarkStudio.Test.csproj" />
 </Solution>
