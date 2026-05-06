@@ -1029,4 +1029,290 @@ public class BookmarkMetadataStoreTests
             }
         }
     }
+
+    [TestMethod]
+    public async Task LoadWorkspaceAsync_WhenJsonMalformed_ReturnsEmptyState()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string solutionPath = Path.Combine(tempDir, "test.sln");
+        File.WriteAllText(solutionPath, string.Empty);
+
+        try
+        {
+            string vsDir = Path.Combine(tempDir, ".vs");
+            Directory.CreateDirectory(vsDir);
+            File.WriteAllText(Path.Combine(vsDir, ".bookmarks.json"), "{ this is not valid json", Encoding.UTF8);
+
+            var store = new BookmarkMetadataStore();
+            BookmarkWorkspaceState state = await store.LoadWorkspaceAsync(solutionPath, CancellationToken.None);
+
+            Assert.IsNotNull(state);
+            Assert.IsEmpty(state.Bookmarks);
+            Assert.IsEmpty(state.ExpandedFolders);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task MoveToLocationAsync_WhenSourceFileExists_MovesFileAndReturnsNewLocation()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string solutionPath = Path.Combine(tempDir, "test.sln");
+        File.WriteAllText(solutionPath, string.Empty);
+
+        try
+        {
+            var store = new BookmarkMetadataStore();
+            var state = new BookmarkWorkspaceState();
+            state.Bookmarks.Add(new BookmarkMetadata
+            {
+                BookmarkId = "move-test",
+                DocumentPath = Path.Combine(tempDir, "file.cs"),
+                LineNumber = 1,
+                Group = string.Empty,
+                StorageLocation = BookmarkStorageLocation.Personal,
+            });
+            state.FolderPaths.Add(string.Empty);
+            await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Personal, state, CancellationToken.None);
+
+            string personalPath = store.GetPersonalStoragePath(solutionPath);
+            string workspacePath = store.GetSolutionStoragePath(solutionPath);
+            Assert.IsTrue(File.Exists(personalPath), "Source personal file should exist before move");
+
+            BookmarkStorageInfo info = await store.MoveToLocationAsync(solutionPath, BookmarkStorageLocation.Workspace, CancellationToken.None);
+
+            Assert.AreEqual(BookmarkStorageLocation.Workspace, info.Location);
+            Assert.AreEqual(workspacePath, info.AbsolutePath);
+            Assert.IsTrue(File.Exists(workspacePath), "Workspace file should exist after move");
+            Assert.IsFalse(File.Exists(personalPath), "Personal file should be deleted after move");
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task MoveToLocationAsync_WhenAlreadyAtTargetLocation_IsNoOp()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string solutionPath = Path.Combine(tempDir, "test.sln");
+        File.WriteAllText(solutionPath, string.Empty);
+
+        try
+        {
+            var store = new BookmarkMetadataStore();
+            var state = new BookmarkWorkspaceState();
+            state.FolderPaths.Add(string.Empty);
+            await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Personal, state, CancellationToken.None);
+
+            string personalPath = store.GetPersonalStoragePath(solutionPath);
+            DateTime originalWriteTime = File.GetLastWriteTimeUtc(personalPath);
+
+            BookmarkStorageInfo info = await store.MoveToLocationAsync(solutionPath, BookmarkStorageLocation.Personal, CancellationToken.None);
+
+            Assert.AreEqual(BookmarkStorageLocation.Personal, info.Location);
+            Assert.IsTrue(File.Exists(personalPath));
+            Assert.AreEqual(originalWriteTime, File.GetLastWriteTimeUtc(personalPath), "File should not be touched when already at target location");
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task MoveToLocationAsync_WhenNoSolution_Throws()
+    {
+        var store = new BookmarkMetadataStore();
+
+        await Assert.ThrowsExactlyAsync<InvalidOperationException>(
+            () => store.MoveToLocationAsync(string.Empty, BookmarkStorageLocation.Workspace, CancellationToken.None));
+    }
+
+    [TestMethod]
+    public async Task UpdateWorkspaceAtLocationAsync_AppliesUpdateAndPersistsState()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string solutionPath = Path.Combine(tempDir, "test.sln");
+        File.WriteAllText(solutionPath, string.Empty);
+
+        try
+        {
+            var store = new BookmarkMetadataStore();
+
+            BookmarkWorkspaceState updated = await store.UpdateWorkspaceAtLocationAsync(
+                solutionPath,
+                BookmarkStorageLocation.Personal,
+                state =>
+                {
+                    state.Bookmarks.Add(new BookmarkMetadata
+                    {
+                        BookmarkId = "added-by-update",
+                        DocumentPath = Path.Combine(tempDir, "file.cs"),
+                        LineNumber = 5,
+                        Group = "MyFolder",
+                        StorageLocation = BookmarkStorageLocation.Personal,
+                    });
+                    state.FolderPaths.Add("MyFolder");
+                },
+                CancellationToken.None);
+
+            Assert.HasCount(1, updated.Bookmarks);
+            Assert.AreEqual("added-by-update", updated.Bookmarks[0].BookmarkId);
+
+            BookmarkWorkspaceState reloaded = await store.LoadWorkspaceFromLocationAsync(solutionPath, BookmarkStorageLocation.Personal, CancellationToken.None);
+            Assert.HasCount(1, reloaded.Bookmarks);
+            Assert.AreEqual("added-by-update", reloaded.Bookmarks[0].BookmarkId);
+            Assert.AreEqual("MyFolder", reloaded.Bookmarks[0].Group);
+            Assert.Contains("MyFolder", reloaded.FolderPaths);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task LoadDualWorkspaceAsync_WhenAllLocationsHaveBookmarks_ReturnsCombinedState()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        // .git marker so the workspace path resolves to tempDir rather than walking up to the user profile.
+        Directory.CreateDirectory(Path.Combine(tempDir, ".git"));
+        string solutionPath = Path.Combine(tempDir, "test.sln");
+        File.WriteAllText(solutionPath, string.Empty);
+
+        var store = new BookmarkMetadataStore();
+        string globalPath = store.GetGlobalStoragePath();
+        string globalBackup = globalPath + ".backup";
+        bool hadExistingGlobal = File.Exists(globalPath);
+        if (hadExistingGlobal)
+        {
+            File.Move(globalPath, globalBackup);
+        }
+
+        try
+        {
+            // Save workspace FIRST so that tempDir/.bookmarks.json exists before any walk-up
+            // resolution would otherwise reach the global file in the user profile.
+            var solutionState = new BookmarkWorkspaceState();
+            solutionState.Bookmarks.Add(new BookmarkMetadata
+            {
+                BookmarkId = "w1",
+                DocumentPath = Path.Combine(tempDir, "Workspace.cs"),
+                LineNumber = 3,
+                Group = string.Empty,
+                StorageLocation = BookmarkStorageLocation.Workspace,
+            });
+            solutionState.FolderPaths.Add(string.Empty);
+            await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Workspace, solutionState, CancellationToken.None);
+
+            var globalState = new BookmarkWorkspaceState();
+            globalState.Bookmarks.Add(new BookmarkMetadata
+            {
+                BookmarkId = "g1",
+                DocumentPath = @"C:\Other\Global.cs",
+                LineNumber = 1,
+                Group = string.Empty,
+                StorageLocation = BookmarkStorageLocation.Global,
+            });
+            globalState.FolderPaths.Add(string.Empty);
+            await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Global, globalState, CancellationToken.None);
+
+            var personalState = new BookmarkWorkspaceState();
+            personalState.Bookmarks.Add(new BookmarkMetadata
+            {
+                BookmarkId = "p1",
+                DocumentPath = Path.Combine(tempDir, "Personal.cs"),
+                LineNumber = 2,
+                Group = string.Empty,
+                StorageLocation = BookmarkStorageLocation.Personal,
+            });
+            personalState.FolderPaths.Add(string.Empty);
+            await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Personal, personalState, CancellationToken.None);
+
+            DualBookmarkWorkspaceState dual = await store.LoadDualWorkspaceAsync(solutionPath, CancellationToken.None);
+
+            Assert.HasCount(1, dual.GlobalState.Bookmarks);
+            Assert.AreEqual("g1", dual.GlobalState.Bookmarks[0].BookmarkId);
+            Assert.HasCount(1, dual.PersonalState.Bookmarks);
+            Assert.AreEqual("p1", dual.PersonalState.Bookmarks[0].BookmarkId);
+            Assert.HasCount(1, dual.SolutionState.Bookmarks);
+            Assert.AreEqual("w1", dual.SolutionState.Bookmarks[0].BookmarkId);
+            Assert.HasCount(3, dual.AllBookmarks);
+        }
+        finally
+        {
+            if (File.Exists(globalPath))
+            {
+                File.Delete(globalPath);
+            }
+
+            if (hadExistingGlobal)
+            {
+                File.Move(globalBackup, globalPath);
+            }
+
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task SaveAndLoadWorkspaceToLocationAsync_WhenWorkspace_RoundTripsBookmarkData()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(Path.Combine(tempDir, ".git"));
+        string solutionPath = Path.Combine(tempDir, "test.sln");
+        File.WriteAllText(solutionPath, string.Empty);
+
+        try
+        {
+            var store = new BookmarkMetadataStore();
+            var state = new BookmarkWorkspaceState();
+            state.Bookmarks.Add(new BookmarkMetadata
+            {
+                BookmarkId = "ws-1",
+                DocumentPath = Path.Combine(tempDir, "src", "Program.cs"),
+                LineNumber = 7,
+                Label = "Workspace bookmark",
+                Group = "Shared/Folder",
+                Color = BookmarkColor.Yellow,
+                StorageLocation = BookmarkStorageLocation.Workspace,
+            });
+            state.FolderPaths.Add(string.Empty);
+            state.FolderPaths.Add("Shared");
+            state.FolderPaths.Add("Shared/Folder");
+            state.ExpandedFolders.Add("Shared");
+
+            await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Workspace, state, CancellationToken.None);
+
+            string workspacePath = store.GetSolutionStoragePath(solutionPath);
+            Assert.IsTrue(File.Exists(workspacePath), "Workspace bookmarks file should be created at repo root");
+            Assert.AreEqual(Path.Combine(tempDir, ".bookmarks.json"), workspacePath);
+
+            BookmarkWorkspaceState loaded = await store.LoadWorkspaceFromLocationAsync(solutionPath, BookmarkStorageLocation.Workspace, CancellationToken.None);
+
+            Assert.HasCount(1, loaded.Bookmarks);
+            BookmarkMetadata bookmark = loaded.Bookmarks[0];
+            Assert.AreEqual("ws-1", bookmark.BookmarkId);
+            Assert.AreEqual(Path.Combine(tempDir, "src", "Program.cs"), bookmark.DocumentPath);
+            Assert.AreEqual(7, bookmark.LineNumber);
+            Assert.AreEqual("Workspace bookmark", bookmark.Label);
+            Assert.AreEqual(BookmarkColor.Yellow, bookmark.Color);
+            Assert.AreEqual("Shared/Folder", bookmark.Group);
+            Assert.AreEqual(BookmarkStorageLocation.Workspace, bookmark.StorageLocation);
+            Assert.Contains("Shared", loaded.ExpandedFolders);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
 }
