@@ -192,20 +192,14 @@ namespace BookmarkStudio
             }
 
             var solutionDirectory = Path.GetDirectoryName(solutionPath) ?? string.Empty;
-            var repoRoot = GetRepositoryRoot(solutionDirectory);
-            var baseDirectory = repoRoot ?? solutionDirectory;
 
-            // Check solution/repo root first for team-shared bookmarks (new name, then legacy)
-            var solutionRootPath = Path.Combine(baseDirectory, BookmarksFileName);
-            if (File.Exists(solutionRootPath))
+            // Walk up from the solution directory and use the first .bookmarks.json (or legacy
+            // bookmarks.json) we find. This lets teams place the shared bookmarks file anywhere
+            // along the path above the solution rather than only at the solution or repo root.
+            BookmarkStorageInfo? existingWorkspaceFile = FindExistingWorkspaceBookmarksFile(solutionDirectory);
+            if (existingWorkspaceFile != null)
             {
-                return new BookmarkStorageInfo(BookmarkStorageLocation.Workspace, solutionRootPath, BookmarksFileName);
-            }
-
-            var legacySolutionRootPath = Path.Combine(baseDirectory, LegacyBookmarksFileName);
-            if (File.Exists(legacySolutionRootPath))
-            {
-                return new BookmarkStorageInfo(BookmarkStorageLocation.Workspace, legacySolutionRootPath, LegacyBookmarksFileName);
+                return existingWorkspaceFile;
             }
 
             // Check .vs folder for user-specific bookmarks (new name, then legacy)
@@ -233,6 +227,17 @@ namespace BookmarkStudio
             }
 
             var solutionDirectory = Path.GetDirectoryName(solutionPath) ?? string.Empty;
+
+            // If a workspace bookmarks file already exists somewhere up the directory tree,
+            // reuse that location so saves go to the same file the loader picks up.
+            BookmarkStorageInfo? existingWorkspaceFile = FindExistingWorkspaceBookmarksFile(solutionDirectory);
+            if (existingWorkspaceFile != null)
+            {
+                return existingWorkspaceFile.AbsolutePath;
+            }
+
+            // Otherwise default to the repository root (when this is a git repo) so new
+            // workspace bookmarks files are created next to the repo and can be shared with the team.
             var repoRoot = GetRepositoryRoot(solutionDirectory);
             var baseDirectory = repoRoot ?? solutionDirectory;
             return Path.Combine(baseDirectory, BookmarksFileName);
@@ -632,6 +637,49 @@ namespace BookmarkStudio
             }
         }
 
+        private static BookmarkStorageInfo? FindExistingWorkspaceBookmarksFile(string solutionDirectory)
+        {
+            if (string.IsNullOrWhiteSpace(solutionDirectory))
+            {
+                return null;
+            }
+
+            string normalizedDirectoryPath;
+            try
+            {
+                normalizedDirectoryPath = Path.GetFullPath(solutionDirectory)
+                    .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+            }
+            catch (ArgumentException)
+            {
+                return null;
+            }
+            catch (NotSupportedException)
+            {
+                return null;
+            }
+
+            var current = normalizedDirectoryPath;
+
+            while (!string.IsNullOrWhiteSpace(current))
+            {
+                var candidate = Path.Combine(current, BookmarksFileName);
+                if (File.Exists(candidate))
+                {
+                    return new BookmarkStorageInfo(BookmarkStorageLocation.Workspace, candidate, BookmarksFileName);
+                }
+
+                var legacyCandidate = Path.Combine(current, LegacyBookmarksFileName);
+                if (File.Exists(legacyCandidate))
+                {
+                    return new BookmarkStorageInfo(BookmarkStorageLocation.Workspace, legacyCandidate, LegacyBookmarksFileName);
+                }
+
+                current = Path.GetDirectoryName(current.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+            }
+
+            return null;
+        }
         private static string? GetRepositoryRoot(string directoryPath)
         {
             string normalizedDirectoryPath;

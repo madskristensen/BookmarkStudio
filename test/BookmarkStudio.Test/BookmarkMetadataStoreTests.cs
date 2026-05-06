@@ -247,7 +247,114 @@ public class BookmarkMetadataStoreTests
     }
 
     [TestMethod]
-    public void GetSolutionStoragePath_WhenNoSolutionPath_Throws()
+    public void GetStorageInfo_WhenBookmarksFileExistsAboveSolutionWithoutGitRoot_ReturnsThatWorkspaceFile()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        string ancestorDir = Path.Combine(tempDir, "team-shared");
+        string solutionDir = Path.Combine(ancestorDir, "products", "MyApp");
+        Directory.CreateDirectory(solutionDir);
+        string solutionPath = Path.Combine(solutionDir, "MyApp.sln");
+        File.WriteAllText(solutionPath, string.Empty);
+        string ancestorBookmarks = Path.Combine(ancestorDir, ".bookmarks.json");
+        File.WriteAllText(ancestorBookmarks, "{}", Encoding.UTF8);
+
+        try
+        {
+            var store = new BookmarkMetadataStore();
+
+            BookmarkStorageInfo info = store.GetStorageInfo(solutionPath);
+
+            Assert.AreEqual(BookmarkStorageLocation.Workspace, info.Location);
+            Assert.AreEqual(ancestorBookmarks, info.AbsolutePath);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public void GetStorageInfo_WhenLegacyBookmarksFileExistsAboveSolution_ReturnsThatWorkspaceFile()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        string ancestorDir = Path.Combine(tempDir, "team-shared");
+        string solutionDir = Path.Combine(ancestorDir, "products", "MyApp");
+        Directory.CreateDirectory(solutionDir);
+        string solutionPath = Path.Combine(solutionDir, "MyApp.sln");
+        File.WriteAllText(solutionPath, string.Empty);
+        string ancestorBookmarks = Path.Combine(ancestorDir, "bookmarks.json");
+        File.WriteAllText(ancestorBookmarks, "{}", Encoding.UTF8);
+
+        try
+        {
+            var store = new BookmarkMetadataStore();
+
+            BookmarkStorageInfo info = store.GetStorageInfo(solutionPath);
+
+            Assert.AreEqual(BookmarkStorageLocation.Workspace, info.Location);
+            Assert.AreEqual(ancestorBookmarks, info.AbsolutePath);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public void GetStorageInfo_WhenBookmarksFileNearestSolutionAndAtAncestor_PrefersNearestToSolution()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        string ancestorDir = Path.Combine(tempDir, "team-shared");
+        string solutionDir = Path.Combine(ancestorDir, "products", "MyApp");
+        Directory.CreateDirectory(solutionDir);
+        string solutionPath = Path.Combine(solutionDir, "MyApp.sln");
+        File.WriteAllText(solutionPath, string.Empty);
+        File.WriteAllText(Path.Combine(ancestorDir, ".bookmarks.json"), "{}", Encoding.UTF8);
+        string nearestBookmarks = Path.Combine(solutionDir, ".bookmarks.json");
+        File.WriteAllText(nearestBookmarks, "{}", Encoding.UTF8);
+
+        try
+        {
+            var store = new BookmarkMetadataStore();
+
+            BookmarkStorageInfo info = store.GetStorageInfo(solutionPath);
+
+            Assert.AreEqual(BookmarkStorageLocation.Workspace, info.Location);
+            Assert.AreEqual(nearestBookmarks, info.AbsolutePath);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public void GetSolutionStoragePath_WhenExistingBookmarksFileAboveSolution_ReturnsThatPath()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        string ancestorDir = Path.Combine(tempDir, "team-shared");
+        string solutionDir = Path.Combine(ancestorDir, "products", "MyApp");
+        Directory.CreateDirectory(solutionDir);
+        string solutionPath = Path.Combine(solutionDir, "MyApp.sln");
+        File.WriteAllText(solutionPath, string.Empty);
+        string ancestorBookmarks = Path.Combine(ancestorDir, ".bookmarks.json");
+        File.WriteAllText(ancestorBookmarks, "{}", Encoding.UTF8);
+
+        try
+        {
+            var store = new BookmarkMetadataStore();
+
+            string path = store.GetSolutionStoragePath(solutionPath);
+
+            Assert.AreEqual(ancestorBookmarks, path);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [TestMethod]    public void GetSolutionStoragePath_WhenNoSolutionPath_Throws()
     {
         var store = new BookmarkMetadataStore();
 
