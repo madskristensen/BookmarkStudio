@@ -107,12 +107,12 @@ namespace BookmarkStudio
         public static BookmarkMetadata FindBySnapshot(IEnumerable<BookmarkMetadata> bookmarks, BookmarkSnapshot snapshot)
             => bookmarks.FirstOrDefault(item => string.Equals(item.ExactMatchKey, snapshot.ExactMatchKey, StringComparison.Ordinal));
 
-        public static BookmarkMetadata CreateBookmarkMetadata(IEnumerable<BookmarkMetadata> existingBookmarks, BookmarkSnapshot snapshot, string? label)
+        public static BookmarkMetadata CreateBookmarkMetadata(IEnumerable<BookmarkMetadata> existingBookmarks, BookmarkSnapshot snapshot, string? label, bool autoAssignShortcut = true)
         {
             var bookmark = new BookmarkMetadata
             {
                 BookmarkId = Guid.NewGuid().ToString("N"),
-                ShortcutNumber = FindNextAvailableShortcut(existingBookmarks),
+                ShortcutNumber = autoAssignShortcut ? FindNextAvailableShortcut(existingBookmarks) : null,
                 Label = string.IsNullOrWhiteSpace(label) ? FindNextDefaultLabel(existingBookmarks) : label,
                 Color = BookmarkColor.Blue,
             };

@@ -287,6 +287,14 @@
         </Strings>
       </Button>
 
+      <Button guid="BookmarkStudio" id="ToggleAutoAssignShortcutCommand" priority="0x0101" type="Button">
+        <Parent guid="BookmarkStudio" id="SettingsMenuGroup"/>
+        <Strings>
+          <ButtonText>Auto-assign shortcut number</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.ToggleAutoAssignShortcut</LocCanonicalName>
+        </Strings>
+      </Button>
+
       <Button guid="BookmarkStudio" id="OpenSettingsCommand" priority="0x0100" type="Button">
         <Parent guid="BookmarkStudio" id="SettingsMenuOptionsGroup"/>
         <Icon guid="ImageCatalogGuid" id="Settings" />
@@ -496,6 +504,7 @@
       <IDSymbol name="GoToShortcut9Command" value="0x0508" />
       <IDSymbol name="TogglePromptForNameCommand" value="0x0600" />
       <IDSymbol name="OpenSettingsCommand" value="0x0601" />
+      <IDSymbol name="ToggleAutoAssignShortcutCommand" value="0x0602" />
       <IDSymbol name="BookmarkManagerToolbarFilterGroup" value="0x1005" />
       <IDSymbol name="FilterByColorMenu" value="0x1020" />
       <IDSymbol name="FilterByColorMenuGroup" value="0x1021" />

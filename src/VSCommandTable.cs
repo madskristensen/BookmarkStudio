@@ -55,6 +55,7 @@ namespace BookmarkStudio
         public const int GoToShortcut9Command = 0x0508;
         public const int TogglePromptForNameCommand = 0x0600;
         public const int OpenSettingsCommand = 0x0601;
+        public const int ToggleAutoAssignShortcutCommand = 0x0602;
         public const int BookmarkManagerToolbarFilterGroup = 0x1005;
         public const int FilterByColorMenu = 0x1020;
         public const int FilterByColorMenuGroup = 0x1021;

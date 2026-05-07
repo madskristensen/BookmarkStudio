@@ -216,7 +216,7 @@ namespace BookmarkStudio
                     allBookmarks.AddRange(dualState.PersonalState.Bookmarks);
                     allBookmarks.AddRange(dualState.SolutionState.Bookmarks);
 
-                    BookmarkMetadata createdBookmark = BookmarkRepositoryService.CreateBookmarkMetadata(allBookmarks, snapshot, label);
+                    BookmarkMetadata createdBookmark = BookmarkRepositoryService.CreateBookmarkMetadata(allBookmarks, snapshot, label, General.Instance.AutoAssignShortcutNumber);
 
                     // Use the override storage location if provided, otherwise the configured default.
                     BookmarkStorageLocation defaultLocation = overrideLocation ?? General.Instance.DefaultStorageLocation;
@@ -315,7 +315,7 @@ namespace BookmarkStudio
 
                     await NativeBookmarkHelper.TryRemoveNativeBookmarkAsync(snapshot.DocumentPath, snapshot.LineNumber);
 
-                    BookmarkMetadata createdBookmark = BookmarkRepositoryService.CreateBookmarkMetadata(allBookmarks, snapshot, label: null);
+                    BookmarkMetadata createdBookmark = BookmarkRepositoryService.CreateBookmarkMetadata(allBookmarks, snapshot, label: null, General.Instance.AutoAssignShortcutNumber);
                     createdBookmark.StorageLocation = defaultLocation;
 
                     targetBookmarks.Add(createdBookmark);

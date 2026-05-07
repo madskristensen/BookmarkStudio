@@ -25,6 +25,12 @@ namespace BookmarkStudio
         public bool PromptForBookmarkName { get; set; }
 
         [Category("Bookmarks")]
+        [DisplayName("Auto-assign shortcut number")]
+        [Description("When enabled, new bookmarks are automatically assigned the lowest available shortcut slot (1 - 9) for quick navigation via Alt+Shift+<number>.")]
+        [DefaultValue(true)]
+        public bool AutoAssignShortcutNumber { get; set; } = true;
+
+        [Category("Bookmarks")]
         [DisplayName("Default storage location")]
         [Description("Determines where new bookmarks are stored by default. 'Global' stores bookmarks in %userprofile%\\.bookmarks.json (persists across solutions). 'Workspace' stores bookmarks in the solution/repository folder for team sharing. 'Personal' stores bookmarks in the '.vs' folder.")]
         [DefaultValue(BookmarkStorageLocation.Personal)]
