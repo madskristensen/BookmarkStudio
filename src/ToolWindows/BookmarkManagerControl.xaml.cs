@@ -39,6 +39,20 @@ namespace BookmarkStudio
             _viewModel.PropertyChanged += ViewModel_PropertyChanged;
         }
 
+        private void LoadOptionsIntoViewModel()
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            try
+            {
+                _viewModel.SortMode = General.Instance.SortMode;
+                _viewModel.GroupMode = General.Instance.GroupMode;
+            }
+            catch (Exception ex)
+            {
+                _ = ex.LogAsync();
+            }
+        }
+
         internal BookmarkManagerViewModel ViewModel => _viewModel;
 
         internal string? SelectedBookmarkId => _viewModel.SelectedBookmark?.BookmarkId;
@@ -147,6 +161,9 @@ namespace BookmarkStudio
         private async void BookmarkManagerControl_Loaded(object sender, RoutedEventArgs e)
         {
             Loaded -= BookmarkManagerControl_Loaded;
+
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            LoadOptionsIntoViewModel();
 
             if (_initData is not null)
             {

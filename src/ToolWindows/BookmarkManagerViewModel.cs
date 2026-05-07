@@ -24,6 +24,8 @@ namespace BookmarkStudio
         private BookmarkNodeViewModel? _selectedNode;
         private string _searchText = string.Empty;
         private BookmarkColor? _filterColor;
+        private BookmarkSortMode _sortMode = BookmarkSortMode.LineNumber;
+        private BookmarkGroupMode _groupMode = BookmarkGroupMode.Folders;
         private int? _selectedShortcutNumber;
         private string _selectedLabelText = string.Empty;
         private string _statusText = "Loading bookmarks...";
@@ -202,6 +204,38 @@ namespace BookmarkStudio
                 }
 
                 _filterColor = value;
+                OnPropertyChanged();
+                RebuildTreeInternal();
+            }
+        }
+
+        public BookmarkSortMode SortMode
+        {
+            get => _sortMode;
+            set
+            {
+                if (_sortMode == value)
+                {
+                    return;
+                }
+
+                _sortMode = value;
+                OnPropertyChanged();
+                RebuildTreeInternal();
+            }
+        }
+
+        public BookmarkGroupMode GroupMode
+        {
+            get => _groupMode;
+            set
+            {
+                if (_groupMode == value)
+                {
+                    return;
+                }
+
+                _groupMode = value;
                 OnPropertyChanged();
                 RebuildTreeInternal();
             }
@@ -843,12 +877,6 @@ namespace BookmarkStudio
             RootNodes.Clear();
             BookmarkRows.Clear();
 
-            var root = new FolderBuilderNode(string.Empty, null);
-            foreach (var folderPath in _folderPaths)
-            {
-                EnsureFolderBuilderNode(root, folderPath);
-            }
-
             IEnumerable<ManagedBookmark> sourceBookmarks = _bookmarks;
             var search = SearchText.Trim();
             if (!string.IsNullOrWhiteSpace(search))
@@ -863,27 +891,48 @@ namespace BookmarkStudio
             }
 
             List<ManagedBookmark> visibleBookmarks = [.. sourceBookmarks];
-            RebuildBookmarkRows(root, visibleBookmarks);
 
-            foreach (ManagedBookmark bookmark in visibleBookmarks)
+            FolderNodeViewModel rootNode;
+            if (_groupMode == BookmarkGroupMode.Folders)
             {
-                FolderBuilderNode folder = EnsureFolderBuilderNode(root, bookmark.FolderPath);
-                folder.Bookmarks.Add(bookmark);
+                var root = new FolderBuilderNode(string.Empty, null);
+                foreach (var folderPath in _folderPaths)
+                {
+                    EnsureFolderBuilderNode(root, folderPath);
+                }
+
+                RebuildBookmarkRows(root, visibleBookmarks);
+
+                foreach (ManagedBookmark bookmark in visibleBookmarks)
+                {
+                    FolderBuilderNode folder = EnsureFolderBuilderNode(root, bookmark.FolderPath);
+                    folder.Bookmarks.Add(bookmark);
+                }
+
+                rootNode = new FolderNodeViewModel(string.Empty, 0, _storageInfo?.Location);
+                rootNode.IsExpanded = true;
+                rootNode.IsExpandedChanged += OnFolderExpandedChanged;
+
+                foreach (FolderBuilderNode childFolder in root.Children.Values.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
+                {
+                    FolderNodeViewModel node = BuildFolderNode(childFolder, 1, _storageInfo?.Location ?? BookmarkStorageLocation.Personal);
+                    rootNode.Children.Add(node);
+                }
+
+                foreach (ManagedBookmark rootBookmark in SortBookmarks(root.Bookmarks))
+                {
+                    rootNode.Children.Add(new BookmarkItemNodeViewModel(rootBookmark, 1));
+                }
             }
-
-            var rootNode = new FolderNodeViewModel(string.Empty, 0, _storageInfo?.Location);
-            rootNode.IsExpanded = true;
-            rootNode.IsExpandedChanged += OnFolderExpandedChanged;
-
-            foreach (FolderBuilderNode childFolder in root.Children.Values.OrderBy(item => item.Name, StringComparer.OrdinalIgnoreCase))
+            else
             {
-                FolderNodeViewModel node = BuildFolderNode(childFolder, 1, _storageInfo?.Location ?? BookmarkStorageLocation.Personal);
-                rootNode.Children.Add(node);
-            }
+                BookmarkRows.Clear();
+                foreach (ManagedBookmark bookmark in SortBookmarks(visibleBookmarks))
+                {
+                    BookmarkRows.Add(new BookmarkGridRowViewModel(bookmark));
+                }
 
-            foreach (ManagedBookmark rootBookmark in root.Bookmarks.OrderBy(item => item.LineNumber).ThenBy(item => item.FileName, StringComparer.OrdinalIgnoreCase))
-            {
-                rootNode.Children.Add(new BookmarkItemNodeViewModel(rootBookmark, 1));
+                rootNode = BuildSyntheticGroupedRoot(visibleBookmarks, _storageInfo?.Location);
             }
 
             RootNodes.Add(rootNode);
@@ -1284,12 +1333,6 @@ namespace BookmarkStudio
             IEnumerable<string> folderPaths,
             string search)
         {
-            var root = new FolderBuilderNode(string.Empty, null);
-            foreach (var folderPath in folderPaths)
-            {
-                EnsureFolderBuilderNode(root, folderPath);
-            }
-
             IEnumerable<ManagedBookmark> sourceBookmarks = bookmarks;
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -1303,6 +1346,17 @@ namespace BookmarkStudio
             }
 
             List<ManagedBookmark> visibleBookmarks = [.. sourceBookmarks];
+
+            if (_groupMode != BookmarkGroupMode.Folders)
+            {
+                return BuildSyntheticGroupedRoot(visibleBookmarks, storageLocation);
+            }
+
+            var root = new FolderBuilderNode(string.Empty, null);
+            foreach (var folderPath in folderPaths)
+            {
+                EnsureFolderBuilderNode(root, folderPath);
+            }
 
             foreach (ManagedBookmark bookmark in visibleBookmarks)
             {
@@ -1320,12 +1374,59 @@ namespace BookmarkStudio
                 rootNode.Children.Add(node);
             }
 
-            foreach (ManagedBookmark rootBookmark in root.Bookmarks.OrderBy(item => item.LineNumber).ThenBy(item => item.FileName, StringComparer.OrdinalIgnoreCase))
+            foreach (ManagedBookmark rootBookmark in SortBookmarks(root.Bookmarks))
             {
                 rootNode.Children.Add(new BookmarkItemNodeViewModel(rootBookmark, 1));
             }
 
             return rootNode;
+        }
+
+        private FolderNodeViewModel BuildSyntheticGroupedRoot(
+            IReadOnlyList<ManagedBookmark> visibleBookmarks,
+            BookmarkStorageLocation? storageLocation)
+        {
+            var rootNode = new FolderNodeViewModel(string.Empty, 0, storageLocation);
+            rootNode.IsExpanded = true;
+
+            IEnumerable<IGrouping<string, ManagedBookmark>> grouped = _groupMode == BookmarkGroupMode.Color
+                ? visibleBookmarks
+                    .GroupBy(b => b.Color.ToString(), StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(g => g.First().Color)
+                : visibleBookmarks
+                    .GroupBy(b => string.IsNullOrWhiteSpace(b.FileName) ? "(unknown)" : b.FileName, StringComparer.OrdinalIgnoreCase)
+                    .OrderBy(g => g.Key, StringComparer.OrdinalIgnoreCase);
+
+            foreach (IGrouping<string, ManagedBookmark> group in grouped)
+            {
+                foreach (ManagedBookmark bookmark in SortBookmarks(group))
+                {
+                    rootNode.Children.Add(new BookmarkItemNodeViewModel(bookmark, 1));
+                }
+            }
+
+            return rootNode;
+        }
+
+        private IEnumerable<ManagedBookmark> SortBookmarks(IEnumerable<ManagedBookmark> bookmarks)
+        {
+            return _sortMode switch
+            {
+                BookmarkSortMode.Alphabetical => bookmarks
+                    .OrderBy(b => string.IsNullOrWhiteSpace(b.Label) ? b.FileName : b.Label, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(b => b.LineNumber),
+                BookmarkSortMode.Slot => bookmarks
+                    .OrderBy(b => b.ShortcutNumber.HasValue ? 0 : 1)
+                    .ThenBy(b => b.ShortcutNumber ?? int.MaxValue)
+                    .ThenBy(b => b.FileName, StringComparer.OrdinalIgnoreCase)
+                    .ThenBy(b => b.LineNumber),
+                BookmarkSortMode.Created => bookmarks
+                    .OrderByDescending(b => b.CreatedUtc)
+                    .ThenBy(b => b.LineNumber),
+                _ => bookmarks
+                    .OrderBy(b => b.LineNumber)
+                    .ThenBy(b => b.FileName, StringComparer.OrdinalIgnoreCase),
+            };
         }
 
         private void OnFolderExpandedChanged(object? sender, EventArgs e)
@@ -1431,7 +1532,7 @@ namespace BookmarkStudio
                 node.Children.Add(childNode);
             }
 
-            foreach (ManagedBookmark bookmark in folderNode.Bookmarks.OrderBy(item => item.LineNumber).ThenBy(item => item.FileName, StringComparer.OrdinalIgnoreCase))
+            foreach (ManagedBookmark bookmark in SortBookmarks(folderNode.Bookmarks))
             {
                 node.Children.Add(new BookmarkItemNodeViewModel(bookmark, treeDepth + 1));
             }

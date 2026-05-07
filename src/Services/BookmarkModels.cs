@@ -229,6 +229,7 @@ namespace BookmarkStudio
                 Group = Group,
                 Color = Color,
                 StorageLocation = StorageLocation,
+                CreatedUtc = CreatedUtc,
             };
         }
     }
@@ -260,6 +261,8 @@ namespace BookmarkStudio
         public BookmarkColor Color { get; set; }
 
         public BookmarkStorageLocation StorageLocation { get; set; }
+
+        public DateTime CreatedUtc { get; set; }
 
         public string FileName => Path.GetFileName(DocumentPath);
 

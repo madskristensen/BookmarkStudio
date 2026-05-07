@@ -43,5 +43,13 @@ namespace BookmarkStudio
         [DefaultValue(CommandInterceptionMode.Ask)]
         [TypeConverter(typeof(EnumConverter))]
         public CommandInterceptionMode InterceptBuiltInCommands { get; set; } = CommandInterceptionMode.Ask;
+
+        [Browsable(false)]
+        [DefaultValue(BookmarkSortMode.LineNumber)]
+        public BookmarkSortMode SortMode { get; set; } = BookmarkSortMode.LineNumber;
+
+        [Browsable(false)]
+        [DefaultValue(BookmarkGroupMode.Folders)]
+        public BookmarkGroupMode GroupMode { get; set; } = BookmarkGroupMode.Folders;
     }
 }

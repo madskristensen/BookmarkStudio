@@ -20,6 +20,12 @@
       <Group guid="BookmarkStudio" id="BookmarkManagerToolbarFilterGroup" priority="0x0250">
         <Parent guid="BookmarkStudio" id="BookmarkManagerToolbar"/>
       </Group>
+      <Group guid="BookmarkStudio" id="BookmarkManagerToolbarSortGroup" priority="0x0260">
+        <Parent guid="BookmarkStudio" id="BookmarkManagerToolbar"/>
+      </Group>
+      <Group guid="BookmarkStudio" id="BookmarkManagerToolbarGroupGroup" priority="0x0270">
+        <Parent guid="BookmarkStudio" id="BookmarkManagerToolbar"/>
+      </Group>
       <Group guid="BookmarkStudio" id="BookmarkManagerToolbarSettingsGroup" priority="0x0300">
         <Parent guid="BookmarkStudio" id="BookmarkManagerToolbar"/>
       </Group>
@@ -31,6 +37,12 @@
       </Group>
       <Group guid="BookmarkStudio" id="FilterByColorMenuGroup" priority="0x0000">
         <Parent guid="BookmarkStudio" id="FilterByColorMenu"/>
+      </Group>
+      <Group guid="BookmarkStudio" id="SortByMenuGroup" priority="0x0000">
+        <Parent guid="BookmarkStudio" id="SortByMenu"/>
+      </Group>
+      <Group guid="BookmarkStudio" id="GroupByMenuGroup" priority="0x0000">
+        <Parent guid="BookmarkStudio" id="GroupByMenu"/>
       </Group>
       <Group guid="BookmarkStudio" id="MarginContextMenuBookmarkGroup" priority="0x0100">
         <Parent guid="guidEditorCommands" id="LeftMarginContextMenu"/>
@@ -73,12 +85,29 @@
           <CommandName>Settings</CommandName>
         </Strings>
       </Menu>
-      <Menu guid="BookmarkStudio" id="FilterByColorMenu" priority="0x0100" type="MenuControllerLatched">
+      <Menu guid="BookmarkStudio" id="FilterByColorMenu" priority="0x0100" type="MenuController">
         <Parent guid="BookmarkStudio" id="BookmarkManagerToolbarFilterGroup"/>
         <CommandFlag>TextChanges</CommandFlag>
         <CommandFlag>NotInTBList</CommandFlag>
         <Strings>
           <CommandName>Filter by Color</CommandName>
+        </Strings>
+      </Menu>
+      <Menu guid="BookmarkStudio" id="SortByMenu" priority="0x0100" type="MenuController">
+        <Parent guid="BookmarkStudio" id="BookmarkManagerToolbarSortGroup"/>
+        <CommandFlag>TextChanges</CommandFlag>
+        <CommandFlag>NotInTBList</CommandFlag>
+        <Strings>
+          <ButtonText>Sort by</ButtonText>
+          <CommandName>Sort by</CommandName>
+        </Strings>
+      </Menu>
+      <Menu guid="BookmarkStudio" id="GroupByMenu" priority="0x0100" type="MenuController">
+        <Parent guid="BookmarkStudio" id="BookmarkManagerToolbarGroupGroup"/>        
+        <CommandFlag>TextChanges</CommandFlag>
+        <Strings>
+          <ButtonText>Group by</ButtonText>
+          <CommandName>Group by</CommandName>
         </Strings>
       </Menu>
       <Menu guid="BookmarkStudio" id="BookmarkShortcutsMenu" priority="0x0100" type="MenuControllerLatched">
@@ -310,6 +339,7 @@
         <Parent guid="BookmarkStudio" id="FilterByColorMenuGroup"/>
         <Icon guid="ImageCatalogGuid" id="Filter"/>
         <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>FixMenuController</CommandFlag>
         <Strings>
           <ButtonText>All Colors</ButtonText>
           <LocCanonicalName>.BookmarkStudio.FilterByColorAll</LocCanonicalName>
@@ -369,6 +399,63 @@
         <Strings>
           <ButtonText>Teal</ButtonText>
           <LocCanonicalName>.BookmarkStudio.FilterByColorTeal</LocCanonicalName>
+        </Strings>
+      </Button>
+
+      <Button guid="BookmarkStudio" id="SortByAlphabeticalCommand" priority="0x0100" type="Button">
+        <Parent guid="BookmarkStudio" id="SortByMenuGroup"/>
+        <Icon guid="ImageCatalogGuid" id="SortAscending"/>
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>FixMenuController</CommandFlag>
+        <Strings>
+          <ButtonText>Alphabetical</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.SortByAlphabetical</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="BookmarkStudio" id="SortByLineNumberCommand" priority="0x0101" type="Button">
+        <Parent guid="BookmarkStudio" id="SortByMenuGroup"/>
+        <Strings>
+          <ButtonText>Line number</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.SortByLineNumber</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="BookmarkStudio" id="SortBySlotCommand" priority="0x0102" type="Button">
+        <Parent guid="BookmarkStudio" id="SortByMenuGroup"/>
+        <Strings>
+          <ButtonText>Shortcut slot</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.SortBySlot</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="BookmarkStudio" id="SortByCreatedCommand" priority="0x0103" type="Button">
+        <Parent guid="BookmarkStudio" id="SortByMenuGroup"/>
+        <Strings>
+          <ButtonText>Date created (newest first)</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.SortByCreated</LocCanonicalName>
+        </Strings>
+      </Button>
+
+      <Button guid="BookmarkStudio" id="GroupByFoldersCommand" priority="0x0100" type="Button">
+        <Parent guid="BookmarkStudio" id="GroupByMenuGroup"/>
+        <Icon guid="ImageCatalogGuid" id="GroupBy"/>
+        <CommandFlag>IconIsMoniker</CommandFlag>
+        <CommandFlag>FixMenuController</CommandFlag>
+        <Strings>
+          <ButtonText>Folders</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.GroupByFolders</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="BookmarkStudio" id="GroupByColorCommand" priority="0x0101" type="Button">
+        <Parent guid="BookmarkStudio" id="GroupByMenuGroup"/>
+        <Strings>
+          <ButtonText>Color</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.GroupByColor</LocCanonicalName>
+        </Strings>
+      </Button>
+      <Button guid="BookmarkStudio" id="GroupByFileCommand" priority="0x0102" type="Button">
+        <Parent guid="BookmarkStudio" id="GroupByMenuGroup"/>
+        <Strings>
+          <ButtonText>File</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.GroupByFile</LocCanonicalName>
         </Strings>
       </Button>
 
@@ -531,6 +618,22 @@
       <IDSymbol name="AddGlobalBookmarkCommand" value="0x0900" />
       <IDSymbol name="AddPersonalBookmarkCommand" value="0x0901" />
       <IDSymbol name="AddWorkspaceBookmarkCommand" value="0x0902" />
+
+      <IDSymbol name="BookmarkManagerToolbarSortGroup" value="0x1006" />
+      <IDSymbol name="BookmarkManagerToolbarGroupGroup" value="0x1007" />
+      <IDSymbol name="SortByMenu" value="0x1050" />
+      <IDSymbol name="SortByMenuGroup" value="0x1051" />
+      <IDSymbol name="GroupByMenu" value="0x1052" />
+      <IDSymbol name="GroupByMenuGroup" value="0x1053" />
+      <IDSymbol name="SortByLineNumberCommand" value="0x0A00" />
+      <IDSymbol name="SortByAlphabeticalCommand" value="0x0A01" />
+      <IDSymbol name="SortBySlotCommand" value="0x0A02" />
+      <IDSymbol name="SortByCreatedCommand" value="0x0A03" />
+      <IDSymbol name="GroupByFoldersCommand" value="0x0A10" />
+      <IDSymbol name="GroupByColorCommand" value="0x0A11" />
+      <IDSymbol name="GroupByFileCommand" value="0x0A12" />
+      <IDSymbol name="SortByAnchorCommand" value="0x0A20" />
+      <IDSymbol name="GroupByAnchorCommand" value="0x0A21" />
     </GuidSymbol>
 
     <!-- Editor margin context menu -->

@@ -380,4 +380,173 @@ public class BookmarkManagerViewModelTests
 
         return count;
     }
+
+    private static List<string> CollectBookmarkIdsInOrder(IEnumerable<BookmarkNodeViewModel> nodes)
+    {
+        var result = new List<string>();
+        foreach (BookmarkNodeViewModel node in nodes)
+        {
+            if (node is BookmarkItemNodeViewModel bookmarkNode)
+            {
+                result.Add(bookmarkNode.Bookmark.BookmarkId);
+            }
+            else if (node is FolderNodeViewModel folder)
+            {
+                result.AddRange(CollectBookmarkIdsInOrder(folder.Children));
+            }
+        }
+
+        return result;
+    }
+
+    [TestMethod]
+    public void SortMode_WhenAlphabetical_OrdersBookmarksByLabel()
+    {
+        var viewModel = new BookmarkManagerViewModel();
+        viewModel.LoadForTests(new[]
+        {
+            new ManagedBookmark { BookmarkId = "id-c", DocumentPath = @"C:\repo\c.cs", LineNumber = 1, Label = "Charlie", Group = string.Empty },
+            new ManagedBookmark { BookmarkId = "id-a", DocumentPath = @"C:\repo\a.cs", LineNumber = 2, Label = "Alpha", Group = string.Empty },
+            new ManagedBookmark { BookmarkId = "id-b", DocumentPath = @"C:\repo\b.cs", LineNumber = 3, Label = "Bravo", Group = string.Empty },
+        }, new[] { string.Empty });
+
+        viewModel.SortMode = BookmarkSortMode.Alphabetical;
+        List<string> order = CollectBookmarkIdsInOrder(viewModel.RootNodes);
+
+        CollectionAssert.AreEqual(new[] { "id-a", "id-b", "id-c" }, order);
+    }
+
+    [TestMethod]
+    public void SortMode_WhenAlphabeticalAndLabelEmpty_FallsBackToFileName()
+    {
+        var viewModel = new BookmarkManagerViewModel();
+        viewModel.LoadForTests(new[]
+        {
+            new ManagedBookmark { BookmarkId = "id-z", DocumentPath = @"C:\repo\zeta.cs", LineNumber = 1, Label = "", Group = string.Empty },
+            new ManagedBookmark { BookmarkId = "id-a", DocumentPath = @"C:\repo\alpha.cs", LineNumber = 2, Label = "", Group = string.Empty },
+        }, new[] { string.Empty });
+
+        viewModel.SortMode = BookmarkSortMode.Alphabetical;
+        List<string> order = CollectBookmarkIdsInOrder(viewModel.RootNodes);
+
+        CollectionAssert.AreEqual(new[] { "id-a", "id-z" }, order);
+    }
+
+    [TestMethod]
+    public void SortMode_WhenSlot_AssignedShortcutsFirstThenUnassigned()
+    {
+        var viewModel = new BookmarkManagerViewModel();
+        viewModel.LoadForTests(new[]
+        {
+            new ManagedBookmark { BookmarkId = "no-slot", DocumentPath = @"C:\repo\a.cs", LineNumber = 1, ShortcutNumber = null, Group = string.Empty },
+            new ManagedBookmark { BookmarkId = "slot-3", DocumentPath = @"C:\repo\b.cs", LineNumber = 2, ShortcutNumber = 3, Group = string.Empty },
+            new ManagedBookmark { BookmarkId = "slot-1", DocumentPath = @"C:\repo\c.cs", LineNumber = 3, ShortcutNumber = 1, Group = string.Empty },
+        }, new[] { string.Empty });
+
+        viewModel.SortMode = BookmarkSortMode.Slot;
+        List<string> order = CollectBookmarkIdsInOrder(viewModel.RootNodes);
+
+        CollectionAssert.AreEqual(new[] { "slot-1", "slot-3", "no-slot" }, order);
+    }
+
+    [TestMethod]
+    public void SortMode_WhenCreated_NewestFirst()
+    {
+        var now = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var bookmarks = new[]
+        {
+            new ManagedBookmark { BookmarkId = "old", DocumentPath = @"C:\repo\a.cs", LineNumber = 1, Group = string.Empty, CreatedUtc = now.AddDays(-10) },
+            new ManagedBookmark { BookmarkId = "newest", DocumentPath = @"C:\repo\b.cs", LineNumber = 2, Group = string.Empty, CreatedUtc = now },
+            new ManagedBookmark { BookmarkId = "middle", DocumentPath = @"C:\repo\c.cs", LineNumber = 3, Group = string.Empty, CreatedUtc = now.AddDays(-5) },
+        };
+
+        var viewModel = new BookmarkManagerViewModel();
+        viewModel.LoadForTests(bookmarks, new[] { string.Empty });
+        viewModel.SortMode = BookmarkSortMode.Created;
+        List<string> order = CollectBookmarkIdsInOrder(viewModel.RootNodes);
+
+        CollectionAssert.AreEqual(new[] { "newest", "middle", "old" }, order);
+    }
+
+    [TestMethod]
+    public void GroupMode_WhenColor_ProducesFlatListOrderedByColor()
+    {
+        var viewModel = new BookmarkManagerViewModel();
+        viewModel.LoadForTests(new[]
+        {
+            new ManagedBookmark { BookmarkId = "g1", DocumentPath = @"C:\repo\b.cs", LineNumber = 2, Color = BookmarkColor.Green, Group = "FolderB" },
+            new ManagedBookmark { BookmarkId = "b1", DocumentPath = @"C:\repo\a.cs", LineNumber = 1, Color = BookmarkColor.Blue, Group = "FolderA" },
+            new ManagedBookmark { BookmarkId = "b2", DocumentPath = @"C:\repo\c.cs", LineNumber = 3, Color = BookmarkColor.Blue, Group = "FolderA" },
+        }, new[] { string.Empty, "FolderA", "FolderB" });
+
+        viewModel.GroupMode = BookmarkGroupMode.Color;
+
+        var rootFolder = (FolderNodeViewModel)viewModel.RootNodes[0];
+        Assert.IsTrue(rootFolder.Children.All(n => n is BookmarkItemNodeViewModel),
+            "Grouped view should be a flat list of bookmark items - no folder nodes.");
+
+        var order = rootFolder.Children.OfType<BookmarkItemNodeViewModel>().Select(n => n.Bookmark.BookmarkId).ToArray();
+        // Blue comes before Green by enum value (Red=1 < Blue=5 < Green=4)... actually enum is Red=1,Orange=2,Yellow=3,Green=4,Blue=5.
+        // So Green(4) before Blue(5).
+        CollectionAssert.AreEqual(new[] { "g1", "b1", "b2" }, order);
+    }
+
+    [TestMethod]
+    public void GroupMode_WhenFile_ProducesFlatListOrderedByFileName()
+    {
+        var viewModel = new BookmarkManagerViewModel();
+        viewModel.LoadForTests(new[]
+        {
+            new ManagedBookmark { BookmarkId = "b1", DocumentPath = @"C:\repo\b.cs", LineNumber = 2, Group = "Y" },
+            new ManagedBookmark { BookmarkId = "a2", DocumentPath = @"C:\repo\sub\a.cs", LineNumber = 5, Group = "Z" },
+            new ManagedBookmark { BookmarkId = "a1", DocumentPath = @"C:\repo\a.cs", LineNumber = 1, Group = "X" },
+        }, new[] { string.Empty, "X", "Y", "Z" });
+
+        viewModel.GroupMode = BookmarkGroupMode.File;
+
+        var rootFolder = (FolderNodeViewModel)viewModel.RootNodes[0];
+        Assert.IsTrue(rootFolder.Children.All(n => n is BookmarkItemNodeViewModel),
+            "Grouped view should be a flat list of bookmark items - no folder nodes.");
+
+        var order = rootFolder.Children.OfType<BookmarkItemNodeViewModel>().Select(n => n.Bookmark.BookmarkId).ToArray();
+        // a.cs bookmarks come first (both files named "a.cs" group together), then b.cs.
+        // Within same file name, sort by LineNumber (default). a1 is line 1, a2 is line 5.
+        CollectionAssert.AreEqual(new[] { "a1", "a2", "b1" }, order);
+    }
+
+    [TestMethod]
+    public void GroupModeAndSortMode_WhenCombined_AppliesSortInsideEachGroup()
+    {
+        var viewModel = new BookmarkManagerViewModel();
+        viewModel.LoadForTests(new[]
+        {
+            new ManagedBookmark { BookmarkId = "blue-z", DocumentPath = @"C:\repo\z.cs", LineNumber = 10, Color = BookmarkColor.Blue, Label = "Zeta", Group = string.Empty },
+            new ManagedBookmark { BookmarkId = "blue-a", DocumentPath = @"C:\repo\a.cs", LineNumber = 20, Color = BookmarkColor.Blue, Label = "Alpha", Group = string.Empty },
+            new ManagedBookmark { BookmarkId = "green-m", DocumentPath = @"C:\repo\m.cs", LineNumber = 5, Color = BookmarkColor.Green, Label = "Mike", Group = string.Empty },
+        }, new[] { string.Empty });
+
+        viewModel.GroupMode = BookmarkGroupMode.Color;
+        viewModel.SortMode = BookmarkSortMode.Alphabetical;
+
+        var rootFolder = (FolderNodeViewModel)viewModel.RootNodes[0];
+        var order = rootFolder.Children.OfType<BookmarkItemNodeViewModel>().Select(n => n.Bookmark.BookmarkId).ToArray();
+        // Green(4) group first, then Blue(5) group. Alpha < Zeta inside Blue.
+        CollectionAssert.AreEqual(new[] { "green-m", "blue-a", "blue-z" }, order);
+    }
+
+    [TestMethod]
+    public void GroupMode_WhenSwitchingBackToFolders_RestoresFolderHierarchy()
+    {
+        var viewModel = new BookmarkManagerViewModel();
+        viewModel.LoadForTests(new[]
+        {
+            new ManagedBookmark { BookmarkId = "id-1", DocumentPath = @"C:\repo\a.cs", LineNumber = 1, Color = BookmarkColor.Blue, Group = "FolderA" },
+        }, new[] { string.Empty, "FolderA" });
+
+        viewModel.GroupMode = BookmarkGroupMode.Color;
+        viewModel.GroupMode = BookmarkGroupMode.Folders;
+
+        var rootFolder = (FolderNodeViewModel)viewModel.RootNodes[0];
+        Assert.IsTrue(rootFolder.Children.OfType<FolderNodeViewModel>().Any(n => n.FolderName == "FolderA"));
+    }
 }

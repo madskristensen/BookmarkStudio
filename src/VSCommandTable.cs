@@ -82,6 +82,21 @@ namespace BookmarkStudio
         public const int AddGlobalBookmarkCommand = 0x0900;
         public const int AddPersonalBookmarkCommand = 0x0901;
         public const int AddWorkspaceBookmarkCommand = 0x0902;
+        public const int BookmarkManagerToolbarSortGroup = 0x1006;
+        public const int BookmarkManagerToolbarGroupGroup = 0x1007;
+        public const int SortByMenu = 0x1050;
+        public const int SortByMenuGroup = 0x1051;
+        public const int GroupByMenu = 0x1052;
+        public const int GroupByMenuGroup = 0x1053;
+        public const int SortByLineNumberCommand = 0x0A00;
+        public const int SortByAlphabeticalCommand = 0x0A01;
+        public const int SortBySlotCommand = 0x0A02;
+        public const int SortByCreatedCommand = 0x0A03;
+        public const int GroupByFoldersCommand = 0x0A10;
+        public const int GroupByColorCommand = 0x0A11;
+        public const int GroupByFileCommand = 0x0A12;
+        public const int SortByAnchorCommand = 0x0A20;
+        public const int GroupByAnchorCommand = 0x0A21;
         public const int LeftMarginContextMenu = 0x0066;
         public const int ToggleBookmark = 0x004C;
     }
