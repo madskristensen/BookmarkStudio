@@ -32,6 +32,9 @@ namespace BookmarkStudio
         internal static string? GetSelectedFolderPath()
             => _currentControl?.SelectedFolderPath;
 
+        internal static BookmarkColor? GetCurrentFilterColor()
+            => _currentControl?.ViewModel.FilterColor;
+
         internal static async Task<BookmarkManagerControl?> GetControlAsync()
         {
             if (_currentControl is null)

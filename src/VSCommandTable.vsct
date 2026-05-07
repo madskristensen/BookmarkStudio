@@ -347,6 +347,8 @@
       </Button>
       <Button guid="BookmarkStudio" id="FilterByColorBlueCommand" priority="0x0200" type="Button">
         <Parent guid="BookmarkStudio" id="FilterByColorMenuGroup"/>
+        <Icon guid="BookmarkColorImages" id="BookmarkColorBlue"/>
+        <CommandFlag>IconIsMoniker</CommandFlag>
         <Strings>
           <ButtonText>Blue</ButtonText>
           <LocCanonicalName>.BookmarkStudio.FilterByColorBlue</LocCanonicalName>
@@ -354,6 +356,8 @@
       </Button>
       <Button guid="BookmarkStudio" id="FilterByColorRedCommand" priority="0x0201" type="Button">
         <Parent guid="BookmarkStudio" id="FilterByColorMenuGroup"/>
+        <Icon guid="BookmarkColorImages" id="BookmarkColorRed"/>
+        <CommandFlag>IconIsMoniker</CommandFlag>
         <Strings>
           <ButtonText>Red</ButtonText>
           <LocCanonicalName>.BookmarkStudio.FilterByColorRed</LocCanonicalName>
@@ -361,6 +365,8 @@
       </Button>
       <Button guid="BookmarkStudio" id="FilterByColorOrangeCommand" priority="0x0202" type="Button">
         <Parent guid="BookmarkStudio" id="FilterByColorMenuGroup"/>
+        <Icon guid="BookmarkColorImages" id="BookmarkColorOrange"/>
+        <CommandFlag>IconIsMoniker</CommandFlag>
         <Strings>
           <ButtonText>Orange</ButtonText>
           <LocCanonicalName>.BookmarkStudio.FilterByColorOrange</LocCanonicalName>
@@ -368,6 +374,8 @@
       </Button>
       <Button guid="BookmarkStudio" id="FilterByColorYellowCommand" priority="0x0203" type="Button">
         <Parent guid="BookmarkStudio" id="FilterByColorMenuGroup"/>
+        <Icon guid="BookmarkColorImages" id="BookmarkColorYellow"/>
+        <CommandFlag>IconIsMoniker</CommandFlag>
         <Strings>
           <ButtonText>Yellow</ButtonText>
           <LocCanonicalName>.BookmarkStudio.FilterByColorYellow</LocCanonicalName>
@@ -375,6 +383,8 @@
       </Button>
       <Button guid="BookmarkStudio" id="FilterByColorGreenCommand" priority="0x0204" type="Button">
         <Parent guid="BookmarkStudio" id="FilterByColorMenuGroup"/>
+        <Icon guid="BookmarkColorImages" id="BookmarkColorGreen"/>
+        <CommandFlag>IconIsMoniker</CommandFlag>
         <Strings>
           <ButtonText>Green</ButtonText>
           <LocCanonicalName>.BookmarkStudio.FilterByColorGreen</LocCanonicalName>
@@ -382,6 +392,8 @@
       </Button>
       <Button guid="BookmarkStudio" id="FilterByColorPurpleCommand" priority="0x0205" type="Button">
         <Parent guid="BookmarkStudio" id="FilterByColorMenuGroup"/>
+        <Icon guid="BookmarkColorImages" id="BookmarkColorPurple"/>
+        <CommandFlag>IconIsMoniker</CommandFlag>
         <Strings>
           <ButtonText>Purple</ButtonText>
           <LocCanonicalName>.BookmarkStudio.FilterByColorPurple</LocCanonicalName>
@@ -389,6 +401,8 @@
       </Button>
       <Button guid="BookmarkStudio" id="FilterByColorPinkCommand" priority="0x0206" type="Button">
         <Parent guid="BookmarkStudio" id="FilterByColorMenuGroup"/>
+        <Icon guid="BookmarkColorImages" id="BookmarkColorPink"/>
+        <CommandFlag>IconIsMoniker</CommandFlag>
         <Strings>
           <ButtonText>Pink</ButtonText>
           <LocCanonicalName>.BookmarkStudio.FilterByColorPink</LocCanonicalName>
@@ -396,6 +410,8 @@
       </Button>
       <Button guid="BookmarkStudio" id="FilterByColorTealCommand" priority="0x0207" type="Button">
         <Parent guid="BookmarkStudio" id="FilterByColorMenuGroup"/>
+        <Icon guid="BookmarkColorImages" id="BookmarkColorTeal"/>
+        <CommandFlag>IconIsMoniker</CommandFlag>
         <Strings>
           <ButtonText>Teal</ButtonText>
           <LocCanonicalName>.BookmarkStudio.FilterByColorTeal</LocCanonicalName>
@@ -637,6 +653,17 @@
     </GuidSymbol>
 
     <!-- Editor margin context menu -->
+    <GuidSymbol name="BookmarkColorImages" value="{55a8ba0c-12ed-4e78-96d8-c430ee2e6ef3}">
+      <IDSymbol name="BookmarkColorRed" value="1" />
+      <IDSymbol name="BookmarkColorOrange" value="2" />
+      <IDSymbol name="BookmarkColorYellow" value="3" />
+      <IDSymbol name="BookmarkColorGreen" value="4" />
+      <IDSymbol name="BookmarkColorBlue" value="5" />
+      <IDSymbol name="BookmarkColorPurple" value="6" />
+      <IDSymbol name="BookmarkColorPink" value="7" />
+      <IDSymbol name="BookmarkColorTeal" value="8" />
+    </GuidSymbol>
+
     <GuidSymbol name="guidEditorCommands" value="{160961B3-909D-4B28-9353-A1BEF587B4A6}">
       <IDSymbol name="LeftMarginContextMenu" value="0x0066"/>
     </GuidSymbol>

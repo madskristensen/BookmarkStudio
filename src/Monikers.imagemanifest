@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ImageManifest xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://schemas.microsoft.com/VisualStudio/ImageManifestSchema/2014">
+  <Symbols>
+    <String Name="Resources" Value="/BookmarkStudio;Component/Resources/BookmarkColors" />
+    <Guid Name="BookmarkColorImages" Value="{55a8ba0c-12ed-4e78-96d8-c430ee2e6ef3}" />
+
+    <ID Name="BookmarkColorRed" Value="1" />
+    <ID Name="BookmarkColorOrange" Value="2" />
+    <ID Name="BookmarkColorYellow" Value="3" />
+    <ID Name="BookmarkColorGreen" Value="4" />
+    <ID Name="BookmarkColorBlue" Value="5" />
+    <ID Name="BookmarkColorPurple" Value="6" />
+    <ID Name="BookmarkColorPink" Value="7" />
+    <ID Name="BookmarkColorTeal" Value="8" />
+  </Symbols>
+
+  <Images>
+    <Image Guid="$(BookmarkColorImages)" ID="$(BookmarkColorRed)" AllowColorInversion="false">
+      <Source Uri="$(Resources)/Red.16.16.png">
+        <Size Value="16" />
+      </Source>
+    </Image>
+    <Image Guid="$(BookmarkColorImages)" ID="$(BookmarkColorOrange)" AllowColorInversion="false">
+      <Source Uri="$(Resources)/Orange.16.16.png">
+        <Size Value="16" />
+      </Source>
+    </Image>
+    <Image Guid="$(BookmarkColorImages)" ID="$(BookmarkColorYellow)" AllowColorInversion="false">
+      <Source Uri="$(Resources)/Yellow.16.16.png">
+        <Size Value="16" />
+      </Source>
+    </Image>
+    <Image Guid="$(BookmarkColorImages)" ID="$(BookmarkColorGreen)" AllowColorInversion="false">
+      <Source Uri="$(Resources)/Green.16.16.png">
+        <Size Value="16" />
+      </Source>
+    </Image>
+    <Image Guid="$(BookmarkColorImages)" ID="$(BookmarkColorBlue)" AllowColorInversion="false">
+      <Source Uri="$(Resources)/Blue.16.16.png">
+        <Size Value="16" />
+      </Source>
+    </Image>
+    <Image Guid="$(BookmarkColorImages)" ID="$(BookmarkColorPurple)" AllowColorInversion="false">
+      <Source Uri="$(Resources)/Purple.16.16.png">
+        <Size Value="16" />
+      </Source>
+    </Image>
+    <Image Guid="$(BookmarkColorImages)" ID="$(BookmarkColorPink)" AllowColorInversion="false">
+      <Source Uri="$(Resources)/Pink.16.16.png">
+        <Size Value="16" />
+      </Source>
+    </Image>
+    <Image Guid="$(BookmarkColorImages)" ID="$(BookmarkColorTeal)" AllowColorInversion="false">
+      <Source Uri="$(Resources)/Teal.16.16.png">
+        <Size Value="16" />
+      </Source>
+    </Image>
+  </Images>
+</ImageManifest>

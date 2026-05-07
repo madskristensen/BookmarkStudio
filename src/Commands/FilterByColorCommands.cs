@@ -24,6 +24,19 @@ namespace BookmarkStudio
 
             control.ViewModel.SetStatus(message);
         }
+
+        protected override void BeforeQueryStatus(EventArgs e)
+        {
+            try
+            {
+                BookmarkColor? current = BookmarkManagerToolWindow.GetCurrentFilterColor();
+                Command.Checked = current == FilterColor;
+            }
+            catch
+            {
+                Command.Checked = !FilterColor.HasValue;
+            }
+        }
     }
 
     [Command(PackageIds.FilterByColorAllCommand)]

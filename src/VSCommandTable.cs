@@ -16,6 +16,9 @@ namespace BookmarkStudio
         public const string BookmarkStudioString = "78198409-af4c-486d-9caf-7ee074cf1041";
         public static Guid BookmarkStudio = new Guid(BookmarkStudioString);
 
+        public const string BookmarkColorImagesString = "55a8ba0c-12ed-4e78-96d8-c430ee2e6ef3";
+        public static Guid BookmarkColorImages = new Guid(BookmarkColorImagesString);
+
         public const string guidEditorCommandsString = "160961b3-909d-4b28-9353-a1bef587b4a6";
         public static Guid guidEditorCommands = new Guid(guidEditorCommandsString);
 
@@ -97,6 +100,14 @@ namespace BookmarkStudio
         public const int GroupByFileCommand = 0x0A12;
         public const int SortByAnchorCommand = 0x0A20;
         public const int GroupByAnchorCommand = 0x0A21;
+        public const int BookmarkColorRed = 0x0001;
+        public const int BookmarkColorOrange = 0x0002;
+        public const int BookmarkColorYellow = 0x0003;
+        public const int BookmarkColorGreen = 0x0004;
+        public const int BookmarkColorBlue = 0x0005;
+        public const int BookmarkColorPurple = 0x0006;
+        public const int BookmarkColorPink = 0x0007;
+        public const int BookmarkColorTeal = 0x0008;
         public const int LeftMarginContextMenu = 0x0066;
         public const int ToggleBookmark = 0x004C;
     }
