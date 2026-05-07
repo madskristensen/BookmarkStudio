@@ -24,7 +24,7 @@ namespace BookmarkStudio
         private BookmarkNodeViewModel? _selectedNode;
         private string _searchText = string.Empty;
         private BookmarkColor? _filterColor;
-        private BookmarkSortMode _sortMode = BookmarkSortMode.LineNumber;
+        private BookmarkSortMode _sortMode = BookmarkSortMode.Alphabetical;
         private BookmarkGroupMode _groupMode = BookmarkGroupMode.Folders;
         private int? _selectedShortcutNumber;
         private string _selectedLabelText = string.Empty;

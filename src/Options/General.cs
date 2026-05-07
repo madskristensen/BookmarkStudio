@@ -45,8 +45,8 @@ namespace BookmarkStudio
         public CommandInterceptionMode InterceptBuiltInCommands { get; set; } = CommandInterceptionMode.Ask;
 
         [Browsable(false)]
-        [DefaultValue(BookmarkSortMode.LineNumber)]
-        public BookmarkSortMode SortMode { get; set; } = BookmarkSortMode.LineNumber;
+        [DefaultValue(BookmarkSortMode.Alphabetical)]
+        public BookmarkSortMode SortMode { get; set; } = BookmarkSortMode.Alphabetical;
 
         [Browsable(false)]
         [DefaultValue(BookmarkGroupMode.Folders)]
