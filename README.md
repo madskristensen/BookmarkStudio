@@ -5,7 +5,6 @@
 # Bookmark Studio for Visual Studio
 
 [![Build](https://github.com/madskristensen/BookmarkStudio/actions/workflows/build.yaml/badge.svg)](https://github.com/madskristensen/BookmarkStudio/actions/workflows/build.yaml)
-[![Install from VSIX Gallery](https://www.vsixgallery.com/badge/BookmarkStudio.7ed28d42-37b3-4773-8a6e-e9ca6403a0fc.svg)][vsixgallery]
 [![GitHub Sponsors](https://img.shields.io/github/sponsors/madskristensen)](https://github.com/sponsors/madskristensen)
 
 Download this extension from the [Visual Studio Marketplace][marketplace]
