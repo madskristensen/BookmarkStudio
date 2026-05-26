@@ -52,6 +52,7 @@ Open **View > Bookmark Manager** to see all your bookmarks in one place:
 - **Search** - Filter by name, file, color, or any text
 - **Folders** - Group related bookmarks (drag and drop to organize)
 - **Labels** - Give bookmarks meaningful names
+- **Notes** - Attach a short note to remind yourself why a location matters
 - **Colors** - Right-click to assign Blue, Red, Orange, Yellow, Green, Purple, Pink, or Teal
 
 ### Quick Access from the Toolbar
@@ -103,6 +104,10 @@ Drag the bookmark glyph in the margin to move it to a different line.
 ### Reassigning Shortcuts
 
 From the Bookmark Manager, right-click a bookmark to assign it to a different shortcut slot (1-9), or clear its shortcut entirely.
+
+### Adding Notes
+
+Right-click a bookmark in the margin or the Bookmark Manager and choose **Edit Note...** to attach a short, single-line note. The note appears in italics underneath the bookmark in the tool window and in the tooltip when you hover the glyph in the editor margin. Choose **Delete Note** to remove it.
 
 ## Keyboard Shortcuts
 
