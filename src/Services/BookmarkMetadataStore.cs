@@ -398,6 +398,17 @@ namespace BookmarkStudio
 
             var storagePath = GetStoragePathForLocation(solutionPath, location);
 
+            // If the state is empty (no bookmarks and only the root folder), delete the file instead of persisting an empty state
+            if (IsEmptyState(state))
+            {
+                if (File.Exists(storagePath))
+                {
+                    await Task.Run(() => File.Delete(storagePath), cancellationToken);
+                }
+
+                return;
+            }
+
             var directory = Path.GetDirectoryName(storagePath);
             if (string.IsNullOrWhiteSpace(directory))
             {

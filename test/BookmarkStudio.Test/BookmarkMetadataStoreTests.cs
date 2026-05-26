@@ -514,6 +514,48 @@ public class BookmarkMetadataStoreTests
     }
 
     [TestMethod]
+    public async Task SaveWorkspaceToLocationAsync_WhenStateIsEmpty_DeletesStorageFile()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string solutionPath = Path.Combine(tempDir, "test.sln");
+        File.WriteAllText(solutionPath, string.Empty);
+
+        try
+        {
+            var store = new BookmarkMetadataStore();
+
+            var solutionState = new BookmarkWorkspaceState();
+            solutionState.Bookmarks.Add(new BookmarkMetadata
+            {
+                BookmarkId = "bookmark-1",
+                DocumentPath = Path.Combine(tempDir, "file.cs"),
+                LineNumber = 10,
+                Group = string.Empty,
+                StorageLocation = BookmarkStorageLocation.Workspace
+            });
+            solutionState.FolderPaths.Add(string.Empty);
+            await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Workspace, solutionState, CancellationToken.None);
+
+            string storagePath = store.GetStoragePathForLocation(solutionPath, BookmarkStorageLocation.Workspace);
+            Assert.IsTrue(File.Exists(storagePath), "Storage file should exist after saving a non-empty state.");
+
+            await store.MoveBookmarkBetweenLocationsAsync(
+                solutionPath,
+                "bookmark-1",
+                BookmarkStorageLocation.Workspace,
+                BookmarkStorageLocation.Personal,
+                CancellationToken.None);
+
+            Assert.IsFalse(File.Exists(storagePath), "Workspace .bookmarks.json should be deleted once it becomes empty after moving the last bookmark out.");
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [TestMethod]
     public async Task MoveBookmarkBetweenLocationsAsync_WhenMovedToNestedFolder_UpdatesFolderAndRegistersPath()
     {
         string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
@@ -1109,6 +1151,14 @@ public class BookmarkMetadataStoreTests
         {
             var store = new BookmarkMetadataStore();
             var state = new BookmarkWorkspaceState();
+            state.Bookmarks.Add(new BookmarkMetadata
+            {
+                BookmarkId = "bookmark-1",
+                DocumentPath = Path.Combine(tempDir, "file.cs"),
+                LineNumber = 1,
+                Group = string.Empty,
+                StorageLocation = BookmarkStorageLocation.Personal
+            });
             state.FolderPaths.Add(string.Empty);
             await store.SaveWorkspaceToLocationAsync(solutionPath, BookmarkStorageLocation.Personal, state, CancellationToken.None);
 
