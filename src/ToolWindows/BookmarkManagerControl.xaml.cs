@@ -480,6 +480,31 @@ namespace BookmarkStudio
             await RunAsync(cancellationToken => _viewModel.SaveSelectionAsync(cancellationToken));
         }
 
+        private async void EditNoteMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            SelectNodeFromContextMenu(sender);
+
+            ManagedBookmark? bookmark = _viewModel.SelectedBookmark;
+            if (bookmark is null)
+            {
+                return;
+            }
+
+            var newNote = TextPromptWindow.Show("Edit Note", "Enter a short note for the bookmark:", bookmark.Note, selectTextOnLoad: true);
+            if (newNote is null)
+            {
+                return;
+            }
+
+            await RunAsync(cancellationToken => _viewModel.SetSelectedNoteAsync(newNote, cancellationToken));
+        }
+
+        private async void DeleteNoteMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            SelectNodeFromContextMenu(sender);
+            await RunAsync(cancellationToken => _viewModel.SetSelectedNoteAsync(string.Empty, cancellationToken));
+        }
+
         private async void AssignShortcutMenuItem_Click(object sender, RoutedEventArgs e)
         {
             SelectNodeFromContextMenu(sender);
@@ -552,6 +577,8 @@ namespace BookmarkStudio
             // When multi-selecting, only show Delete and Set Color
             var hasMultiSelection = _viewModel.HasMultiSelection;
             var hasOnlyBookmarks = _viewModel.MultiSelectionHasOnlyBookmarks;
+            var selectedBookmark = _viewModel.SelectedBookmark;
+            var hasNote = !hasMultiSelection && selectedBookmark is not null && !string.IsNullOrWhiteSpace(selectedBookmark.Note);
 
             // Find menu items by name and set visibility
             foreach (var item in contextMenu.Items)
@@ -563,8 +590,12 @@ namespace BookmarkStudio
                         case "NavigateMenuItem":
                         case "CopyLocationMenuItem":
                         case "RenameMenuItem":
+                        case "EditNoteMenuItem":
                         case "AssignShortcutSubmenu":
                             menuItem.Visibility = hasMultiSelection ? Visibility.Collapsed : Visibility.Visible;
+                            break;
+                        case "DeleteNoteMenuItem":
+                            menuItem.Visibility = hasNote ? Visibility.Visible : Visibility.Collapsed;
                             break;
                         case "SetColorMenuItem":
                             // Set Color only available for bookmarks-only selection

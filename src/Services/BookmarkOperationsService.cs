@@ -242,6 +242,16 @@ namespace BookmarkStudio
             }, cancellationToken);
         }
 
+        public async Task<IReadOnlyList<ManagedBookmark>> SetNoteAsync(string? bookmarkId, string? note, CancellationToken cancellationToken)
+        {
+            ManagedBookmark targetBookmark = await GetRequiredBookmarkAsync(bookmarkId, cancellationToken);
+            return await _session.UpdateBookmarksAsync(metadata =>
+            {
+                BookmarkMetadata targetMetadata = BookmarkRepositoryService.GetRequiredBookmark(metadata, targetBookmark.BookmarkId);
+                targetMetadata.Note = note?.Trim() ?? string.Empty;
+            }, cancellationToken);
+        }
+
         public async Task<IReadOnlyList<ManagedBookmark>> ClearShortcutAsync(string? bookmarkId, CancellationToken cancellationToken)
         {
             ManagedBookmark targetBookmark = await GetRequiredBookmarkAsync(bookmarkId, cancellationToken);

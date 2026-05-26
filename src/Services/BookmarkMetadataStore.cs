@@ -826,6 +826,7 @@ namespace BookmarkStudio
                 LineText = GetStringProperty(element, "lineText"),
                 ShortcutNumber = GetNullableIntProperty(element, "slotNumber"),
                 Label = GetStringProperty(element, "label"),
+                Note = GetStringProperty(element, "note"),
                 Group = !string.IsNullOrWhiteSpace(GetStringProperty(element, "group"))
                     ? GetStringProperty(element, "group")
                     : folderPath,
@@ -884,6 +885,11 @@ namespace BookmarkStudio
                 if (!string.IsNullOrWhiteSpace(bookmark.Label))
                 {
                     writer.WriteString("label", bookmark.Label);
+                }
+
+                if (!string.IsNullOrWhiteSpace(bookmark.Note))
+                {
+                    writer.WriteString("note", bookmark.Note);
                 }
 
                 if (bookmark.Color != BookmarkColor.None)
@@ -1077,6 +1083,7 @@ namespace BookmarkStudio
             metadata.DocumentPath = metadata.DocumentPath ?? string.Empty;
             metadata.LineText = metadata.LineText ?? string.Empty;
             metadata.Label = metadata.Label ?? string.Empty;
+            metadata.Note = metadata.Note ?? string.Empty;
             metadata.Group = BookmarkIdentity.NormalizeFolderPath(metadata.Group);
 
             return metadata;

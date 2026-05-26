@@ -38,6 +38,7 @@ public class BookmarkMetadataStoreTests
                 LineText = "Console.WriteLine(\"Hello\");",
                 ShortcutNumber = 3,
                 Label = "Important entry point",
+                Note = "Remember to review with team",
                 Group = "Core/Startup",
                 Color = BookmarkColor.Green,
             };
@@ -46,6 +47,7 @@ public class BookmarkMetadataStoreTests
             string json = File.ReadAllText(Path.Combine(tempDir, ".vs", ".bookmarks.json"), Encoding.UTF8);
             Assert.DoesNotContain(@"""documentPathRoot""", json);
             StringAssert.Contains(json, @"""documentPath"": ""src/Program.cs""");
+            StringAssert.Contains(json, @"""note"": ""Remember to review with team""");
 
             IReadOnlyList<BookmarkMetadata> loaded = await store.LoadAsync(solutionPath, CancellationToken.None);
 
@@ -57,6 +59,7 @@ public class BookmarkMetadataStoreTests
             Assert.AreEqual(original.LineText, result.LineText);
             Assert.AreEqual(original.ShortcutNumber, result.ShortcutNumber);
             Assert.AreEqual(original.Label, result.Label);
+            Assert.AreEqual(original.Note, result.Note);
             Assert.AreEqual(original.Color, result.Color);
             Assert.AreEqual("Core/Startup", result.Group);
         }
@@ -506,6 +509,37 @@ public class BookmarkMetadataStoreTests
             Assert.AreEqual("bookmark-1", movedBookmark.BookmarkId);
             Assert.AreEqual("TargetFolder", movedBookmark.Group, "Bookmark should be in TargetFolder");
             Assert.AreEqual(BookmarkStorageLocation.Personal, movedBookmark.StorageLocation);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+
+    [TestMethod]
+    public async Task SaveAsync_WhenNoteIsEmpty_OmitsNoteFromJson()
+    {
+        string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string solutionPath = Path.Combine(tempDir, "test.sln");
+        File.WriteAllText(solutionPath, string.Empty);
+
+        try
+        {
+            var store = new BookmarkMetadataStore();
+            var original = new BookmarkMetadata
+            {
+                BookmarkId = "no-note",
+                DocumentPath = Path.Combine(tempDir, "src", "Program.cs"),
+                LineNumber = 1,
+                LineText = "x",
+                Note = string.Empty,
+            };
+
+            await store.SaveAsync(solutionPath, new[] { original }, CancellationToken.None);
+            string json = File.ReadAllText(Path.Combine(tempDir, ".vs", ".bookmarks.json"), Encoding.UTF8);
+
+            Assert.DoesNotContain(@"""note""", json);
         }
         finally
         {

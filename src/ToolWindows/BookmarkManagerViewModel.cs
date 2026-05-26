@@ -408,6 +408,17 @@ namespace BookmarkStudio
             SetStatus("Bookmark shortcut cleared.");
         }
 
+        public async Task SetSelectedNoteAsync(string? note, CancellationToken cancellationToken)
+        {
+            ManagedBookmark selectedBookmark = GetRequiredSelection();
+            IReadOnlyList<ManagedBookmark> bookmarks = await _operations.SetNoteAsync(selectedBookmark.BookmarkId, note, cancellationToken);
+            ReloadDualBookmarks(bookmarks);
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+            RebuildTree();
+            SelectBookmark(selectedBookmark.BookmarkId);
+            SetStatus(string.IsNullOrWhiteSpace(note) ? "Note removed." : "Note updated.");
+        }
+
         public Dictionary<int, string> GetShortcutAssignments()
         {
             var assignments = new Dictionary<int, string>();
@@ -1859,6 +1870,8 @@ namespace BookmarkStudio
         public override string DisplayText => string.IsNullOrWhiteSpace(Bookmark.Label)
             ? Bookmark.FileName
             : Bookmark.Label;
+
+        public bool HasNote => !string.IsNullOrWhiteSpace(Bookmark.Note);
     }
 
     public sealed class BookmarkGridRowViewModel

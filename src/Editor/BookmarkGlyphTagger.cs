@@ -112,6 +112,7 @@ namespace BookmarkStudio
                 {
                     BookmarkId = bookmark.BookmarkId,
                     Label = bookmark.Label,
+                    Note = bookmark.Note,
                     ShortcutNumber = bookmark.ShortcutNumber,
                     Color = bookmark.Color,
                 };

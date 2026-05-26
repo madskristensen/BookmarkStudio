@@ -125,6 +125,64 @@ namespace BookmarkStudio
         }
 
         /// <summary>
+        /// Creates an "Edit Note..." menu item.
+        /// </summary>
+        public static MenuItem CreateEditNoteMenuItem(string bookmarkId, Func<string, CancellationToken, Task>? refreshCallback = null)
+        {
+            var icon = new CrispImage
+            {
+                Moniker = KnownMonikers.Note,
+                Width = 16,
+                Height = 16,
+            };
+
+            var item = new MenuItem { Header = "Edit Note...", Icon = icon };
+            item.Click += (sender, e) =>
+            {
+                ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
+                {
+                    ManagedBookmark bookmark = await BookmarkOperationsService.Current.GetBookmarkAsync(bookmarkId, CancellationToken.None);
+
+                    await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(CancellationToken.None);
+                    var newNote = TextPromptWindow.Show("Edit Note", "Enter a short note for the bookmark:", bookmark.Note, selectTextOnLoad: true);
+                    if (newNote is null)
+                    {
+                        return;
+                    }
+
+                    await BookmarkOperationsService.Current.SetNoteAsync(bookmarkId, newNote, CancellationToken.None);
+                    if (refreshCallback is not null)
+                    {
+                        await refreshCallback(bookmarkId, CancellationToken.None);
+                    }
+                }).FireAndForget();
+            };
+
+            return item;
+        }
+
+        /// <summary>
+        /// Creates a "Delete Note" menu item. Caller is responsible for only showing this when a note exists.
+        /// </summary>
+        public static MenuItem CreateDeleteNoteMenuItem(string bookmarkId, Func<string, CancellationToken, Task>? refreshCallback = null)
+        {
+            var item = new MenuItem { Header = "Delete Note" };
+            item.Click += (sender, e) =>
+            {
+                ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
+                {
+                    await BookmarkOperationsService.Current.SetNoteAsync(bookmarkId, string.Empty, CancellationToken.None);
+                    if (refreshCallback is not null)
+                    {
+                        await refreshCallback(bookmarkId, CancellationToken.None);
+                    }
+                }).FireAndForget();
+            };
+
+            return item;
+        }
+
+        /// <summary>
         /// Updates shortcut menu item headers to show current bookmark assignments.
         /// Call this from the SubmenuOpened event handler.
         /// </summary>

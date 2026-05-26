@@ -92,9 +92,31 @@ namespace BookmarkStudio
             menu.Items.Add(BookmarkContextMenuHelper.CreateSetColorSubmenu(bookmarkId, BookmarkManagerToolWindow.RefreshIfVisibleAsync));
             menu.Items.Add(new Separator());
             menu.Items.Add(BookmarkContextMenuHelper.CreateRenameMenuItem(bookmarkId, BookmarkManagerToolWindow.RefreshIfVisibleAsync));
+            menu.Items.Add(BookmarkContextMenuHelper.CreateEditNoteMenuItem(bookmarkId, BookmarkManagerToolWindow.RefreshIfVisibleAsync));
+
+            MenuItem deleteNoteItem = BookmarkContextMenuHelper.CreateDeleteNoteMenuItem(bookmarkId, BookmarkManagerToolWindow.RefreshIfVisibleAsync);
+            menu.Items.Add(deleteNoteItem);
+
+            menu.Opened += (sender, e) =>
+            {
+                deleteNoteItem.Visibility = HasNote(bookmarkId) ? Visibility.Visible : Visibility.Collapsed;
+            };
 
             ThemedContextMenuHelper.ApplyVsTheme(menu);
             return menu;
+        }
+
+        private static bool HasNote(string bookmarkId)
+        {
+            foreach (ManagedBookmark bookmark in BookmarkStudioSession.Current.CachedBookmarks)
+            {
+                if (string.Equals(bookmark.BookmarkId, bookmarkId, StringComparison.Ordinal))
+                {
+                    return !string.IsNullOrWhiteSpace(bookmark.Note);
+                }
+            }
+
+            return false;
         }
 
         private static Brush GetGlyphBrush(BookmarkGlyphTag? bookmarkTag)
@@ -115,30 +137,22 @@ namespace BookmarkStudio
             }
 
             var hasLabel = !string.IsNullOrWhiteSpace(bookmarkTag.Label);
+            var hasNote = !string.IsNullOrWhiteSpace(bookmarkTag.Note);
             var hasShortcut = bookmarkTag.ShortcutNumber.HasValue;
 
-            if (hasLabel && hasShortcut)
+            if (!hasLabel && !hasNote && !hasShortcut)
             {
-                return CreateThemedTooltip(bookmarkTag.Label, bookmarkTag.ShortcutNumber.Value);
+                return "BookmarkStudio bookmark";
             }
 
-            if (hasLabel)
-            {
-                return bookmarkTag.Label;
-            }
-
-            if (hasShortcut)
-            {
-                return CreateThemedTooltip(null, bookmarkTag.ShortcutNumber.Value);
-            }
-
-            return "BookmarkStudio bookmark";
+            return CreateThemedTooltip(
+                hasLabel ? bookmarkTag.Label : null,
+                hasNote ? bookmarkTag.Note : null,
+                hasShortcut ? bookmarkTag.ShortcutNumber : null);
         }
 
-        private static ToolTip CreateThemedTooltip(string? label, int slotNumber)
+        private static ToolTip CreateThemedTooltip(string? label, string? note, int? slotNumber)
         {
-            var shortcut = string.Concat("Alt+Shift+", slotNumber.ToString(CultureInfo.InvariantCulture));
-
             var panel = new StackPanel
             {
                 Orientation = Orientation.Vertical,
@@ -155,13 +169,31 @@ namespace BookmarkStudio
                 panel.Children.Add(labelText);
             }
 
-            var shortcutText = new TextBlock
+            if (!string.IsNullOrWhiteSpace(note))
             {
-                Text = shortcut,
-                Opacity = 0.8,
-            };
-            shortcutText.SetResourceReference(TextBlock.ForegroundProperty, EnvironmentColors.ToolTipTextBrushKey);
-            panel.Children.Add(shortcutText);
+                var noteText = new TextBlock
+                {
+                    Text = note,
+                    FontStyle = FontStyles.Italic,
+                    Opacity = 0.85,
+                    Margin = new Thickness(0, !string.IsNullOrWhiteSpace(label) ? 2 : 0, 0, 0),
+                };
+                noteText.SetResourceReference(TextBlock.ForegroundProperty, EnvironmentColors.ToolTipTextBrushKey);
+                panel.Children.Add(noteText);
+            }
+
+            if (slotNumber.HasValue)
+            {
+                var shortcut = string.Concat("Alt+Shift+", slotNumber.Value.ToString(CultureInfo.InvariantCulture));
+                var shortcutText = new TextBlock
+                {
+                    Text = shortcut,
+                    Opacity = 0.8,
+                    Margin = new Thickness(0, panel.Children.Count > 0 ? 4 : 0, 0, 0),
+                };
+                shortcutText.SetResourceReference(TextBlock.ForegroundProperty, EnvironmentColors.ToolTipTextBrushKey);
+                panel.Children.Add(shortcutText);
+            }
 
             var tooltip = new ToolTip
             {

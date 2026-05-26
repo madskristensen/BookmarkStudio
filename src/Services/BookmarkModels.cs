@@ -187,6 +187,8 @@ namespace BookmarkStudio
 
         public string Label { get; set; } = string.Empty;
 
+        public string Note { get; set; } = string.Empty;
+
         public string Group { get; set; } = string.Empty;
 
         public string FolderPath
@@ -226,6 +228,7 @@ namespace BookmarkStudio
                 LineText = (LineText ?? string.Empty).Trim(),
                 ShortcutNumber = ShortcutNumber,
                 Label = Label,
+                Note = Note,
                 Group = Group,
                 Color = Color,
                 StorageLocation = StorageLocation,
@@ -249,6 +252,8 @@ namespace BookmarkStudio
         public int? ShortcutNumber { get; set; }
 
         public string Label { get; set; } = string.Empty;
+
+        public string Note { get; set; } = string.Empty;
 
         public string Group { get; set; } = string.Empty;
 
