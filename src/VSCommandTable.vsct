@@ -449,6 +449,13 @@
           <LocCanonicalName>.BookmarkStudio.SortByCreated</LocCanonicalName>
         </Strings>
       </Button>
+      <Button guid="BookmarkStudio" id="SortByManualCommand" priority="0x0104" type="Button">
+        <Parent guid="BookmarkStudio" id="SortByMenuGroup"/>
+        <Strings>
+          <ButtonText>Manual (drag to reorder)</ButtonText>
+          <LocCanonicalName>.BookmarkStudio.SortByManual</LocCanonicalName>
+        </Strings>
+      </Button>
 
       <Button guid="BookmarkStudio" id="GroupByFoldersCommand" priority="0x0100" type="Button">
         <Parent guid="BookmarkStudio" id="GroupByMenuGroup"/>
@@ -645,6 +652,7 @@
       <IDSymbol name="SortByAlphabeticalCommand" value="0x0A01" />
       <IDSymbol name="SortBySlotCommand" value="0x0A02" />
       <IDSymbol name="SortByCreatedCommand" value="0x0A03" />
+      <IDSymbol name="SortByManualCommand" value="0x0A04" />
       <IDSymbol name="GroupByFoldersCommand" value="0x0A10" />
       <IDSymbol name="GroupByColorCommand" value="0x0A11" />
       <IDSymbol name="GroupByFileCommand" value="0x0A12" />

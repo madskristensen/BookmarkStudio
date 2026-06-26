@@ -454,6 +454,32 @@ namespace BookmarkStudio
             }, cancellationToken);
         }
 
+        public async Task<IReadOnlyList<ManagedBookmark>> ReorderBookmarkAsync(string? bookmarkId, string? targetFolderPath, string? anchorBookmarkId, bool placeBefore, BookmarkStorageLocation storageLocation, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(bookmarkId))
+            {
+                throw new ArgumentException("Select a bookmark to move.", nameof(bookmarkId));
+            }
+
+            return await _session.UpdateWorkspaceAtLocationAsync(storageLocation, workspace =>
+            {
+                BookmarkRepositoryService.ReorderBookmark(workspace, bookmarkId, targetFolderPath, anchorBookmarkId, placeBefore);
+            }, cancellationToken);
+        }
+
+        public async Task<IReadOnlyList<ManagedBookmark>> MoveBookmarkWithinFolderAsync(string? bookmarkId, int delta, BookmarkStorageLocation storageLocation, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(bookmarkId))
+            {
+                throw new ArgumentException("Select a bookmark to move.", nameof(bookmarkId));
+            }
+
+            return await _session.UpdateWorkspaceAtLocationAsync(storageLocation, workspace =>
+            {
+                BookmarkRepositoryService.MoveBookmarkWithinFolder(workspace, bookmarkId, delta);
+            }, cancellationToken);
+        }
+
         public async Task<IReadOnlyList<ManagedBookmark>> MoveFolderAsync(string? sourceFolderPath, string? targetFolderPath, BookmarkStorageLocation storageLocation, CancellationToken cancellationToken)
         {
             var sourcePath = BookmarkIdentity.NormalizeFolderPath(sourceFolderPath);

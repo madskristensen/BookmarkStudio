@@ -56,4 +56,10 @@ namespace BookmarkStudio
     {
         protected override BookmarkSortMode SortMode => BookmarkSortMode.Created;
     }
+
+    [Command(PackageIds.SortByManualCommand)]
+    internal sealed class SortByManualCommand : SortByCommandBase<SortByManualCommand>
+    {
+        protected override BookmarkSortMode SortMode => BookmarkSortMode.Manual;
+    }
 }

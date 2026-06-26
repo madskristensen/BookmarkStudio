@@ -327,6 +327,17 @@
                             <Separator Style="{StaticResource ThemedSeparatorStyle}" />
                             <MenuItem Header="Clear Shortcut" Click="ClearShortcutMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" />
                         </MenuItem>
+                        <Separator x:Name="MoveSeparator" Style="{StaticResource ThemedSeparatorStyle}" />
+                        <MenuItem x:Name="MoveUpMenuItem" Header="Move Up" Click="MoveUpMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" InputGestureText="Alt+Up">
+                            <MenuItem.Icon>
+                                <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.MoveUp}" />
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <MenuItem x:Name="MoveDownMenuItem" Header="Move Down" Click="MoveDownMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}" InputGestureText="Alt+Down">
+                            <MenuItem.Icon>
+                                <imaging:CrispImage Width="16" Height="16" Moniker="{x:Static imageCatalog:KnownMonikers.MoveDown}" />
+                            </MenuItem.Icon>
+                        </MenuItem>
                         <Separator x:Name="Separator3" Style="{StaticResource ThemedSeparatorStyle}" />
                         <MenuItem x:Name="SetColorMenuItem" Header="Set Color" Style="{StaticResource ThemedMenuItemStyle}">
                             <MenuItem Header="Blue (default)" Tag="5" Click="SetColorMenuItem_Click" Style="{StaticResource ThemedMenuItemStyle}">

@@ -203,6 +203,8 @@ namespace BookmarkStudio
 
         public DateTime CreatedUtc { get; set; }
 
+        public int SortIndex { get; set; }
+
         public string ExactMatchKey => BookmarkIdentity.CreateExactMatchKey(DocumentPath, LineNumber);
 
         public void UpdateFromSnapshot(BookmarkSnapshot snapshot)
@@ -233,6 +235,7 @@ namespace BookmarkStudio
                 Color = Color,
                 StorageLocation = StorageLocation,
                 CreatedUtc = CreatedUtc,
+                SortIndex = SortIndex,
             };
         }
     }
@@ -268,6 +271,8 @@ namespace BookmarkStudio
         public BookmarkStorageLocation StorageLocation { get; set; }
 
         public DateTime CreatedUtc { get; set; }
+
+        public int SortIndex { get; set; }
 
         public string FileName => Path.GetFileName(DocumentPath);
 

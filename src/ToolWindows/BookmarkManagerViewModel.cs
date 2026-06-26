@@ -241,6 +241,8 @@ namespace BookmarkStudio
             }
         }
 
+        public bool CanReorderManually => _groupMode == BookmarkGroupMode.Folders;
+
         public string SelectedLabelText
         {
             get => _selectedLabelText;
@@ -712,6 +714,75 @@ namespace BookmarkStudio
             RebuildTree();
             SelectBookmark(selectedBookmark.BookmarkId);
             SetStatus("Bookmark moved.");
+        }
+
+        public async Task ReorderBookmarkAsync(string bookmarkId, string targetFolderPath, string? anchorBookmarkId, bool placeBefore, BookmarkStorageLocation storageLocation, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(bookmarkId))
+            {
+                return;
+            }
+
+            IReadOnlyList<ManagedBookmark> bookmarks = await _operations.ReorderBookmarkAsync(
+                bookmarkId,
+                targetFolderPath,
+                anchorBookmarkId,
+                placeBefore,
+                storageLocation,
+                cancellationToken);
+            ReloadDualBookmarks(bookmarks);
+            AddFolderPathForStorage(targetFolderPath, storageLocation);
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+            EnsureManualSortMode();
+            RebuildTree();
+            SelectBookmark(bookmarkId);
+            SetStatus("Bookmark moved.");
+        }
+
+        public async Task MoveSelectedBookmarkAsync(int delta, CancellationToken cancellationToken)
+        {
+            if (!CanReorderManually)
+            {
+                await VS.StatusBar.ShowMessageAsync("Switch to Folder grouping to reorder bookmarks manually.");
+                return;
+            }
+
+            ManagedBookmark selectedBookmark = GetRequiredSelection();
+            IReadOnlyList<ManagedBookmark> bookmarks = await _operations.MoveBookmarkWithinFolderAsync(
+                selectedBookmark.BookmarkId,
+                delta,
+                selectedBookmark.StorageLocation,
+                cancellationToken);
+            ReloadDualBookmarks(bookmarks);
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+            EnsureManualSortMode();
+            RebuildTree();
+            SelectBookmark(selectedBookmark.BookmarkId);
+            SetStatus(delta < 0 ? "Bookmark moved up." : "Bookmark moved down.");
+        }
+
+        private void EnsureManualSortMode()
+        {
+            if (_sortMode == BookmarkSortMode.Manual)
+            {
+                return;
+            }
+
+            _sortMode = BookmarkSortMode.Manual;
+            OnPropertyChanged(nameof(SortMode));
+
+            if (!_isTestMode)
+            {
+                try
+                {
+                    General.Instance.SortMode = BookmarkSortMode.Manual;
+                    _ = General.Instance.SaveAsync();
+                }
+                catch (Exception ex)
+                {
+                    _ = ex.LogAsync();
+                }
+            }
         }
 
         public async Task MoveFolderAsync(string sourceFolderPath, string targetFolderPath, BookmarkStorageLocation storageLocation, CancellationToken cancellationToken)
@@ -1433,6 +1504,10 @@ namespace BookmarkStudio
                     .ThenBy(b => b.LineNumber),
                 BookmarkSortMode.Created => bookmarks
                     .OrderByDescending(b => b.CreatedUtc)
+                    .ThenBy(b => b.LineNumber),
+                BookmarkSortMode.Manual => bookmarks
+                    .OrderBy(b => b.SortIndex)
+                    .ThenBy(b => b.CreatedUtc)
                     .ThenBy(b => b.LineNumber),
                 _ => bookmarks
                     .OrderBy(b => b.LineNumber)

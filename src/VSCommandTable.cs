@@ -95,6 +95,7 @@ namespace BookmarkStudio
         public const int SortByAlphabeticalCommand = 0x0A01;
         public const int SortBySlotCommand = 0x0A02;
         public const int SortByCreatedCommand = 0x0A03;
+        public const int SortByManualCommand = 0x0A04;
         public const int GroupByFoldersCommand = 0x0A10;
         public const int GroupByColorCommand = 0x0A11;
         public const int GroupByFileCommand = 0x0A12;

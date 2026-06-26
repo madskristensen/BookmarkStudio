@@ -492,6 +492,26 @@ public class BookmarkManagerViewModelTests
     }
 
     [TestMethod]
+    public void CanReorderManually_DependsOnGroupMode()
+    {
+        var viewModel = new BookmarkManagerViewModel();
+        viewModel.LoadForTests(new[]
+        {
+            new ManagedBookmark { BookmarkId = "b1", DocumentPath = @"C:\repo\a.cs", LineNumber = 1, Color = BookmarkColor.Blue, Group = "FolderA" },
+            new ManagedBookmark { BookmarkId = "b2", DocumentPath = @"C:\repo\c.cs", LineNumber = 3, Color = BookmarkColor.Blue, Group = "FolderA" },
+        }, new[] { string.Empty, "FolderA" });
+
+        viewModel.GroupMode = BookmarkGroupMode.Folders;
+        Assert.IsTrue(viewModel.CanReorderManually, "Manual reordering should be available in Folder grouping.");
+
+        viewModel.GroupMode = BookmarkGroupMode.Color;
+        Assert.IsFalse(viewModel.CanReorderManually, "Manual reordering should be unavailable in Color grouping.");
+
+        viewModel.GroupMode = BookmarkGroupMode.File;
+        Assert.IsFalse(viewModel.CanReorderManually, "Manual reordering should be unavailable in File grouping.");
+    }
+
+    [TestMethod]
     public void GroupMode_WhenFile_ProducesFlatListOrderedByFileName()
     {
         var viewModel = new BookmarkManagerViewModel();

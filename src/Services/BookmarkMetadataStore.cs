@@ -832,6 +832,7 @@ namespace BookmarkStudio
                     : folderPath,
                 Color = GetColorProperty(element, "color"),
                 CreatedUtc = GetDateTimeProperty(element, "createdUtc"),
+                SortIndex = GetIntProperty(element, "sortIndex"),
             };
         }
 
@@ -895,6 +896,11 @@ namespace BookmarkStudio
                 if (bookmark.Color != BookmarkColor.None)
                 {
                     writer.WriteString("color", bookmark.Color.ToString().ToLowerInvariant());
+                }
+
+                if (bookmark.SortIndex != 0)
+                {
+                    writer.WriteNumber("sortIndex", bookmark.SortIndex);
                 }
 
                 writer.WriteEndObject();

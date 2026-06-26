@@ -720,6 +720,119 @@ public class RepositoryAndModelTests
         Assert.AreEqual(string.Empty, metadata.FolderPath);
     }
 
+    [TestMethod]
+    public void Repository_MoveBookmarkToFolder_AssignsEndSortIndexInTargetFolder()
+    {
+        var workspace = new BookmarkWorkspaceState();
+        workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "x", Group = "F", SortIndex = 0 });
+        workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "y", Group = "F", SortIndex = 1 });
+        workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "a", Group = string.Empty, SortIndex = 0 });
+
+        BookmarkRepositoryService.MoveBookmarkToFolder(workspace, "a", "F");
+
+        BookmarkMetadata moved = workspace.Bookmarks.Single(item => item.BookmarkId == "a");
+        Assert.AreEqual("F", moved.Group);
+        Assert.AreEqual(2, moved.SortIndex);
+    }
+
+    [TestMethod]
+    public void Repository_ReorderBookmark_WhenPlacedBeforeAnchor_RenumbersFolder()
+    {
+        var workspace = new BookmarkWorkspaceState();
+        workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "a", Group = "F", SortIndex = 0 });
+        workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "b", Group = "F", SortIndex = 1 });
+        workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "c", Group = "F", SortIndex = 2 });
+
+        var changed = BookmarkRepositoryService.ReorderBookmark(workspace, "c", "F", anchorBookmarkId: "a", placeBefore: true);
+
+        Assert.IsTrue(changed);
+        Assert.AreEqual(0, workspace.Bookmarks.Single(item => item.BookmarkId == "c").SortIndex);
+        Assert.AreEqual(1, workspace.Bookmarks.Single(item => item.BookmarkId == "a").SortIndex);
+        Assert.AreEqual(2, workspace.Bookmarks.Single(item => item.BookmarkId == "b").SortIndex);
+    }
+
+    [TestMethod]
+    public void Repository_ReorderBookmark_WhenPlacedAfterAnchor_RenumbersFolder()
+    {
+        var workspace = new BookmarkWorkspaceState();
+        workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "a", Group = "F", SortIndex = 0 });
+        workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "b", Group = "F", SortIndex = 1 });
+        workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "c", Group = "F", SortIndex = 2 });
+
+        BookmarkRepositoryService.ReorderBookmark(workspace, "a", "F", anchorBookmarkId: "b", placeBefore: false);
+
+        Assert.AreEqual(0, workspace.Bookmarks.Single(item => item.BookmarkId == "b").SortIndex);
+        Assert.AreEqual(1, workspace.Bookmarks.Single(item => item.BookmarkId == "a").SortIndex);
+        Assert.AreEqual(2, workspace.Bookmarks.Single(item => item.BookmarkId == "c").SortIndex);
+    }
+
+    [TestMethod]
+    public void Repository_ReorderBookmark_WhenMovedToDifferentFolder_AppendsAtEnd()
+    {
+        var workspace = new BookmarkWorkspaceState();
+        workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "x", Group = "F", SortIndex = 0 });
+        workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "y", Group = "F", SortIndex = 1 });
+        workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "a", Group = string.Empty, SortIndex = 0 });
+
+        BookmarkRepositoryService.ReorderBookmark(workspace, "a", "F", anchorBookmarkId: null, placeBefore: false);
+
+        BookmarkMetadata moved = workspace.Bookmarks.Single(item => item.BookmarkId == "a");
+        Assert.AreEqual("F", moved.Group);
+        Assert.AreEqual(2, moved.SortIndex);
+        Assert.Contains("F", workspace.FolderPaths);
+    }
+
+    [TestMethod]
+    public void Repository_MoveBookmarkWithinFolder_WhenMovedUp_SwapsWithPredecessor()
+    {
+        var workspace = new BookmarkWorkspaceState();
+        workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "a", Group = "F", SortIndex = 0 });
+        workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "b", Group = "F", SortIndex = 1 });
+        workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "c", Group = "F", SortIndex = 2 });
+
+        var changed = BookmarkRepositoryService.MoveBookmarkWithinFolder(workspace, "c", -1);
+
+        Assert.IsTrue(changed);
+        Assert.AreEqual(0, workspace.Bookmarks.Single(item => item.BookmarkId == "a").SortIndex);
+        Assert.AreEqual(1, workspace.Bookmarks.Single(item => item.BookmarkId == "c").SortIndex);
+        Assert.AreEqual(2, workspace.Bookmarks.Single(item => item.BookmarkId == "b").SortIndex);
+    }
+
+    [TestMethod]
+    public void Repository_MoveBookmarkWithinFolder_WhenAlreadyAtTop_ReturnsFalse()
+    {
+        var workspace = new BookmarkWorkspaceState();
+        workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "a", Group = "F", SortIndex = 0 });
+        workspace.Bookmarks.Add(new BookmarkMetadata { BookmarkId = "b", Group = "F", SortIndex = 1 });
+
+        var changed = BookmarkRepositoryService.MoveBookmarkWithinFolder(workspace, "a", -1);
+
+        Assert.IsFalse(changed);
+    }
+
+    [TestMethod]
+    public async Task MetadataStore_SaveAndLoad_RoundTripsSortIndex()
+    {
+        var store = new BookmarkMetadataStore();
+        string solutionPath = CreateTestSolutionPath();
+
+        var workspace = new BookmarkWorkspaceState();
+        workspace.FolderPaths.Add(string.Empty);
+        workspace.Bookmarks.Add(new BookmarkMetadata
+        {
+            BookmarkId = "id-1",
+            DocumentPath = @"C:\repo\file.cs",
+            LineNumber = 10,
+            Group = string.Empty,
+            SortIndex = 7,
+        });
+        await store.SaveWorkspaceAsync(solutionPath, workspace, CancellationToken.None);
+
+        BookmarkWorkspaceState loaded = await store.LoadWorkspaceAsync(solutionPath, CancellationToken.None);
+
+        Assert.AreEqual(7, loaded.Bookmarks.Single(item => item.BookmarkId == "id-1").SortIndex);
+    }
+
     private static string CreateTestSolutionPath()
     {
         string testRoot = Path.Combine(Path.GetTempPath(), "BookmarkStudio.Tests", Guid.NewGuid().ToString("N"));

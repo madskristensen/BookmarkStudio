@@ -115,6 +115,7 @@ namespace BookmarkStudio
                 ShortcutNumber = autoAssignShortcut ? FindNextAvailableShortcut(existingBookmarks) : null,
                 Label = string.IsNullOrWhiteSpace(label) ? FindNextDefaultLabel(existingBookmarks) : label,
                 Color = BookmarkColor.Blue,
+                SortIndex = NextSortIndexForFolder(existingBookmarks, string.Empty, exclude: null),
             };
 
             bookmark.UpdateFromSnapshot(snapshot);
@@ -242,8 +243,122 @@ namespace BookmarkStudio
 
             BookmarkMetadata bookmark = GetRequiredBookmark(state.Bookmarks, bookmarkId);
             var normalizedFolderPath = BookmarkIdentity.NormalizeFolderPath(folderPath);
+            if (!string.Equals(bookmark.Group, normalizedFolderPath, StringComparison.OrdinalIgnoreCase))
+            {
+                bookmark.Group = normalizedFolderPath;
+                bookmark.SortIndex = NextSortIndexForFolder(state.Bookmarks, normalizedFolderPath, bookmark);
+            }
+
+            RegisterFolderPath(state.FolderPaths, normalizedFolderPath);
+        }
+
+        /// <summary>
+        /// Moves a bookmark into <paramref name="targetFolderPath"/> and positions it relative to an anchor bookmark,
+        /// assigning a dense manual <see cref="BookmarkMetadata.SortIndex"/> to every bookmark in that folder.
+        /// </summary>
+        public static bool ReorderBookmark(BookmarkWorkspaceState state, string bookmarkId, string? targetFolderPath, string? anchorBookmarkId, bool placeBefore)
+        {
+            if (state is null)
+            {
+                throw new ArgumentNullException(nameof(state));
+            }
+
+            BookmarkMetadata bookmark = GetRequiredBookmark(state.Bookmarks, bookmarkId);
+            var normalizedFolderPath = BookmarkIdentity.NormalizeFolderPath(targetFolderPath);
             bookmark.Group = normalizedFolderPath;
             RegisterFolderPath(state.FolderPaths, normalizedFolderPath);
+
+            List<BookmarkMetadata> ordered = GetFolderBookmarksInManualOrder(state.Bookmarks, normalizedFolderPath)
+                .Where(item => !string.Equals(item.BookmarkId, bookmarkId, StringComparison.Ordinal))
+                .ToList();
+
+            var insertAt = ordered.Count;
+            if (!string.IsNullOrEmpty(anchorBookmarkId)
+                && !string.Equals(anchorBookmarkId, bookmarkId, StringComparison.Ordinal))
+            {
+                var anchorIndex = ordered.FindIndex(item => string.Equals(item.BookmarkId, anchorBookmarkId, StringComparison.Ordinal));
+                if (anchorIndex >= 0)
+                {
+                    insertAt = placeBefore ? anchorIndex : anchorIndex + 1;
+                }
+            }
+
+            ordered.Insert(insertAt, bookmark);
+            RenumberSortIndexes(ordered);
+            return true;
+        }
+
+        /// <summary>
+        /// Moves a bookmark up or down within its current folder by <paramref name="delta"/> positions in manual order.
+        /// </summary>
+        public static bool MoveBookmarkWithinFolder(BookmarkWorkspaceState state, string bookmarkId, int delta)
+        {
+            if (state is null)
+            {
+                throw new ArgumentNullException(nameof(state));
+            }
+
+            if (delta == 0)
+            {
+                return false;
+            }
+
+            BookmarkMetadata bookmark = GetRequiredBookmark(state.Bookmarks, bookmarkId);
+            var folderPath = BookmarkIdentity.NormalizeFolderPath(bookmark.Group);
+
+            List<BookmarkMetadata> ordered = GetFolderBookmarksInManualOrder(state.Bookmarks, folderPath).ToList();
+            var currentIndex = ordered.FindIndex(item => string.Equals(item.BookmarkId, bookmarkId, StringComparison.Ordinal));
+            if (currentIndex < 0)
+            {
+                return false;
+            }
+
+            var newIndex = Math.Max(0, Math.Min(ordered.Count - 1, currentIndex + delta));
+            if (newIndex == currentIndex)
+            {
+                RenumberSortIndexes(ordered);
+                return false;
+            }
+
+            ordered.RemoveAt(currentIndex);
+            ordered.Insert(newIndex, bookmark);
+            RenumberSortIndexes(ordered);
+            return true;
+        }
+
+        private static IEnumerable<BookmarkMetadata> GetFolderBookmarksInManualOrder(IEnumerable<BookmarkMetadata> bookmarks, string normalizedFolderPath)
+            => bookmarks
+                .Where(item => string.Equals(BookmarkIdentity.NormalizeFolderPath(item.Group), normalizedFolderPath, StringComparison.OrdinalIgnoreCase))
+                .OrderBy(item => item.SortIndex)
+                .ThenBy(item => item.CreatedUtc)
+                .ThenBy(item => item.LineNumber)
+                .ThenBy(item => item.BookmarkId, StringComparer.Ordinal);
+
+        private static void RenumberSortIndexes(IReadOnlyList<BookmarkMetadata> orderedBookmarks)
+        {
+            for (var index = 0; index < orderedBookmarks.Count; index++)
+            {
+                orderedBookmarks[index].SortIndex = index;
+            }
+        }
+
+        private static int NextSortIndexForFolder(IEnumerable<BookmarkMetadata> bookmarks, string normalizedFolderPath, BookmarkMetadata? exclude)
+        {
+            var maxIndex = -1;
+            foreach (BookmarkMetadata candidate in bookmarks)
+            {
+                if (exclude is not null && ReferenceEquals(candidate, exclude))
+                {
+                    continue;
+                }
+
+                if (string.Equals(BookmarkIdentity.NormalizeFolderPath(candidate.Group), normalizedFolderPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    maxIndex = Math.Max(maxIndex, candidate.SortIndex);
+                }
+            }
+
+            return maxIndex + 1;
         }
 
         public static void MoveFolder(BookmarkWorkspaceState state, string sourceFolderPath, string targetFolderPath)

@@ -6,6 +6,7 @@ namespace BookmarkStudio
         Alphabetical = 1,
         Slot = 2,
         Created = 3,
+        Manual = 4,
     }
 
     public enum BookmarkGroupMode

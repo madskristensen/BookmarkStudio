@@ -98,7 +98,9 @@ namespace BookmarkStudio
                 return;
             }
 
-            switch (e.Key)
+            Key effectiveKey = e.Key == Key.System ? e.SystemKey : e.Key;
+
+            switch (effectiveKey)
             {
                 case Key.F2:
                     e.Handled = true;
@@ -153,6 +155,17 @@ namespace BookmarkStudio
                     {
                         e.Handled = true;
                         await CopyLocationAsync();
+                    }
+                    break;
+
+                case Key.Up:
+                case Key.Down:
+                    if ((Keyboard.Modifiers & ModifierKeys.Alt) == ModifierKeys.Alt
+                        && _viewModel.SelectedNode is BookmarkItemNodeViewModel)
+                    {
+                        e.Handled = true;
+                        var delta = effectiveKey == Key.Up ? -1 : 1;
+                        await RunAsync(cancellationToken => _viewModel.MoveSelectedBookmarkAsync(delta, cancellationToken));
                     }
                     break;
             }
@@ -380,11 +393,62 @@ namespace BookmarkStudio
                     await _viewModel.RefreshAsync(cancellationToken);
                 });
             }
+            else if (_viewModel.GroupMode == BookmarkGroupMode.Folders)
+            {
+                // Same storage in folder view: reorder relative to the drop target and/or move folder
+                (var anchorBookmarkId, var placeBefore) = GetDropPosition(e, bookmarkId!);
+                await RunAsync(cancellationToken => _viewModel.ReorderBookmarkAsync(
+                    bookmarkId!,
+                    targetFolderPath,
+                    anchorBookmarkId,
+                    placeBefore,
+                    selectedBookmark.StorageLocation,
+                    cancellationToken));
+            }
             else if (!string.Equals(selectedBookmark.FolderPath, targetFolderPath, StringComparison.OrdinalIgnoreCase))
             {
                 // Move within same storage to different folder
                 await RunAsync(cancellationToken => _viewModel.MoveSelectedBookmarkToFolderAsync(targetFolderPath, cancellationToken));
             }
+        }
+
+        private static (string? AnchorBookmarkId, bool PlaceBefore) GetDropPosition(DragEventArgs e, string draggedBookmarkId)
+        {
+            DependencyObject? source = e.OriginalSource as DependencyObject;
+            BookmarkNodeViewModel? targetNode = GetNodeFromVisual(source);
+
+            // Dropping onto another bookmark anchors the move relative to it.
+            if (targetNode is BookmarkItemNodeViewModel bookmarkNode
+                && !string.Equals(bookmarkNode.Bookmark.BookmarkId, draggedBookmarkId, StringComparison.Ordinal))
+            {
+                var placeBefore = true;
+                if (GetTreeViewItemFromVisual(source) is TreeViewItem treeViewItem && treeViewItem.ActualHeight > 0)
+                {
+                    Point position = e.GetPosition(treeViewItem);
+                    placeBefore = position.Y < treeViewItem.ActualHeight / 2;
+                }
+
+                return (bookmarkNode.Bookmark.BookmarkId, placeBefore);
+            }
+
+            // Dropping onto a folder (or empty space) appends to the end of that folder.
+            return (null, false);
+        }
+
+        private static TreeViewItem? GetTreeViewItemFromVisual(DependencyObject? source)
+        {
+            DependencyObject? current = source;
+            while (current is not null)
+            {
+                if (current is TreeViewItem item)
+                {
+                    return item;
+                }
+
+                current = VisualTreeHelper.GetParent(current);
+            }
+
+            return null;
         }
 
         private async Task HandleFolderDropAsync(DragEventArgs e)
@@ -567,6 +631,18 @@ namespace BookmarkStudio
             await RunAsync(cancellationToken => _viewModel.DeleteSelectedAsync(cancellationToken));
         }
 
+        private async void MoveUpMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            SelectNodeFromContextMenu(sender);
+            await RunAsync(cancellationToken => _viewModel.MoveSelectedBookmarkAsync(-1, cancellationToken));
+        }
+
+        private async void MoveDownMenuItem_Click(object sender, RoutedEventArgs e)
+        {
+            SelectNodeFromContextMenu(sender);
+            await RunAsync(cancellationToken => _viewModel.MoveSelectedBookmarkAsync(1, cancellationToken));
+        }
+
         private void BookmarkContextMenu_Opened(object sender, RoutedEventArgs e)
         {
             if (sender is not ContextMenu contextMenu)
@@ -597,6 +673,14 @@ namespace BookmarkStudio
                         case "DeleteNoteMenuItem":
                             menuItem.Visibility = hasNote ? Visibility.Visible : Visibility.Collapsed;
                             break;
+                        case "MoveUpMenuItem":
+                        case "MoveDownMenuItem":
+                            // Manual reordering applies to a single selected bookmark. It only takes
+                            // effect in Folder grouping; in other groupings the command shows a hint.
+                            menuItem.Visibility = (!hasMultiSelection && selectedBookmark is not null)
+                                ? Visibility.Visible
+                                : Visibility.Collapsed;
+                            break;
                         case "SetColorMenuItem":
                             // Set Color only available for bookmarks-only selection
                             menuItem.Visibility = (hasMultiSelection && !hasOnlyBookmarks) ? Visibility.Collapsed : Visibility.Visible;
@@ -610,6 +694,11 @@ namespace BookmarkStudio
                         case "Separator1":
                         case "Separator2":
                             separator.Visibility = hasMultiSelection ? Visibility.Collapsed : Visibility.Visible;
+                            break;
+                        case "MoveSeparator":
+                            separator.Visibility = (!hasMultiSelection && selectedBookmark is not null)
+                                ? Visibility.Visible
+                                : Visibility.Collapsed;
                             break;
                         case "Separator3":
                             // Hide separator before Set Color if Set Color is hidden
