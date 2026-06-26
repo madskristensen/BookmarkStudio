@@ -552,7 +552,7 @@
     <CommandPlacement guid="BookmarkStudio" id="OpenBookmarkManagerCommand" priority="0x0100">
       <Parent guid="BookmarkStudio" id="EditorContextBookmarkManagerGroup"/>
     </CommandPlacement>
-    <CommandPlacement guid="BookmarkStudio" id="OpenBookmarkManagerCommand" priority="0x0100">
+    <CommandPlacement guid="BookmarkStudio" id="BookmarkShortcutsMenu" priority="0x0100">
       <Parent guid="BookmarkStudio" id="TextEditorToolbarBookmarkGroup"/>
     </CommandPlacement>
     <CommandPlacement guid="BookmarkStudio" id="GoToShortcut1Command" priority="0x0200">
