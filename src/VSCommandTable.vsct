@@ -50,6 +50,9 @@
       <Group guid="BookmarkStudio" id="StandardToolbarBookmarkGroup" priority="0x0900">
         <Parent guid="guidSHLMainMenu" id="IDM_VS_TOOL_STANDARD"/>
       </Group>
+      <Group guid="BookmarkStudio" id="TextEditorToolbarBookmarkGroup" priority="0x0900">
+        <Parent guid="guidStdEditor" id="IDM_VS_TOOL_TEXTEDITOR"/>
+      </Group>
       <Group guid="BookmarkStudio" id="BookmarkShortcutsMenuGroup" priority="0x0000">
         <Parent guid="BookmarkStudio" id="BookmarkShortcutsMenu"/>
       </Group>
@@ -549,6 +552,9 @@
     <CommandPlacement guid="BookmarkStudio" id="OpenBookmarkManagerCommand" priority="0x0100">
       <Parent guid="BookmarkStudio" id="EditorContextBookmarkManagerGroup"/>
     </CommandPlacement>
+    <CommandPlacement guid="BookmarkStudio" id="OpenBookmarkManagerCommand" priority="0x0100">
+      <Parent guid="BookmarkStudio" id="TextEditorToolbarBookmarkGroup"/>
+    </CommandPlacement>
     <CommandPlacement guid="BookmarkStudio" id="GoToShortcut1Command" priority="0x0200">
       <Parent guid="BookmarkStudio" id="BookmarkShortcutsMenuGoToGroup"/>
     </CommandPlacement>
@@ -629,6 +635,7 @@
       <IDSymbol name="FilterByColorPinkCommand" value="0x0707" />
       <IDSymbol name="FilterByColorTealCommand" value="0x0708" />
       <IDSymbol name="StandardToolbarBookmarkGroup" value="0x1030" />
+      <IDSymbol name="TextEditorToolbarBookmarkGroup" value="0x1035" />
       <IDSymbol name="BookmarkShortcutsMenu" value="0x1031" />
       <IDSymbol name="BookmarkShortcutsMenuGroup" value="0x1032" />
       <IDSymbol name="BookmarkShortcutsMenuGoToGroup" value="0x1033" />

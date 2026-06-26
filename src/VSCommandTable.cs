@@ -73,6 +73,7 @@ namespace BookmarkStudio
         public const int FilterByColorPinkCommand = 0x0707;
         public const int FilterByColorTealCommand = 0x0708;
         public const int StandardToolbarBookmarkGroup = 0x1030;
+        public const int TextEditorToolbarBookmarkGroup = 0x1035;
         public const int BookmarkShortcutsMenu = 0x1031;
         public const int BookmarkShortcutsMenuGroup = 0x1032;
         public const int BookmarkShortcutsMenuGoToGroup = 0x1033;
