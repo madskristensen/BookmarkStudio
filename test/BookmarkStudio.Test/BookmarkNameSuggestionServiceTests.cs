@@ -50,4 +50,70 @@ public class BookmarkNameSuggestionServiceTests
 
         Assert.AreEqual("01234", result);
     }
+
+    [TestMethod]
+    public void SelectBestIdentifier_PrefersDeclaredMemberOverGenericType()
+    {
+        // public List<DrawerData> DrawerData { get; set; }
+        (string, string)[] spans =
+        [
+            ("keyword", "public"),
+            ("class name", "List"),
+            ("class name", "DrawerData"),
+            ("property name", "DrawerData"),
+            ("keyword", "get"),
+            ("keyword", "set"),
+        ];
+
+        string? result = BookmarkNameSuggestionService.SelectBestIdentifier(spans);
+
+        Assert.AreEqual("DrawerData", result);
+    }
+
+    [TestMethod]
+    public void SelectBestIdentifier_PrefersFieldNameOverType()
+    {
+        // private readonly List<int> _items;
+        (string, string)[] spans =
+        [
+            ("keyword", "private"),
+            ("keyword", "readonly"),
+            ("class name", "List"),
+            ("keyword", "int"),
+            ("field name", "_items"),
+        ];
+
+        string? result = BookmarkNameSuggestionService.SelectBestIdentifier(spans);
+
+        Assert.AreEqual("_items", result);
+    }
+
+    [TestMethod]
+    public void SelectBestIdentifier_DefinitionKeywordStillWins()
+    {
+        // class DrawerData
+        (string, string)[] spans =
+        [
+            ("keyword", "class"),
+            ("class name", "DrawerData"),
+        ];
+
+        string? result = BookmarkNameSuggestionService.SelectBestIdentifier(spans);
+
+        Assert.AreEqual("DrawerData", result);
+    }
+
+    [TestMethod]
+    public void SelectBestIdentifier_FallsBackToTypeWhenNoMember()
+    {
+        (string, string)[] spans =
+        [
+            ("keyword", "new"),
+            ("class name", "List"),
+        ];
+
+        string? result = BookmarkNameSuggestionService.SelectBestIdentifier(spans);
+
+        Assert.AreEqual("List", result);
+    }
 }

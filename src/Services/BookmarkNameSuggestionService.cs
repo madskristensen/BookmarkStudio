@@ -47,6 +47,10 @@ namespace BookmarkStudio
             "function name",
             "property name",
             "field name",
+            "event name",
+            "constant name",
+            "enum member name",
+            "extension method name",
             "local name",
             "parameter name",
             "type parameter name",
@@ -74,6 +78,20 @@ namespace BookmarkStudio
             "enum name",
             "delegate name",
             "type parameter name",
+        };
+
+        // Classification names for declared members (the thing being defined on the line).
+        // These rank above type names so a property/field/method name wins over its type.
+        private static readonly HashSet<string> MemberDeclarationClassifications = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "property name",
+            "method name",
+            "extension method name",
+            "field name",
+            "event name",
+            "constant name",
+            "enum member name",
+            "local name",
         };
 
         [Import]
@@ -319,21 +337,28 @@ namespace BookmarkStudio
 
         /// <summary>
         /// Extracts the best identifier from the classifications on a line.
-        /// Priority: identifier after definition keyword > type name > first identifier
         /// </summary>
         private static string? ExtractBestIdentifier(IList<ClassificationSpan> classifications)
+            => SelectBestIdentifier(classifications.Select(span => (span.ClassificationType.Classification, span.Span.GetText())));
+
+        /// <summary>
+        /// Selects the best identifier from a sequence of (classification, text) pairs on a line.
+        /// Priority: identifier after definition keyword > declared member name > type name > first identifier.
+        /// </summary>
+        internal static string? SelectBestIdentifier(IEnumerable<(string Classification, string Text)> spans)
         {
             string? identifierAfterKeyword = null;
+            string? memberName = null;
             string? typeName = null;
             string? firstIdentifier = null;
             bool previousWasDefinitionKeyword = false;
 
-            foreach (ClassificationSpan span in classifications)
+            foreach ((string Classification, string Text) span in spans)
             {
-                string classificationType = span.ClassificationType.Classification;
-                string text = span.Span.GetText().Trim();
+                string classificationType = span.Classification;
+                string text = span.Text?.Trim() ?? string.Empty;
 
-                if (string.IsNullOrWhiteSpace(text))
+                if (string.IsNullOrWhiteSpace(classificationType) || string.IsNullOrWhiteSpace(text))
                 {
                     continue;
                 }
@@ -361,7 +386,13 @@ namespace BookmarkStudio
                         identifierAfterKeyword = text;
                     }
 
-                    // Type name - second priority
+                    // Declared member name (property/field/method/etc.) - ranks above the type name
+                    if (memberName is null && IsMemberDeclarationClassification(classificationType))
+                    {
+                        memberName = text;
+                    }
+
+                    // Type name
                     if (typeName is null && IsTypeClassification(classificationType))
                     {
                         typeName = text;
@@ -382,7 +413,7 @@ namespace BookmarkStudio
             }
 
             // Return in priority order
-            return identifierAfterKeyword ?? typeName ?? firstIdentifier;
+            return identifierAfterKeyword ?? memberName ?? typeName ?? firstIdentifier;
         }
 
         private static bool IsKeywordClassification(string classification)
@@ -393,6 +424,9 @@ namespace BookmarkStudio
 
         private static bool IsTypeClassification(string classification)
             => TypeClassifications.Any(t => classification.IndexOf(t, StringComparison.OrdinalIgnoreCase) >= 0);
+
+        private static bool IsMemberDeclarationClassification(string classification)
+            => MemberDeclarationClassifications.Any(m => classification.IndexOf(m, StringComparison.OrdinalIgnoreCase) >= 0);
 
         /// <summary>
         /// Returns true for common identifiers that don't make good bookmark names.
