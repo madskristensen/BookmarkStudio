@@ -301,6 +301,15 @@ namespace BookmarkStudio
             }
 
             ITextSnapshot snapshot = _textBuffer.CurrentSnapshot;
+
+            // Skip persistence when the buffer has no content. During document teardown
+            // (e.g. "Close All Tabs") the snapshot can be emptied, which would otherwise
+            // collapse every tracked bookmark onto line 1 and overwrite the stored data.
+            if (!IsSnapshotSafeForTracking(snapshot.Length))
+            {
+                return false;
+            }
+
             var changed = false;
 
             Dictionary<string, ITrackingPoint> trackingPoints;
@@ -367,6 +376,14 @@ namespace BookmarkStudio
 
         private bool MatchesDocumentPath(string documentPath)
             => string.Equals(BookmarkIdentity.NormalizeDocumentPath(documentPath), _normalizedDocumentPath, StringComparison.Ordinal);
+
+        /// <summary>
+        /// Determines whether the current buffer snapshot is safe to derive bookmark
+        /// positions from. A zero-length snapshot indicates the buffer has no content
+        /// (for example while a document is being torn down), in which case positions
+        /// must not be persisted to avoid corrupting or losing stored bookmarks.
+        /// </summary>
+        internal static bool IsSnapshotSafeForTracking(int snapshotLength) => snapshotLength > 0;
 
         /// <summary>
         /// Creates a tracking point anchored at a stable position within the line content,

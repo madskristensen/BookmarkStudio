@@ -74,4 +74,16 @@ public class BookmarkTextBufferTrackingTests
 
         Assert.AreEqual(4, offset);
     }
+
+    [TestMethod]
+    public void IsSnapshotSafeForTracking_WhenSnapshotIsEmpty_ReturnsFalse()
+    {
+        Assert.IsFalse(BookmarkTextBufferTracker.IsSnapshotSafeForTracking(0));
+    }
+
+    [TestMethod]
+    public void IsSnapshotSafeForTracking_WhenSnapshotHasContent_ReturnsTrue()
+    {
+        Assert.IsTrue(BookmarkTextBufferTracker.IsSnapshotSafeForTracking(42));
+    }
 }

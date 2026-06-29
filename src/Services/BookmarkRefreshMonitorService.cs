@@ -142,6 +142,37 @@ namespace BookmarkStudio
 
         #region Bookmark update helpers
 
+        /// <summary>
+        /// Filters the supplied document paths down to the normalized paths whose bookmarks
+        /// should be removed. A path is only considered removable when the underlying file no
+        /// longer exists on disk. This prevents bookmark loss when a file is merely closed or
+        /// removed from a project (for example via "Close All Tabs") while still on disk.
+        /// </summary>
+        internal static HashSet<string> GetRemovableDocumentPaths(IEnumerable<string> filePaths, Func<string, bool> fileExists)
+        {
+            var removable = new HashSet<string>(StringComparer.Ordinal);
+            if (filePaths is null || fileExists is null)
+            {
+                return removable;
+            }
+
+            foreach (var filePath in filePaths)
+            {
+                if (string.IsNullOrWhiteSpace(filePath) || fileExists(filePath))
+                {
+                    continue;
+                }
+
+                var normalized = BookmarkIdentity.NormalizeDocumentPath(filePath);
+                if (!string.IsNullOrEmpty(normalized))
+                {
+                    _ = removable.Add(normalized);
+                }
+            }
+
+            return removable;
+        }
+
         private async Task RemoveBookmarksForFilesAsync(string[] filePaths, CancellationToken cancellationToken)
         {
             if (filePaths.Length == 0)
@@ -149,9 +180,15 @@ namespace BookmarkStudio
                 return;
             }
 
-            var normalizedPaths = new HashSet<string>(
-                filePaths.Select(BookmarkIdentity.NormalizeDocumentPath),
-                StringComparer.Ordinal);
+            // Only remove bookmarks for files that are actually gone from disk.
+            // Closing tabs ("Close All Tabs"), detaching a miscellaneous file, or
+            // removing a file from a project while it still exists on disk also raise
+            // this event, and in those cases the bookmarks must be preserved.
+            HashSet<string> normalizedPaths = GetRemovableDocumentPaths(filePaths, System.IO.File.Exists);
+            if (normalizedPaths.Count == 0)
+            {
+                return;
+            }
 
             await _session.TryUpdateDualWorkspaceAsync((personal, solution) =>
             {
