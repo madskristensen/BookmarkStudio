@@ -68,11 +68,16 @@ jobs:
       with:
         reports: 'TestResults/*/*.cobertura.xml'
         targetdir: coverage-report
-        reporttypes: 'HtmlInline;Cobertura;MarkdownSummaryGithub'
+        reporttypes: 'HtmlInline;Cobertura'
 
     - name: Add code coverage summary
       shell: pwsh
-      run: Get-Content coverage-report\SummaryGithub.md >> $env:GITHUB_STEP_SUMMARY
+      run: |
+        [xml]$coverage = Get-Content coverage-report\Cobertura.xml
+        $lineCoverage = [Math]::Round([double]$coverage.coverage.'line-rate' * 100, 1)
+        $branchCoverage = [Math]::Round([double]$coverage.coverage.'branch-rate' * 100, 1)
+        "### Code coverage" >> $env:GITHUB_STEP_SUMMARY
+        "**Lines:** $lineCoverage% | **Branches:** $branchCoverage%" >> $env:GITHUB_STEP_SUMMARY
 
     - name: Upload code coverage
       uses: actions/upload-artifact@v7
