@@ -23,6 +23,8 @@ Stop losing your place in large codebases. Bookmark Studio lets you mark, organi
 
 **Visual organization** - Color-code bookmarks by purpose (red for bugs, green for features, blue for TODOs) and group them into folders. See exactly what each bookmark represents at a glance.
 
+**Focused Solution Explorer** - Filter Solution Explorer to show only files that contain bookmarks, making important files easy to find in large solutions.
+
 **Zero learning curve** - Uses the same keyboard shortcuts you already know (**Ctrl+K, Ctrl+K** to toggle, **Ctrl+K, Ctrl+N** for next). Your muscle memory works from day one.
 
 **Team sharing** - Commit your bookmarks file to source control so the whole team can navigate to key code locations - perfect for onboarding or code reviews.
@@ -54,6 +56,12 @@ Open **View > Bookmark Manager** to see all your bookmarks in one place:
 - **Labels** - Give bookmarks meaningful names
 - **Notes** - Attach a short note to remind yourself why a location matters
 - **Colors** - Right-click to assign Blue, Red, Orange, Yellow, Green, Purple, Pink, or Teal
+
+### Filter Solution Explorer
+
+Open the filter dropdown in the Solution Explorer toolbar and select **Files with Bookmarks**. Solution Explorer will show only bookmarked files and the folders and projects that contain them.
+
+The filter updates automatically as bookmarks are added or removed. Use the Solution Explorer filter dropdown again to turn off the filter and restore the full solution tree.
 
 ### Quick Access from the Toolbar
 

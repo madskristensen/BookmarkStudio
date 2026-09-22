@@ -46,6 +46,7 @@ namespace BookmarkStudio
         public const int ToggleBookmarkCommand = 0x0104;
         public const int GoToNextBookmarkCommand = 0x0105;
         public const int GoToPreviousBookmarkCommand = 0x0106;
+        public const int SolutionExplorerBookmarkFilterCommand = 0x0107;
         public const int ExportBookmarksCommand = 0x0404;
         public const int GoToShortcut1Command = 0x0500;
         public const int GoToShortcut2Command = 0x0501;

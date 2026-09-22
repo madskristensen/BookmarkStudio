@@ -97,6 +97,40 @@ public class RepositoryAndModelTests
     }
 
     [TestMethod]
+    public void SolutionExplorerFilter_WhenDocumentHasBookmark_ReturnsTrue()
+    {
+        var bookmarks = new[]
+        {
+            new ManagedBookmark
+            {
+                DocumentPath = @"C:\repo\src\file.cs",
+                NormalizedDocumentPath = BookmarkIdentity.NormalizeDocumentPath(@"C:\repo\src\file.cs"),
+            },
+        };
+
+        bool isIncluded = BookmarkIdentity.IsBookmarkedDocumentPath(@"c:\repo\src\FILE.cs", bookmarks);
+
+        Assert.IsTrue(isIncluded);
+    }
+
+    [TestMethod]
+    public void SolutionExplorerFilter_WhenDocumentHasNoBookmark_ReturnsFalse()
+    {
+        var bookmarks = new[]
+        {
+            new ManagedBookmark
+            {
+                DocumentPath = @"C:\repo\src\other.cs",
+                NormalizedDocumentPath = BookmarkIdentity.NormalizeDocumentPath(@"C:\repo\src\other.cs"),
+            },
+        };
+
+        bool isIncluded = BookmarkIdentity.IsBookmarkedDocumentPath(@"C:\repo\src\file.cs", bookmarks);
+
+        Assert.IsFalse(isIncluded);
+    }
+
+    [TestMethod]
     public async Task MetadataStore_SaveAndLoadWorkspaceAsync_WhenRoundTripped_PreservesFoldersAndBookmarks()
     {
         var store = new BookmarkMetadataStore();

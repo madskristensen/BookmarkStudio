@@ -39,6 +39,13 @@ namespace BookmarkStudio
         public static string CreateExactMatchKey(string documentPath, int lineNumber)
             => string.Concat(NormalizeDocumentPath(documentPath), "|", lineNumber.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
+        public static bool IsBookmarkedDocumentPath(string? documentPath, IEnumerable<ManagedBookmark> bookmarks)
+        {
+            var normalizedPath = NormalizeDocumentPath(documentPath);
+            return !string.IsNullOrEmpty(normalizedPath)
+                && bookmarks.Any(bookmark => string.Equals(bookmark.NormalizedDocumentPath, normalizedPath, StringComparison.Ordinal));
+        }
+
         public static string NormalizeFolderPath(string? folderPath)
         {
             if (string.IsNullOrWhiteSpace(folderPath))
