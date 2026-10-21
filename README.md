@@ -197,6 +197,8 @@ Global bookmarks are different: they remain machine-specific and keep absolute d
 
 Global bookmarks persist across all solutions and are stored in `%USERPROFILE%\.bookmarks.json`. They appear under the **Global** node in the Bookmark Manager and are always available, regardless of which solution is open.
 
+With **Folder** grouping, drag bookmarks or use **Move Up** and **Move Down** to set their manual order. Adding files preserves existing Global bookmarks. **Clear Bookmarks** on the Global node clears only Global bookmarks and folders, leaving User and Workspace bookmarks unchanged; the Bookmark Manager updates immediately.
+
 ### Bookmarking Files from Anywhere
 
 Right-click the **Global** node and select **Add File...** to bookmark any file on disk - even files outside your current solution. This is useful for:

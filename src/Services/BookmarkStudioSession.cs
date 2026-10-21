@@ -413,13 +413,7 @@ namespace BookmarkStudio
                 var solutionPath = await GetSolutionPathAsync(cancellationToken);
                 DualBookmarkWorkspaceState dualState = await EnsureDualStateLoadedAsync(cancellationToken);
 
-                // Apply update to the appropriate workspace
-                BookmarkWorkspaceState targetState = location == BookmarkStorageLocation.Personal
-                    ? dualState.PersonalState
-                    : dualState.SolutionState;
-
-                updateAction(targetState);
-                BookmarkRepositoryService.NormalizeWorkspaceState(targetState);
+                BookmarkWorkspaceState targetState = ApplyWorkspaceUpdate(dualState, location, updateAction);
                 await _metadataStore.SaveWorkspaceToLocationAsync(solutionPath, location, targetState, cancellationToken);
 
                 UpdateCachedStateFromDualState(dualState);
@@ -429,6 +423,17 @@ namespace BookmarkStudio
             {
                 _repositoryGate.Release();
             }
+        }
+
+        internal static BookmarkWorkspaceState ApplyWorkspaceUpdate(
+            DualBookmarkWorkspaceState dualState,
+            BookmarkStorageLocation location,
+            Action<BookmarkWorkspaceState> updateAction)
+        {
+            BookmarkWorkspaceState targetState = dualState.GetStateForLocation(location);
+            updateAction(targetState);
+            BookmarkRepositoryService.NormalizeWorkspaceState(targetState);
+            return targetState;
         }
 
         /// <summary>
